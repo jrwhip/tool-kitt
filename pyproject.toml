@@ -1,0 +1,52 @@
+[project]
+name = "tool-kitt"
+version = "0.1.0"
+description = "Your AI coding assistant's Swiss Army knife - commands, agents, skills, and MCP tools for Claude, Gemini, and Copilot CLIs"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Jerry" }
+]
+keywords = ["mcp", "claude", "gemini", "copilot", "ai", "cli", "tool-kitt", "kitt"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+tool-kitt = "ai_cli_mcp.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/jrwhip/tool-kitt"
+Repository = "https://github.com/jrwhip/tool-kitt"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_cli_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/",
+    "agents/",
+    "commands/",
+    "skills/",
+    "docs/",
+    "README.md",
+    "LICENSE",
+]

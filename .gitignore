@@ -1,0 +1,13 @@
+# Planning artifacts
+.planning/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+*.egg
+
+CLI-CAPABILITY-COMPARISON.md
