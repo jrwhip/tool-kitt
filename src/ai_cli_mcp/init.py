@@ -88,24 +88,26 @@ def copy_defaults(workspace: Path) -> None:
                             print(f"  Skipped {category}/{subdir.name}/ (exists)")
 
 
-def get_mcp_config(workspace: Path, for_copilot: bool = False) -> dict:
+def get_mcp_config(workspace: Path, cli_type: str = "claude") -> dict:
     """Generate MCP server configuration.
 
     Args:
         workspace: Path to the workspace directory
-        for_copilot: If True, include 'type' and 'tools' fields required by Copilot CLI
+        cli_type: Target CLI type ('claude', 'copilot', 'gemini')
     """
     config = {
         "tool-kitt": {
             "command": "tool-kitt",
             "args": [],
             "env": {
-                "TOOL_KITT_WORKSPACE": str(workspace)
+                "TOOL_KITT_WORKSPACE": str(workspace),
+                "AI_CLI_TYPE": cli_type  # Help server detect which CLI is calling
             }
         }
     }
 
-    if for_copilot:
+    if cli_type == "copilot":
+        # Copilot requires explicit type and tools fields
         config["tool-kitt"]["type"] = "local"
         config["tool-kitt"]["tools"] = ["*"]
 
@@ -161,7 +163,7 @@ def setup_claude(workspace: Path) -> None:
 
     # Update ~/.claude.json with MCP server (global)
     claude_json = get_home() / ".claude.json"
-    mcp_config = get_mcp_config(workspace)
+    mcp_config = get_mcp_config(workspace, cli_type="claude")
 
     if claude_json.exists():
         try:
@@ -264,7 +266,7 @@ def setup_gemini(workspace: Path) -> None:
     shared_dir = workspace / ".ai-cli" / "shared"
 
     gemini_settings = get_home() / ".gemini" / "settings.json"
-    mcp_config = get_mcp_config(workspace)
+    mcp_config = get_mcp_config(workspace, cli_type="gemini")
 
     if update_json_file(gemini_settings, "mcpServers", mcp_config):
         print(f"  Updated {gemini_settings}")
@@ -316,25 +318,77 @@ def convert_agents_for_copilot(src_dir: Path, dst_dir: Path) -> tuple[int, int]:
     return converted, skipped
 
 
+def verify_copilot_config(config_path: Path) -> tuple[bool, str]:
+    """Verify Copilot MCP configuration is valid.
+
+    Returns (is_valid, message).
+    """
+    if not config_path.exists():
+        return False, f"Config file not created at {config_path}"
+
+    try:
+        with open(config_path) as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        return False, f"Invalid JSON in config: {e}"
+
+    servers = data.get("mcpServers", {})
+    if "tool-kitt" not in servers:
+        return False, "tool-kitt server not found in mcpServers"
+
+    tk = servers["tool-kitt"]
+    required_fields = ["command", "type", "tools", "env"]
+    missing = [f for f in required_fields if f not in tk]
+    if missing:
+        return False, f"Missing required fields: {', '.join(missing)}"
+
+    if tk.get("type") != "local":
+        return False, f"Expected type='local', got type='{tk.get('type')}'"
+
+    env = tk.get("env", {})
+    if "TOOL_KITT_WORKSPACE" not in env:
+        return False, "TOOL_KITT_WORKSPACE not set in env"
+
+    return True, "Configuration valid"
+
+
 def setup_copilot(workspace: Path) -> None:
-    """Configure Copilot CLI."""
+    """Configure Copilot CLI with validation."""
     print("\nCopilot CLI:")
 
     shared_dir = workspace / ".ai-cli" / "shared"
+    copilot_dir = get_home() / ".copilot"
 
-    copilot_config = get_home() / ".copilot" / "mcp-config.json"
-    mcp_config = get_mcp_config(workspace, for_copilot=True)
+    # Ensure .copilot directory exists
+    copilot_dir.mkdir(parents=True, exist_ok=True)
+
+    copilot_config = copilot_dir / "mcp-config.json"
+    mcp_config = get_mcp_config(workspace, cli_type="copilot")
 
     if update_json_file(copilot_config, "mcpServers", mcp_config):
         print(f"  Updated {copilot_config}")
 
+    # Verify configuration
+    is_valid, message = verify_copilot_config(copilot_config)
+    if is_valid:
+        print(f"  Configuration verified: {message}")
+    else:
+        print(f"  WARNING: {message}")
+        print("  Copilot may not connect to tool-kitt properly.")
+
     # Convert agents to .agent.md format
     agents_src = shared_dir / "agents"
-    agents_dst = get_home() / ".copilot" / "agents"
+    agents_dst = copilot_dir / "agents"
     converted, skipped = convert_agents_for_copilot(agents_src, agents_dst)
     print(f"  Converted {converted} agents to {agents_dst}")
     if skipped:
         print(f"  Skipped {skipped} Claude-specific agents")
+
+    # Print Copilot-specific tips
+    print("\n  Copilot Tips:")
+    print("  - Use 'get_workspace_info' tool to verify connection")
+    print("  - Use 'run_skill' and 'invoke_agent' for skill/agent functionality")
+    print("  - Some Claude-specific features are not available in Copilot")
 
 
 def initialize_workspace(workspace: Path) -> int:

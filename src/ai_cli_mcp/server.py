@@ -7,12 +7,23 @@ shared commands, skills, and agents.
 """
 
 import json
+import logging
 import os
 import subprocess
+import sys
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='[tool-kitt] %(levelname)s: %(message)s',
+    stream=sys.stderr
+)
+logger = logging.getLogger("tool-kitt")
 
 mcp = FastMCP("ai-cli")
 
@@ -21,6 +32,33 @@ _workspace: Optional[Path] = None
 
 # Package root (where agents/, commands/, skills/ live)
 _package_root: Optional[Path] = None
+
+# CLI type detection (claude, copilot, gemini, unknown)
+_cli_type: Optional[str] = None
+
+
+def get_cli_type() -> str:
+    """Detect which CLI is calling this server.
+
+    Returns one of: 'claude', 'copilot', 'gemini', 'unknown'
+    """
+    global _cli_type
+    if _cli_type is None:
+        # Check explicit environment variable first
+        cli_env = os.environ.get("AI_CLI_TYPE", "").lower()
+        if cli_env in ("claude", "copilot", "gemini"):
+            _cli_type = cli_env
+        # Try to detect from other env vars or config paths
+        elif os.environ.get("CLAUDE_CODE_ENTRYPOINT"):
+            _cli_type = "claude"
+        elif os.environ.get("GITHUB_COPILOT_TOKEN") or os.environ.get("GH_COPILOT_TOKEN"):
+            _cli_type = "copilot"
+        elif os.environ.get("GEMINI_API_KEY"):
+            _cli_type = "gemini"
+        else:
+            _cli_type = "unknown"
+        logger.info(f"Detected CLI type: {_cli_type}")
+    return _cli_type
 
 
 def get_package_root() -> Path:
@@ -32,15 +70,58 @@ def get_package_root() -> Path:
     return _package_root
 
 
+def _find_git_root(start_path: Path) -> Optional[Path]:
+    """Find the git repository root starting from a path."""
+    current = start_path.resolve()
+    while current != current.parent:
+        if (current / ".git").exists():
+            return current
+        current = current.parent
+    return None
+
+
 def get_workspace() -> Path:
-    """Get the workspace path."""
+    """Get the workspace path with intelligent fallback chain.
+
+    Resolution order:
+    1. AI_CLI_WORKSPACE environment variable
+    2. TOOL_KITT_WORKSPACE environment variable
+    3. Git repository root (if cwd is in a git repo)
+    4. Current working directory
+
+    Logs the resolved workspace for debugging.
+    """
     global _workspace
     if _workspace is None:
+        source = None
+
+        # 1. Check AI_CLI_WORKSPACE
         ws = os.environ.get("AI_CLI_WORKSPACE")
         if ws:
             _workspace = Path(ws).expanduser().resolve()
-        else:
+            source = "AI_CLI_WORKSPACE env var"
+
+        # 2. Check TOOL_KITT_WORKSPACE
+        if _workspace is None:
+            ws = os.environ.get("TOOL_KITT_WORKSPACE")
+            if ws:
+                _workspace = Path(ws).expanduser().resolve()
+                source = "TOOL_KITT_WORKSPACE env var"
+
+        # 3. Try to find git root
+        if _workspace is None:
+            git_root = _find_git_root(Path.cwd())
+            if git_root:
+                _workspace = git_root
+                source = "git repository root"
+
+        # 4. Fall back to cwd
+        if _workspace is None:
             _workspace = Path.cwd()
+            source = "current working directory (fallback)"
+
+        logger.info(f"Workspace: {_workspace} (from {source})")
+
     return _workspace
 
 
@@ -54,6 +135,80 @@ def get_shared_dir() -> Path:
 
     # Fall back to bundled defaults in package
     return get_package_root()
+
+
+def _get_available_projects() -> list[str]:
+    """Get list of available project names in the workspace."""
+    workspace = get_workspace()
+    projects = []
+    for item in workspace.iterdir():
+        if item.is_dir() and not item.name.startswith('.'):
+            projects.append(item.name)
+    return sorted(projects)
+
+
+def _find_similar_projects(name: str, max_suggestions: int = 3) -> list[str]:
+    """Find projects with similar names using fuzzy matching."""
+    available = _get_available_projects()
+    if not available:
+        return []
+
+    # Calculate similarity scores
+    scores = []
+    name_lower = name.lower()
+    for project in available:
+        # Use SequenceMatcher for fuzzy matching
+        ratio = SequenceMatcher(None, name_lower, project.lower()).ratio()
+        # Also check if name is a substring or prefix
+        if name_lower in project.lower():
+            ratio = max(ratio, 0.8)
+        if project.lower().startswith(name_lower):
+            ratio = max(ratio, 0.9)
+        scores.append((project, ratio))
+
+    # Sort by score descending and return top matches
+    scores.sort(key=lambda x: x[1], reverse=True)
+    return [p for p, score in scores[:max_suggestions] if score > 0.3]
+
+
+def _resolve_project_path(project_name: str) -> tuple[Path, Optional[str]]:
+    """Resolve a project name to its path with helpful error messages.
+
+    Returns:
+        (path, error_message) - If path exists, error_message is None.
+        If path doesn't exist, error_message contains helpful suggestions.
+    """
+    workspace = get_workspace()
+    project_path = workspace / project_name
+
+    if project_path.exists():
+        return project_path, None
+
+    # Project not found - build helpful error message
+    available = _get_available_projects()
+
+    if not available:
+        return project_path, (
+            f"Error: Project '{project_name}' not found.\n"
+            f"Workspace '{workspace}' contains no projects.\n"
+            f"Hint: Make sure you're using the correct workspace path."
+        )
+
+    similar = _find_similar_projects(project_name)
+    if similar:
+        suggestions = ", ".join(f"'{p}'" for p in similar)
+        return project_path, (
+            f"Error: Project '{project_name}' not found.\n"
+            f"Did you mean: {suggestions}?\n"
+            f"Use list_projects() to see all available projects."
+        )
+    else:
+        return project_path, (
+            f"Error: Project '{project_name}' not found in workspace.\n"
+            f"Available projects: {', '.join(available[:10])}"
+            + (f" (and {len(available) - 10} more)" if len(available) > 10 else "") + "\n"
+            f"Use list_projects() to see all projects with details."
+        )
 
 
 def get_commands_dir() -> Path:
@@ -119,12 +274,15 @@ def list_projects() -> str:
 
 @mcp.tool()
 def get_project_context(project_name: str) -> str:
-    """Get the full context for a project including its CLAUDE.md, package.json, etc."""
-    workspace = get_workspace()
-    project_path = workspace / project_name
+    """Get the full context for a project including its CLAUDE.md, package.json, etc.
 
-    if not project_path.exists():
-        return f"Error: Project '{project_name}' not found in {workspace}"
+    Args:
+        project_name: Name of the project directory in the workspace.
+                      Use list_projects() first to see available projects.
+    """
+    project_path, error = _resolve_project_path(project_name)
+    if error:
+        return error
 
     context = {"project": project_name, "path": str(project_path)}
 
@@ -154,15 +312,22 @@ def get_project_context(project_name: str) -> str:
 
 @mcp.tool()
 def git_status(project_name: str) -> str:
-    """Get git status for a project."""
-    workspace = get_workspace()
-    project_path = workspace / project_name
+    """Get git status for a project.
 
-    if not project_path.exists():
-        return f"Error: Project '{project_name}' not found"
+    Args:
+        project_name: Name of the project directory.
+                      Use list_projects() first to see available projects.
+    """
+    project_path, error = _resolve_project_path(project_name)
+    if error:
+        return error
 
     if not (project_path / ".git").exists():
-        return f"Error: Project '{project_name}' is not a git repository"
+        return (
+            f"Error: '{project_name}' is not a git repository.\n"
+            f"Path: {project_path}\n"
+            f"Hint: Initialize git with 'git init' or check the project name."
+        )
 
     try:
         result = subprocess.run(
@@ -173,17 +338,20 @@ def git_status(project_name: str) -> str:
         )
         return result.stdout or result.stderr
     except Exception as e:
-        return f"Error: {e}"
+        return f"Error running git status: {e}"
 
 
 @mcp.tool()
 def git_diff(project_name: str, staged: bool = False) -> str:
-    """Get git diff for a project. Set staged=True for staged changes only."""
-    workspace = get_workspace()
-    project_path = workspace / project_name
+    """Get git diff for a project.
 
-    if not project_path.exists():
-        return f"Error: Project '{project_name}' not found"
+    Args:
+        project_name: Name of the project directory.
+        staged: If True, show only staged changes. Default: False (all changes).
+    """
+    project_path, error = _resolve_project_path(project_name)
+    if error:
+        return error
 
     cmd = ["git", "diff"]
     if staged:
@@ -196,19 +364,28 @@ def git_diff(project_name: str, staged: bool = False) -> str:
             capture_output=True,
             text=True
         )
-        return result.stdout or "No changes"
+        output = result.stdout
+        if not output:
+            return "No changes" + (" staged" if staged else "") + " to show."
+        return output
     except Exception as e:
-        return f"Error: {e}"
+        return f"Error running git diff: {e}"
 
 
 @mcp.tool()
 def git_log(project_name: str, count: int = 10) -> str:
-    """Get recent git commits for a project."""
-    workspace = get_workspace()
-    project_path = workspace / project_name
+    """Get recent git commits for a project.
 
-    if not project_path.exists():
-        return f"Error: Project '{project_name}' not found"
+    Args:
+        project_name: Name of the project directory.
+        count: Number of commits to show (default: 10, max: 100).
+    """
+    project_path, error = _resolve_project_path(project_name)
+    if error:
+        return error
+
+    # Limit count to reasonable range
+    count = max(1, min(count, 100))
 
     try:
         result = subprocess.run(
@@ -217,9 +394,12 @@ def git_log(project_name: str, count: int = 10) -> str:
             capture_output=True,
             text=True
         )
-        return result.stdout or result.stderr
+        output = result.stdout or result.stderr
+        if not output.strip():
+            return "No commits found. This may be a new repository."
+        return output
     except Exception as e:
-        return f"Error: {e}"
+        return f"Error running git log: {e}"
 
 
 # ============================================================================
@@ -309,6 +489,267 @@ def get_shared_context(context_name: str) -> str:
     if ctx_file.exists():
         return ctx_file.read_text()
     return f"Error: Context '{context_name}' not found"
+
+
+# ============================================================================
+# SKILL EXECUTION (COPILOT/GEMINI ALTERNATIVE)
+# ============================================================================
+# These tools provide alternatives to Claude's Task and Skill tools for CLIs
+# that don't support those features natively.
+
+@mcp.tool()
+def run_skill(skill_name: str, task_description: str = "") -> str:
+    """Load and return a skill's instructions for inline execution.
+
+    This is an alternative to Claude's Skill tool for CLIs like Copilot and Gemini
+    that don't have native skill support. The skill instructions are returned
+    as text that you should follow to complete the task.
+
+    Args:
+        skill_name: Name of the skill to run (e.g., 'create-plans', 'debug-like-expert').
+                    Use list_shared_skills() to see available skills.
+        task_description: Optional description of what you want to accomplish with this skill.
+
+    Returns:
+        The skill's instructions that you should follow to complete the task.
+    """
+    skills_dir = get_skills_dir()
+    skill_file = skills_dir / skill_name / "SKILL.md"
+
+    if not skill_file.exists():
+        # Try with kitt- prefix
+        skill_file = skills_dir / f"kitt-{skill_name}" / "SKILL.md"
+
+    if not skill_file.exists():
+        # List available skills for helpful error
+        available = []
+        if skills_dir.exists():
+            for skill_dir in skills_dir.iterdir():
+                if skill_dir.is_dir() and (skill_dir / "SKILL.md").exists():
+                    available.append(skill_dir.name)
+
+        if available:
+            # Find similar skill names
+            similar = []
+            name_lower = skill_name.lower()
+            for s in available:
+                if name_lower in s.lower() or s.lower() in name_lower:
+                    similar.append(s)
+
+            if similar:
+                return (
+                    f"Error: Skill '{skill_name}' not found.\n"
+                    f"Did you mean: {', '.join(similar)}?\n"
+                    f"Use list_shared_skills() to see all available skills."
+                )
+            return (
+                f"Error: Skill '{skill_name}' not found.\n"
+                f"Available skills: {', '.join(available[:10])}"
+                + (f" (and {len(available) - 10} more)" if len(available) > 10 else "")
+            )
+        return f"Error: Skill '{skill_name}' not found. No skills are installed."
+
+    content = skill_file.read_text()
+
+    # Build response with context
+    cli_type = get_cli_type()
+    response_parts = [
+        f"# Skill: {skill_name}",
+        "",
+        f"**CLI:** {cli_type}",
+    ]
+
+    if task_description:
+        response_parts.extend([
+            f"**Task:** {task_description}",
+            "",
+        ])
+
+    response_parts.extend([
+        "## Instructions",
+        "",
+        "Follow the instructions below to complete this skill:",
+        "",
+        "---",
+        "",
+        content,
+        "",
+        "---",
+        "",
+        "**Note:** Execute the skill instructions above. Adapt any Claude-specific "
+        "features (like Task tool) to use available tools in your CLI."
+    ])
+
+    return "\n".join(response_parts)
+
+
+@mcp.tool()
+def invoke_agent(agent_name: str, task: str) -> str:
+    """Load an agent's configuration and return instructions for inline execution.
+
+    This is an alternative to Claude's Task tool for CLIs like Copilot and Gemini
+    that don't support spawning sub-agents. The agent's prompt and configuration
+    are returned so you can adopt that agent's persona and complete the task.
+
+    Args:
+        agent_name: Name of the agent to invoke (e.g., 'code-reviewer', 'architect').
+                    Use list_shared_agents() to see available agents.
+        task: Description of the task for this agent to perform.
+
+    Returns:
+        The agent's configuration and instructions for completing the task.
+    """
+    agents_dir = get_agents_dir()
+    agent_file = agents_dir / f"{agent_name}.md"
+
+    if not agent_file.exists():
+        # Try with kitt- prefix
+        agent_file = agents_dir / f"kitt-{agent_name}.md"
+
+    if not agent_file.exists():
+        # List available agents for helpful error
+        available = []
+        if agents_dir.exists():
+            for af in agents_dir.glob("*.md"):
+                available.append(af.stem)
+
+        if available:
+            # Find similar agent names
+            similar = _find_similar_projects(agent_name)  # Reuse fuzzy match
+            similar_agents = [a for a in available if any(
+                s.lower() in a.lower() or a.lower() in s.lower()
+                for s in [agent_name]
+            )]
+
+            if similar_agents:
+                return (
+                    f"Error: Agent '{agent_name}' not found.\n"
+                    f"Did you mean: {', '.join(similar_agents[:3])}?\n"
+                    f"Use list_shared_agents() to see all available agents."
+                )
+            return (
+                f"Error: Agent '{agent_name}' not found.\n"
+                f"Available agents: {', '.join(available[:10])}"
+                + (f" (and {len(available) - 10} more)" if len(available) > 10 else "")
+            )
+        return f"Error: Agent '{agent_name}' not found. No agents are installed."
+
+    content = agent_file.read_text()
+    cli_type = get_cli_type()
+
+    # Parse agent configuration from YAML frontmatter if present
+    agent_config = {}
+    if content.startswith("---"):
+        try:
+            end_idx = content.index("---", 3)
+            frontmatter = content[3:end_idx].strip()
+            # Simple YAML parsing for key: value pairs
+            for line in frontmatter.split("\n"):
+                if ":" in line:
+                    key, value = line.split(":", 1)
+                    agent_config[key.strip()] = value.strip()
+            content = content[end_idx + 3:].strip()
+        except ValueError:
+            pass
+
+    response_parts = [
+        f"# Agent Mode: {agent_name}",
+        "",
+        f"**CLI:** {cli_type}",
+        f"**Task:** {task}",
+        "",
+    ]
+
+    if agent_config:
+        response_parts.extend([
+            "## Agent Configuration",
+            "",
+        ])
+        for key, value in agent_config.items():
+            response_parts.append(f"- **{key}:** {value}")
+        response_parts.append("")
+
+    response_parts.extend([
+        "## Agent Instructions",
+        "",
+        "Adopt the following agent persona and complete the task:",
+        "",
+        "---",
+        "",
+        content,
+        "",
+        "---",
+        "",
+        f"**Your task:** {task}",
+        "",
+        "Execute this task following the agent's instructions above. "
+        "Adapt any Claude-specific tools to your CLI's equivalents."
+    ])
+
+    return "\n".join(response_parts)
+
+
+@mcp.tool()
+def get_workspace_info() -> str:
+    """Get information about the current workspace configuration.
+
+    Returns details about:
+    - Current workspace path
+    - Detected CLI type
+    - Available resources (skills, agents, commands)
+
+    Useful for debugging configuration issues.
+    """
+    workspace = get_workspace()
+    cli_type = get_cli_type()
+    shared_dir = get_shared_dir()
+
+    # Count available resources
+    skills_count = 0
+    agents_count = 0
+    commands_count = 0
+    context_count = 0
+
+    skills_dir = get_skills_dir()
+    if skills_dir.exists():
+        skills_count = sum(1 for d in skills_dir.iterdir()
+                          if d.is_dir() and (d / "SKILL.md").exists())
+
+    agents_dir = get_agents_dir()
+    if agents_dir.exists():
+        agents_count = sum(1 for f in agents_dir.glob("*.md"))
+
+    commands_dir = get_commands_dir()
+    if commands_dir.exists():
+        commands_count = sum(1 for f in commands_dir.rglob("*.md"))
+
+    context_dir = get_context_dir()
+    if context_dir.exists():
+        context_count = sum(1 for f in context_dir.glob("*.md"))
+
+    # Check for workspace-specific config
+    has_local_shared = (workspace / ".ai-cli" / "shared").exists()
+
+    result = {
+        "workspace": str(workspace),
+        "cli_type": cli_type,
+        "shared_resources_path": str(shared_dir),
+        "using_local_resources": has_local_shared,
+        "resources": {
+            "skills": skills_count,
+            "agents": agents_count,
+            "commands": commands_count,
+            "context_docs": context_count
+        },
+        "files": {
+            "todos": (workspace / "TO-DOS.md").exists(),
+            "handoff": (workspace / "whats-next.md").exists(),
+            "time_tracking": (workspace / "time-tracking.json").exists(),
+            "notes": (workspace / "notes.json").exists()
+        }
+    }
+
+    return json.dumps(result, indent=2)
 
 
 # ============================================================================
@@ -1345,23 +1786,51 @@ def {name}({params_str}) -> str:
 
 @mcp.tool()
 def run_npm_script(project_name: str, script: str) -> str:
-    """Run an npm/pnpm script in a project. Returns the output."""
-    workspace = get_workspace()
-    project_path = workspace / project_name
+    """Run an npm/pnpm/yarn script in a project.
 
-    if not project_path.exists():
-        return f"Error: Project '{project_name}' not found"
+    Args:
+        project_name: Name of the project directory.
+        script: Name of the script to run (as defined in package.json scripts).
+
+    Automatically detects package manager (pnpm > yarn > npm).
+    """
+    project_path, error = _resolve_project_path(project_name)
+    if error:
+        return error
 
     pkg = project_path / "package.json"
     if not pkg.exists():
-        return f"Error: No package.json in '{project_name}'"
+        return (
+            f"Error: No package.json found in '{project_name}'.\n"
+            f"Path: {project_path}\n"
+            f"This tool only works with Node.js projects."
+        )
 
+    # Check if script exists in package.json
+    try:
+        with open(pkg) as f:
+            pkg_data = json.load(f)
+            scripts = pkg_data.get("scripts", {})
+            if script not in scripts:
+                available = list(scripts.keys())[:10]
+                return (
+                    f"Error: Script '{script}' not found in package.json.\n"
+                    f"Available scripts: {', '.join(available)}"
+                    + (f" (and {len(scripts) - 10} more)" if len(scripts) > 10 else "")
+                )
+    except json.JSONDecodeError as e:
+        return f"Error: Invalid package.json format: {e}"
+
+    # Detect package manager
     if (project_path / "pnpm-lock.yaml").exists():
         cmd = ["pnpm", "run", script]
+        pm = "pnpm"
     elif (project_path / "yarn.lock").exists():
         cmd = ["yarn", script]
+        pm = "yarn"
     else:
         cmd = ["npm", "run", script]
+        pm = "npm"
 
     try:
         result = subprocess.run(
@@ -1374,38 +1843,62 @@ def run_npm_script(project_name: str, script: str) -> str:
         output = result.stdout
         if result.stderr:
             output += "\n\nSTDERR:\n" + result.stderr
-        return output or "Script completed with no output"
+        if not output.strip():
+            return f"Script '{script}' completed with no output (using {pm})."
+        return output
     except subprocess.TimeoutExpired:
-        return "Error: Script timed out after 120 seconds"
+        return (
+            f"Error: Script '{script}' timed out after 120 seconds.\n"
+            f"The script may be stuck or require user input."
+        )
+    except FileNotFoundError:
+        return (
+            f"Error: Package manager '{pm}' not found.\n"
+            f"Make sure {pm} is installed and in your PATH."
+        )
     except Exception as e:
-        return f"Error: {e}"
+        return f"Error running script: {e}"
 
 
 @mcp.tool()
 def check_build(project_name: str) -> str:
-    """Run type-check/build on a project to check for errors."""
-    workspace = get_workspace()
-    project_path = workspace / project_name
+    """Run type-check or build on a project to check for errors.
 
-    if not project_path.exists():
-        return f"Error: Project '{project_name}' not found"
+    Args:
+        project_name: Name of the project directory.
+
+    Looks for scripts in order: typecheck, type-check, tsc, build.
+    """
+    project_path, error = _resolve_project_path(project_name)
+    if error:
+        return error
 
     pkg = project_path / "package.json"
-    if pkg.exists():
-        try:
-            with open(pkg) as f:
-                data = json.load(f)
-                scripts = data.get("scripts", {})
+    if not pkg.exists():
+        return (
+            f"Error: No package.json found in '{project_name}'.\n"
+            f"This tool only works with Node.js projects."
+        )
 
-                for script in ["typecheck", "type-check", "tsc", "build"]:
-                    if script in scripts:
-                        return run_npm_script(project_name, script)
+    try:
+        with open(pkg) as f:
+            data = json.load(f)
+            scripts = data.get("scripts", {})
 
-                return "No typecheck or build script found in package.json"
-        except Exception as e:
-            return f"Error reading package.json: {e}"
+            for script in ["typecheck", "type-check", "tsc", "build"]:
+                if script in scripts:
+                    return run_npm_script(project_name, script)
 
-    return "No package.json found"
+            available = list(scripts.keys())
+            return (
+                f"No typecheck or build script found in package.json.\n"
+                f"Available scripts: {', '.join(available) if available else '(none)'}\n"
+                f"Hint: Add a 'typecheck' or 'build' script to package.json."
+            )
+    except json.JSONDecodeError as e:
+        return f"Error: Invalid package.json format: {e}"
+    except Exception as e:
+        return f"Error reading package.json: {e}"
 
 
 # ============================================================================
