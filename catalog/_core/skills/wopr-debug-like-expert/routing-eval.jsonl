@@ -1,0 +1,3 @@
+{"intent": "our standard troubleshooting fails and this bug refuses to reproduce", "expected_skill": "wopr-debug-like-expert"}
+{"intent": "let's escalate this when issues require systematic root cause analysis", "expected_skill": "wopr-debug-like-expert"}
+{"intent": "please rename this variable for clarity", "expected_skill": null}

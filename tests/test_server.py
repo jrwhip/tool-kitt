@@ -1,0 +1,100 @@
+"""Tests for the MCP server application factory."""
+
+import pytest
+
+from wopr.config import ServerConfig
+from wopr.context import ServerContext
+from wopr.server import create_app
+
+
+@pytest.fixture(autouse=True)
+def _reset_server_context():
+    """``create_app`` calls ``ServerContext.init()`` internally, clobbering
+    the process-wide singleton. Reset on both entry and exit so this module
+    doesn't leave the singleton pointed at a deleted tmp_path workspace for
+    whatever test runs next, matching the pattern conftest.py's
+    ``workspace``/``isolated_env`` fixtures already use elsewhere."""
+    ServerContext.reset()
+    yield
+    ServerContext.reset()
+
+
+# Every tool the server registers, pinned by name. The prior toolset
+# registered 68 and gated a block of them on an ``extras`` pack lock;
+# this list IS the slimming decision, so a tool appearing or vanishing
+# should be a deliberate diff here rather than a silent change in
+# ``create_app``.
+EXPECTED_TOOLS = [
+    "append_learnings",
+    "check_mcp_servers_for_malware",
+    "check_routing_evals",
+    "create_handoff",
+    "curate_learnings",
+    "detect_stack",
+    "get_handoff",
+    "get_help",
+    "get_pack_template",
+    "get_workspace_info",
+    "learnings_path",
+    "learnings_search",
+    "list_pack_templates",
+    "pin_skill",
+    "propose_wopr_yml",
+    "scan_skill_directory",
+    "seed_learnings",
+    "skill_usage_report",
+    "validate_scout_contract",
+    "write_handoff_contract_stub",
+    "write_spec_stubs",
+    "write_tracking_doc_stub",
+    "write_wopr_yml",
+]
+
+
+class TestCreateApp:
+    def test_registers_exactly_the_expected_tool_set(self, tmp_path):
+        config = ServerConfig(cli_type="claude")
+        app = create_app(config=config, workspace=str(tmp_path))
+        registered = sorted(t.name for t in app._tool_manager.list_tools())
+        assert registered == EXPECTED_TOOLS
+
+    def test_returns_fastmcp_instance(self, tmp_path):
+        config = ServerConfig(cli_type="claude")
+        app = create_app(config=config, workspace=str(tmp_path))
+        assert app.name == "wopr"
+
+    def test_accepts_custom_config(self, tmp_path):
+        config = ServerConfig(cli_type="gemini", toggl_api_key="test-key")
+        app = create_app(config=config, workspace=str(tmp_path))
+        assert app is not None
+        assert ServerContext.get().cli_type == "gemini"
+
+    def test_multiple_instances(self, tmp_path):
+        """Verify factory creates independent instances."""
+        config = ServerConfig(cli_type="claude")
+        app1 = create_app(config=config, workspace=str(tmp_path))
+        app2 = create_app(config=config, workspace=str(tmp_path))
+        assert app1 is not app2
+
+    def test_every_ctx_parameter_receives_context_injection(self, tmp_path):
+        """Every registered tool with a ``ctx`` param must be injectable.
+
+        The ``ToolContext`` alias in ``context.py`` must resolve, at
+        runtime, to something FastMCP's ``find_context_parameter()``
+        recognizes — otherwise detection returns None, ctx silently
+        arrives as None in every tool, and workspace resolution degrades
+        with no error anywhere. This pins the wiring end-to-end against
+        both alias changes and SDK detection changes.
+        """
+        import inspect
+
+        config = ServerConfig(cli_type="claude")
+        app = create_app(config=config, workspace=str(tmp_path))
+        tools = app._tool_manager.list_tools()
+        assert tools, "no tools registered"
+        ctx_tools = [
+            t for t in tools if "ctx" in inspect.signature(t.fn).parameters
+        ]
+        assert ctx_tools, "no ctx-taking tools found; detection is broken"
+        not_injected = [t.name for t in ctx_tools if t.context_kwarg != "ctx"]
+        assert not_injected == []

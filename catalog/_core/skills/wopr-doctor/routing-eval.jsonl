@@ -1,0 +1,3 @@
+{"intent": "before the first crew run on a project, let's sanity check the setup", "expected_skill": "wopr-doctor"}
+{"intent": "double check our wopr wiring after dependency upgrades that may have changed the stack", "expected_skill": "wopr-doctor"}
+{"intent": "write a new rest endpoint for orders", "expected_skill": null}

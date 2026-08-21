@@ -1,0 +1,3 @@
+{"intent": "I'm authoring new skills for the catalog", "expected_skill": "wopr-create-agent-skills"}
+{"intent": "help understanding skill structure and best practices before it ships", "expected_skill": "wopr-create-agent-skills"}
+{"intent": "check the database migration for a typo", "expected_skill": null}

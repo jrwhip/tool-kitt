@@ -1,0 +1,3 @@
+{"intent": "I'm wrapping up a work session and need a handoff doc", "expected_skill": "wopr-whats-next"}
+{"intent": "we're switching clis from claude to copilot mid project", "expected_skill": "wopr-whats-next"}
+{"intent": "run the linter on this file", "expected_skill": null}

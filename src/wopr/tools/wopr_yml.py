@@ -1,0 +1,771 @@
+"""WOPR `wopr.yml` generator.
+
+Two MCP tools that turn a ``detect_stack`` result into a scaffolded
+``wopr.yml`` for a specific target inside the workspace:
+
+- ``propose_wopr_yml(detection_json, target_path)``: read-only. Returns
+  the proposed YAML as a string. Operator confirms before any file
+  lands on disk. ``target_path`` is relative to the workspace inside
+  the detection.
+- ``write_wopr_yml(target_dir, yaml_content, overwrite=False)``: writes
+  the YAML to ``<target_dir>/wopr.yml``. ``target_dir`` is an absolute
+  path resolved by the caller from the operator's working context.
+  Refuses to overwrite existing files unless explicitly told to.
+  Refuses to create parent directories; the caller decides whether the
+  placement is real.
+
+The skill ``/wopr-create-yml`` orchestrates: detect -> propose -> show
+operator -> confirm -> write. The tools themselves are non-interactive.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+import yaml
+
+from .._atomic_write import atomic_create_text, atomic_write_text
+from ._data_paths import candidate_data_paths
+from ._errors import ERROR_PREFIX
+from ._target_paths import (
+    find_profile as _find_profile,
+)
+from ._target_paths import (
+    name_from_slug as _name_from_slug,
+)
+from ._target_paths import (
+    normalize_target_path as _normalize_target_path,
+)
+from ._target_paths import (
+    slug_from_target as _slug_from_target,
+)
+
+logger = logging.getLogger("wopr")
+
+# Trust assumption: the pom.xml files this tool parses live inside the
+# operator's own workspace. They are not adversarial input. If this
+# tool is ever extended to scan arbitrary remote workspaces, replace
+# the stdlib ``xml.etree.ElementTree`` parser below with
+# ``defusedxml.ElementTree`` to neutralize billion-laughs / external-
+# entity attacks.
+
+if TYPE_CHECKING:
+    from mcp.server.fastmcp import FastMCP
+
+
+# -----------------------------------------------------------------------------
+# Helpers: target resolution
+# -----------------------------------------------------------------------------
+#
+# normalize_target_path / find_profile / slug_from_target / name_from_slug
+# live in ``_target_paths`` so claude_md.py uses the same implementation.
+# Imported at module top with private aliases (leading underscore) so
+# call sites here keep the existing names.
+
+
+def _resolve_target_dir(workspace_path: str, target_path: str) -> Path:
+    """Return the absolute path to the target directory inside the workspace."""
+    norm = _normalize_target_path(target_path)
+    workspace = Path(workspace_path)
+    return workspace if norm == "." else workspace / norm
+
+
+def _localname(tag: str) -> str:
+    """Strip the XML namespace prefix from an ElementTree tag.
+
+    Maven pom files routinely carry an ``xmlns`` declaration; ElementTree
+    prefixes every parsed tag with ``{namespace}localname``. We only
+    care about the localname.
+    """
+    return tag.split("}", 1)[1] if tag.startswith("{") else tag
+
+
+def _read_pom_groupid_artifactid(target_dir: Path) -> tuple[str | None, str | None]:
+    """Return (groupId, artifactId) for the project, NOT its parent POM.
+
+    Reads only direct children of the ``<project>`` root. This is
+    structurally immune to the family of bugs that plagued the earlier
+    regex implementation:
+
+    - ``<parent>`` block (which carries the upstream POM's coordinates)
+      is not a direct child match for groupId/artifactId; it owns its
+      own subtree.
+    - ``<dependencyManagement>`` and ``<dependencies>`` blocks routinely
+      list groupId/artifactId for dependencies before the project
+      declares its own coordinates. Direct-child filtering ignores them.
+    - ``<profiles>``/``<profile>`` blocks may redeclare coordinates for
+      profile-scoped overrides. Same filtering applies.
+    - XML namespaces (``<pom:groupId>``) are normalized via
+      :func:`_localname` so the tag check survives namespaced poms.
+
+    A malformed or unreadable pom returns ``(None, None)`` quietly; the
+    caller layers TODO comments on missing fields.
+    """
+    pom = target_dir / "pom.xml"
+    if not pom.is_file():
+        return None, None
+    try:
+        # ``with`` ensures the file handle closes even when ET.parse
+        # raises mid-parse, where stdlib cleanup is implementation-
+        # defined and historically has leaked the handle.
+        with pom.open("rb") as fh:
+            root = ET.parse(fh).getroot()
+    except (OSError, ET.ParseError) as e:
+        # Operator-visible failure mode: base_package falls back to TODO
+        # because the pom did not parse. Log so a curious operator can
+        # follow up; do not raise.
+        logger.warning("doctor: failed to parse %s: %s", pom, e)
+        return None, None
+    group: str | None = None
+    artifact: str | None = None
+    for child in root:
+        local = _localname(child.tag)
+        if local == "groupId" and child.text:
+            group = child.text.strip() or None
+        elif local == "artifactId" and child.text:
+            artifact = child.text.strip() or None
+    return group, artifact
+
+
+def _derive_java_base_package(target_dir: Path) -> tuple[str | None, bool]:
+    """Best-effort derivation of the project's base Java package.
+
+    Strategy, in order:
+
+    1. ``<groupId>.<artifactId>`` from pom.xml when both are present.
+    2. ``<groupId>`` alone when artifactId could not be recovered (the
+       group is still usually a meaningful package root, and the
+       operator can refine it).
+    3. The ``package`` declaration of the first ``.java`` file under
+       ``src/main/java`` when neither groupId nor artifactId could be
+       read from the pom.
+
+    Returns:
+        ``(package, transform_applied)``. ``transform_applied`` is True
+        when the artifactId contained hyphens and had to be folded to
+        underscores to form a valid Java identifier. The caller should
+        surface a TODO comment in that case so the operator confirms
+        the guess.
+    """
+    group, artifact = _read_pom_groupid_artifactid(target_dir)
+    if group and artifact:
+        # Common pattern in WOPR-adjacent projects: groupId already includes
+        # the project segment. Concatenate only when artifactId does not
+        # collide with the groupId's trailing segment.
+        if group.endswith(artifact):
+            return group, False
+        had_hyphen = "-" in artifact
+        return f"{group}.{artifact.replace('-', '_')}", had_hyphen
+    if group:
+        return group, False
+
+    java_root = target_dir / "src" / "main" / "java"
+    if java_root.is_dir():
+        # ``rglob`` order is unspecified across platforms and
+        # filesystems; sort so the first-match-wins behavior is
+        # reproducible across machines (otherwise the same project can
+        # produce different base_package values on different CI agents).
+        # Continue past files without a package declaration (default
+        # package, comment-only files, files we cannot decode as UTF-8);
+        # each candidate read is bounded to 4 KiB and uses
+        # ``errors="replace"`` so a UTF-16 or otherwise non-UTF-8 Java
+        # source does not raise mid-scan. The replacement characters
+        # break the package-line regex, which is the right fail-quiet
+        # behavior: that file gets skipped and the next candidate wins,
+        # falling through to a TODO if no decodable file declares a
+        # package.
+        for java_file in sorted(java_root.rglob("*.java")):
+            try:
+                head = java_file.read_text(encoding="utf-8", errors="replace")[:4096]
+            except OSError:
+                continue
+            m = re.search(r"^package\s+([\w\.]+)\s*;", head, re.MULTILINE)
+            if m:
+                return m.group(1), False
+    return None, False
+
+
+def _derive_target_source_root(profile: dict[str, Any], base_package: str | None) -> str:
+    """Convention-driven source-root path relative to wopr.yml location."""
+    language = profile.get("language")
+    framework = profile.get("framework")
+    package_manager = profile.get("package_manager")
+
+    if language == "java":
+        if base_package:
+            return f"src/main/java/{base_package.replace('.', '/')}"
+        return "src/main/java"
+    if framework == "angular":
+        return "src/app"
+    if framework in {"react", "vue", "next"} or language in {"typescript", "javascript"}:
+        return "src"
+    if language == "python":
+        return "src"
+    if language == "rust":
+        return "src"
+    if language == "go":
+        return "."
+    if language == "csharp":
+        return "."
+    # Fallback when nothing matched but we still have a build file.
+    if package_manager == "maven":
+        return "src/main/java"
+    return "src"
+
+
+def _derive_test_root(profile: dict[str, Any]) -> str:
+    language = profile.get("language")
+    test_runner = profile.get("test_runner")
+    if language == "java":
+        return "src/test/java"
+    if test_runner in {"vitest", "jest", "playwright"}:
+        # Frontend test files commonly co-locate next to sources; this is
+        # the most generic safe choice that still resolves on a search.
+        return "src"
+    if language == "python":
+        return "tests"
+    if language == "rust":
+        return "tests"
+    if language == "go":
+        return "."
+    return "src"
+
+
+def _derive_build_file(profile: dict[str, Any], target_dir: Path) -> str:
+    """Return the build-file path. Prefer the profile, then disk evidence."""
+    package_manager = profile.get("package_manager")
+    if package_manager == "maven" and (target_dir / "pom.xml").is_file():
+        return "pom.xml"
+    if package_manager == "gradle":
+        if (target_dir / "build.gradle.kts").is_file():
+            return "build.gradle.kts"
+        if (target_dir / "build.gradle").is_file():
+            return "build.gradle"
+    if (target_dir / "project.json").is_file():
+        return "project.json"
+    if (target_dir / "package.json").is_file():
+        return "package.json"
+    if (target_dir / "pyproject.toml").is_file():
+        return "pyproject.toml"
+    if (target_dir / "Cargo.toml").is_file():
+        return "Cargo.toml"
+    if (target_dir / "go.mod").is_file():
+        return "go.mod"
+    # Fallback to a string that signals to the operator something is off.
+    return "TODO"
+
+
+def _derive_openapi_section(
+    profile: dict[str, Any], workspace_path: str
+) -> tuple[str | None, str | None, str | None]:
+    """Return (spec_url, pinned_generator_version, todo_comment).
+
+    The todo_comment is set when the field needs human review.
+    """
+    role = profile.get("openapi_role")
+    if role == "producer":
+        return (
+            "/v3/api-docs",
+            "springdoc-openapi 2.7.0",
+            "Confirm `springdoc-openapi` version matches `pom.xml` or `build.gradle`.",
+        )
+    if role == "consumer":
+        # Read the workspace-root package.json devDependencies to pin
+        # the generator version. This is intentional for Nx-style
+        # monorepos, where each app's project.json inherits deps from
+        # the workspace root. A future maintainer working on a non-Nx
+        # layout might "fix" this by joining the target_path; don't.
+        # The detector classifies non-Nx targets via per-app
+        # package.json and the workspace-root profile separately, so
+        # the right `workspace_path` is already in hand.
+        pkg = Path(workspace_path) / "package.json"
+        version: str | None = None
+        try:
+            data = json.loads(pkg.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = None
+        # ``json.loads`` returns whatever the JSON document evaluates to,
+        # which includes ``null``, lists, scalars. A misconfigured
+        # ``package.json`` at root could be any of those. Guard the dict
+        # assumption rather than rely on ``data.get`` to raise, which
+        # would surface as an AttributeError mid-propose.
+        if isinstance(data, dict):
+            dev = data.get("devDependencies") or {}
+            if isinstance(dev, dict):
+                raw = dev.get("@openapitools/openapi-generator-cli")
+                if isinstance(raw, str):
+                    # Extract the first version-shaped token rather
+                    # than ``lstrip``-ing characters, which silently
+                    # mangles specifiers like ``github:foo/bar#v1.2.3``.
+                    # Use search (not match) so prefixes from non-
+                    # standard specifiers are skipped over rather than
+                    # blocking the parse.
+                    m = re.search(r"\d+(?:\.\d+){1,2}[\w\.\-]*", raw)
+                    if m:
+                        version = m.group(0) or None
+        pinned = (
+            f"openapi-generator-cli {version}"
+            if version
+            else "openapi-generator-cli TODO"
+        )
+        # spec_url is emitted as ``null`` rather than a TODO string. A
+        # YAML value containing a literal ``TODO:`` is invalid because the
+        # second colon starts a nested mapping. Use null + a TODO comment.
+        todo = (
+            "Set `spec_url` to the backend's openapi.json path or URL. "
+            "Pin must match the backend's `spec_version`."
+        )
+        return None, pinned, todo
+    return None, None, None
+
+
+# -----------------------------------------------------------------------------
+# Public: propose_wopr_yml
+# -----------------------------------------------------------------------------
+
+
+def propose_wopr_yml(detection_json: str, target_path: str) -> str:
+    """Generate the proposed `wopr.yml` text for a target inside a workspace.
+
+    Args:
+        detection_json: Output of ``detect_stack``. JSON string.
+        target_path: Path of the target inside the workspace (``.`` for
+            the workspace root, ``apps/example-app`` for an Nx app).
+
+    Returns:
+        The proposed YAML as a string with TODO comments next to fields
+        that need operator review. Returns an ``Error:`` string on
+        invalid input. Read-only; no file writes.
+    """
+    try:
+        detection = json.loads(detection_json)
+    except json.JSONDecodeError as e:
+        return f"Error: invalid detection JSON: {e}"
+    # ``json.loads`` returns whatever the document represents, including
+    # ``null``, lists, scalars. The documented contract is that callers
+    # pass the output of ``detect_stack`` which is always a JSON object,
+    # but a malformed caller could hand us a non-dict and ``.get`` would
+    # raise AttributeError. Reject explicitly.
+    if not isinstance(detection, dict):
+        return (
+            "Error: detection JSON must be a JSON object "
+            f"(got {type(detection).__name__})."
+        )
+    if detection.get("error"):
+        return f"Error: detection reports an error: {detection['error']}"
+
+    workspace_path = detection.get("workspace_path") or "."
+    profile = _find_profile(detection, target_path)
+    if profile is None:
+        return (
+            f"Error: target_path {target_path!r} not found in detection. "
+            f"Available: {[p.get('target_path') for p in detection.get('targets') or []]}"
+        )
+
+    target_dir = _resolve_target_dir(workspace_path, target_path)
+    slug = _slug_from_target(target_path, workspace_path)
+    name = _name_from_slug(slug)
+    language = profile.get("language")
+    framework = profile.get("framework")
+
+    base_package: str | None = None
+    base_package_transformed = False
+    if language == "java":
+        base_package, base_package_transformed = _derive_java_base_package(target_dir)
+    source_root = _derive_target_source_root(profile, base_package)
+    test_root = _derive_test_root(profile)
+    build_file = _derive_build_file(profile, target_dir)
+    spec_url, pinned_version, openapi_todo = _derive_openapi_section(
+        profile, workspace_path
+    )
+
+    coder_spec_todo = "# TODO: copy from catalog/crew/templates/coder-spec.template.md"
+    tester_spec_todo = "# TODO: copy from catalog/crew/templates/tester-spec.template.md"
+
+    lines: list[str] = []
+    lines.append(f"# wopr.yml generated by /wopr-create-yml for {slug}.")
+    lines.append("# Schema: webteam-ai-tools/docs/wopr-yml-schema.md")
+    lines.append(
+        "# Review every TODO comment before the first crew run; the "
+        "generator fills in defaults that may not match this project."
+    )
+    lines.append("")
+    lines.append("project:")
+    lines.append(f"  slug: {slug}")
+    lines.append(f"  name: {name}  # TODO: confirm the human-readable name.")
+    lines.append(f"  target_source_root: {source_root}")
+    lines.append(f"  test_root: {test_root}")
+    lines.append(f"  build_file: {build_file}")
+    if base_package:
+        if base_package_transformed:
+            base_package_todo = (
+                "# TODO: artifactId hyphens were folded to underscores; "
+                "confirm the package matches your code."
+            )
+            lines.append(f"  base_package: {base_package}  {base_package_todo}")
+        else:
+            lines.append(f"  base_package: {base_package}")
+    elif language == "java":
+        no_pom_todo = "# could not derive; check pom.xml or first .java file."
+        lines.append(f"  base_package: TODO  {no_pom_todo}")
+    lines.append("")
+    lines.append("specs:")
+    lines.append(f"  coder_spec: specs/coder-spec.md  {coder_spec_todo}")
+    lines.append(f"  tester_spec: specs/tester-spec.md  {tester_spec_todo}")
+    lines.append("  audit_report: AUDIT_REPORT.md")
+
+    if spec_url is not None or pinned_version is not None:
+        lines.append("")
+        lines.append("openapi:")
+        # Always emit spec_url when the openapi block exists; use `null`
+        # plus a TODO comment when the value could not be derived.
+        if spec_url is not None:
+            lines.append(f"  spec_url: {spec_url}")
+        else:
+            lines.append("  spec_url: null")
+        if pinned_version is not None:
+            lines.append(f"  pinned_generator_version: {pinned_version}")
+        if openapi_todo:
+            lines.append(f"  # TODO: {openapi_todo}")
+
+    # Requirements source: where the orchestrator pulls the active REQ
+    # body from at crew dispatch. Default is `local` so existing
+    # projects without this section keep working unchanged (the parser
+    # also defaults absent sections to local). Operators on a Jira-
+    # backed workflow swap the `local:` sub-block for `jira:`. The
+    # Atlassian site (cloud_id) is resolved at runtime by the
+    # orchestrator via the Atlassian MCP's
+    # ``getAccessibleAtlassianResources`` call, not stored here; it is
+    # machine-level state, not project-level.
+    lines.append("")
+    lines.append("requirements:")
+    lines.append("  source: local  # TODO: confirm; \"local\" or \"jira\"")
+    lines.append("  local:")
+    lines.append(
+        "    path: requirements  # directory of <REQ-ID>.md files, "
+        "relative to this wopr.yml"
+    )
+    lines.append("  # When source: jira, replace local: above with:")
+    lines.append("  #   jira:")
+    lines.append("  #     project_key: <PROJECT-KEY>  # optional sanity check")
+
+    if framework == "angular" or language == "typescript":
+        lines.append("")
+        lines.append(
+            "# legacy-migration block intentionally omitted. Add it by hand "
+            "when migrating from a legacy stack; see wopr.example.yml."
+        )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
+# -----------------------------------------------------------------------------
+# Public: write_wopr_yml
+# -----------------------------------------------------------------------------
+
+
+def write_wopr_yml(
+    target_dir: str, yaml_content: str, overwrite: bool = False
+) -> str:
+    """Write ``yaml_content`` to ``<target_dir>/wopr.yml``.
+
+    Args:
+        target_dir: Absolute path of the directory where ``wopr.yml``
+            should be created. Must already exist. The caller (a skill
+            running in the operator's session) is responsible for
+            resolving this from the operator's actual working context.
+            This function does NOT join the path onto any pinned
+            workspace; relying on a server-side default produced silent
+            foot-guns when the MCP server's workspace and the operator's
+            actual project were in different places.
+        yaml_content: Final YAML to write. Validated by parsing through
+            ``yaml.safe_load`` before any disk write.
+        overwrite: When ``False`` (default), refuses to overwrite an
+            existing ``wopr.yml``. When ``True``, replaces the file.
+
+    Returns:
+        Status string. Begins with ``Wrote`` on success or ``Error:`` on
+        failure. The function never creates parent directories. The
+        target directory IS the project root and must already exist;
+        creating it server-side would hide the operator's misnamed
+        path. Contrast with :func:`_write_pack_template` (used by the
+        stub writers), which DOES create intermediate directories
+        because its destination is a sub-path INSIDE the project (e.g.
+        ``docs/implementation-tracking.md``) where the leaf directory
+        may not yet exist by design.
+    """
+    if not target_dir:
+        return (
+            "Error: target_dir is required. Pass the absolute path of the "
+            "directory where wopr.yml should be written."
+        )
+    dest_dir = Path(target_dir).expanduser()
+    if not dest_dir.is_absolute():
+        return (
+            f"Error: target_dir {target_dir!r} is not absolute. Pass the "
+            "fully-resolved path to the target directory."
+        )
+    dest_dir = dest_dir.resolve()
+
+    if not dest_dir.exists():
+        return (
+            f"Error: target directory does not exist: {dest_dir}. "
+            "Create it manually before running the generator."
+        )
+    if not dest_dir.is_dir():
+        return f"Error: target path is not a directory: {dest_dir}"
+
+    # Guard against the operator pasting a proposer error string into
+    # write. ``propose_wopr_yml`` returns ``Error: ...`` on failure; if
+    # that string ever gets handed to write, surface a clearer message
+    # than the YAML parser's complaint about ``:`` mid-value.
+    if yaml_content.lstrip().startswith(ERROR_PREFIX):
+        return (
+            "Error: yaml_content looks like a propose_wopr_yml error "
+            "string; pass the proposed YAML, not the error message."
+        )
+
+    # Defense in depth: PyYAML currently rejects NUL in plain scalars,
+    # but accepts NUL in quoted strings and some block contexts. NUL has
+    # no business in a wopr.yml regardless of YAML grammar specifics, so
+    # reject it explicitly before parsing. Makes the rejection part of
+    # this function's contract rather than a PyYAML implementation
+    # detail that a future release could relax.
+    if "\x00" in yaml_content:
+        return "Error: yaml_content contains NUL bytes; refusing to write."
+
+    # A UTF-8 BOM at the head of ``yaml_content`` passes through this
+    # function verbatim: PyYAML strips it for the parse but we write
+    # the raw string. Most downstream YAML readers tolerate a BOM; some
+    # text tools (``grep ^project:``, strict line-oriented parsers) do
+    # not. We do not strip the BOM because doing so silently rewrites
+    # operator-supplied content; if the operator passed it in, they get
+    # it back out.
+
+    # YAML must not just parse; it must be a mapping that declares the
+    # ``project`` block. Without this gate, callers can write empty
+    # strings, bare scalars (``"x"``), or lists and the function would
+    # cheerfully accept them.
+    try:
+        parsed = yaml.safe_load(yaml_content)
+    except yaml.YAMLError as e:
+        return f"Error: yaml_content failed to parse: {e}"
+    if not isinstance(parsed, dict):
+        return (
+            "Error: yaml_content must be a mapping (got "
+            f"{type(parsed).__name__})."
+        )
+    if "project" not in parsed:
+        return "Error: yaml_content is missing the required `project` block."
+
+    dest = dest_dir / "wopr.yml"
+    # Two paths with different durability properties:
+    #
+    # * no-overwrite: open(dest, "x") gates create-or-fail at the
+    #   filesystem level (no exists()+write race window). The file's
+    #   bytes are fsync'd before this function returns, so a successful
+    #   return implies the content is durable on disk. A crash mid-write
+    #   may leave a partial file that blocks future creates; the operator
+    #   resolves that by deleting the partial and re-running. An fsync
+    #   that itself fails (rare; some network filesystems) returns an
+    #   error AFTER the partial file has already been created, so the
+    #   operator may also need to clean up in that case.
+    # * overwrite: stage to a per-call temp name beside the destination,
+    #   fsync, then os.replace. The replace is atomic on POSIX and on
+    #   Windows when the temp file is on the same volume. A crash
+    #   anywhere before the replace leaves the original file intact and
+    #   orphans the temp; best-effort cleanup runs on error.
+    #
+    # Note: the containing directory is NOT fsync'd. A crash between the
+    # rename and the directory metadata flush could lose the rename on a
+    # power failure, but the workspace config file is trivially
+    # regenerable by the operator, so the cost is acceptable.
+    # Durability notes for both branches below:
+    # * The create-or-fail branch uses ``atomic_create_text``, which
+    #   opens the file with the "x" flag so the existence check and the
+    #   create are a single filesystem operation with no exists+write
+    #   race window. A crash mid-write may leave a partial file that
+    #   blocks future creates; the operator resolves that by deleting
+    #   the partial and re-running.
+    # * The overwrite branch uses ``atomic_write_text``, which stages
+    #   to a per-call temp file beside the destination, fsyncs the
+    #   temp, then ``os.replace``s into place. The replace is atomic
+    #   on POSIX and on Windows when the temp and destination live on
+    #   the same volume.
+    #
+    # Caveats both branches share, documented once on
+    # ``_atomic_write``: no directory fsync, no signal handler, no
+    # cross-process lock. Acceptable for an operator-driven config
+    # writer; the helper docstring spells out the trade-off.
+    if not overwrite:
+        try:
+            atomic_create_text(dest, yaml_content)
+        except FileExistsError:
+            return (
+                f"Error: {dest} already exists. Pass overwrite=True to replace it."
+            )
+        except OSError as e:
+            return f"Error: failed to write {dest}: {e}"
+    else:
+        try:
+            atomic_write_text(dest, yaml_content)
+        except OSError as e:
+            return f"Error: failed to write {dest}: {e}"
+
+    return f"Wrote {dest}"
+
+
+# -----------------------------------------------------------------------------
+# Public: write_spec_stubs
+# -----------------------------------------------------------------------------
+
+
+_KNOWN_STACK_PROFILES = {"angular", "spring-boot", "fastapi"}
+
+
+def _select_stack_template_dir(
+    detection: dict[str, Any], target_path: str
+) -> tuple[str, Path]:
+    """Pick the per-stack template dir for the target. Returns (stack, path).
+
+    ``stack`` is one of the keys under
+    ``catalog/crew/templates/by-stack/`` (``angular``,
+    ``spring-boot``, ``fastapi``, ``_generic``). ``path`` is the
+    absolute directory containing the spec files for that stack.
+    Falls back to ``_generic`` when the stack-specific directory is
+    missing on disk. Path resolution is centralized in
+    :mod:`._data_paths`.
+    """
+    profile = _find_profile(detection, target_path)
+    framework = (profile or {}).get("framework") or ""
+    stack = framework if framework in _KNOWN_STACK_PROFILES else "_generic"
+
+    candidates = candidate_data_paths(
+        "crew", "templates", "by-stack", stack,
+    )
+    for candidate in candidates:
+        if candidate.is_dir():
+            return stack, candidate
+    for candidate in candidate_data_paths(
+        "crew", "templates", "by-stack", "_generic",
+    ):
+        if candidate.is_dir():
+            return "_generic", candidate
+    return stack, candidates[0]
+
+
+def write_spec_stubs(
+    target_dir: str,
+    detection_json: str,
+    target_path: str,
+    overwrite: bool = False,
+) -> str:
+    """Copy stack-appropriate spec stubs into ``<target_dir>/specs/``.
+
+    Args:
+        target_dir: Absolute path of the project directory where the
+            ``specs/`` subdir should land. Must already exist.
+        detection_json: Output of ``detect_stack``. Used to pick the
+            right per-stack template (Angular, Spring Boot, FastAPI, or
+            generic fallback).
+        target_path: Path of the target inside the workspace, as it
+            appears in the detection's ``targets`` list.
+        overwrite: When ``False`` (default), refuses to overwrite
+            existing spec files.
+
+    Returns:
+        Status string. Begins with ``Wrote`` listing the spec files
+        landed, or ``Error:`` on failure.
+    """
+    if not target_dir:
+        return "Error: target_dir is required."
+    dest_dir = Path(target_dir).expanduser()
+    if not dest_dir.is_absolute():
+        return f"Error: target_dir {target_dir!r} is not absolute."
+    dest_dir = dest_dir.resolve()
+    if not dest_dir.is_dir():
+        return f"Error: target directory does not exist: {dest_dir}"
+
+    try:
+        detection = json.loads(detection_json)
+    except json.JSONDecodeError as e:
+        return f"Error: invalid detection JSON: {e}"
+    if not isinstance(detection, dict):
+        return (
+            "Error: detection JSON must be an object "
+            f"(got {type(detection).__name__})."
+        )
+
+    stack, template_dir = _select_stack_template_dir(detection, target_path)
+    coder_src = template_dir / "coder-spec.md"
+    tester_src = template_dir / "tester-spec.md"
+    if not coder_src.is_file() or not tester_src.is_file():
+        return (
+            f"Error: stack template dir {template_dir} is missing "
+            "coder-spec.md or tester-spec.md."
+        )
+
+    specs_dir = dest_dir / "specs"
+    try:
+        specs_dir.mkdir(exist_ok=True)
+    except OSError as e:
+        return f"Error: failed to create {specs_dir}: {e}"
+
+    written: list[str] = []
+    for src in (coder_src, tester_src):
+        dst = specs_dir / src.name
+        if dst.exists() and not overwrite:
+            return (
+                f"Error: {dst} already exists. Pass overwrite=True to "
+                "replace it (or delete it and re-run)."
+            )
+        try:
+            content = src.read_text(encoding="utf-8")
+        except OSError as e:
+            return f"Error: failed to read {src}: {e}"
+        try:
+            atomic_write_text(dst, content)
+        except OSError as e:
+            return f"Error: failed to write {dst}: {e}"
+        written.append(str(dst))
+
+    return (
+        f"Wrote {len(written)} spec stubs (stack: {stack}): "
+        f"{', '.join(written)}"
+    )
+
+
+
+# -----------------------------------------------------------------------------
+# Registration
+# -----------------------------------------------------------------------------
+
+
+# Re-export the stub writers under their original names so existing
+# callers and tests that reach ``wopr_yml.write_tracking_doc_stub`` (etc.)
+# keep working after the split.
+from .stub_writers import (  # noqa: E402, F401  re-export
+    write_handoff_contract_stub,
+    write_tracking_doc_stub,
+)
+
+
+def register(mcp: FastMCP) -> None:
+    """Register `wopr.yml` generator tools with the WOPR MCP server.
+
+    Stub writers (``write_tracking_doc_stub``,
+    ``write_handoff_contract_stub``) used to live here too.
+    They have moved to :mod:`tools.stub_writers`; ``server.py``
+    registers both modules. Tests that previously imported them
+    from ``tools.wopr_yml`` should now import from
+    ``tools.stub_writers`` directly.
+    """
+    mcp.tool()(propose_wopr_yml)
+    mcp.tool()(write_wopr_yml)
+    mcp.tool()(write_spec_stubs)

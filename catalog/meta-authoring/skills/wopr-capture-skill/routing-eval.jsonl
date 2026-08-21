@@ -1,0 +1,3 @@
+{"intent": "that took forever to figure out, can you make a skill for this so we remember it", "expected_skill": "wopr-capture-skill"}
+{"intent": "we should update an existing skill when fresh findings refine it after today's investigation", "expected_skill": "wopr-capture-skill"}
+{"intent": "deploy this branch to staging", "expected_skill": null}

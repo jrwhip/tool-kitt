@@ -1,0 +1,3 @@
+{"intent": "I'm setting up event listeners for pre commit checks", "expected_skill": "wopr-create-hooks"}
+{"intent": "help me with adding notifications when a build finishes", "expected_skill": "wopr-create-hooks"}
+{"intent": "explain the difference between rsa and ec keys", "expected_skill": null}

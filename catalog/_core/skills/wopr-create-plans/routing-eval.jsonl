@@ -1,0 +1,3 @@
+{"intent": "I'm planning projects for the next quarter and need phases mapped out", "expected_skill": "wopr-create-plans"}
+{"intent": "break this into tasks that the ai agent will execute automatically", "expected_skill": "wopr-create-plans"}
+{"intent": "translate this button label to spanish", "expected_skill": null}

@@ -1,0 +1,104 @@
+# wopr.yml example: two worked configurations
+#
+# This file shows TWO complete configurations: one for a Spring Boot backend project
+# and one for an Angular frontend project that consumes the backend's OpenAPI spec.
+#
+# In a real project, only ONE of these blocks would appear at the project root,
+# named exactly `wopr.yml`. They are colocated here for reference.
+#
+# Schema reference: webteam-ai-tools/docs/wopr-yml-schema.md
+
+# ============================================================================
+# Example A: Spring Boot backend project (legacy migration)
+# Lives at:  <project-root>/wopr.yml  (e.g. /path/to/[client-project-b]-api-poc/wopr.yml)
+# ============================================================================
+
+project:
+  slug: [client-project-b]-api
+  name: [client-project-b] API
+  target_source_root: src/main/java/com/redacted/client/app
+  test_root: src/test/java
+  build_file: pom.xml
+  base_package: com.redacted.client.app
+
+specs:
+  coder_spec: CODER_SPEC.md
+  tester_spec: TESTER_SPEC.md
+  audit_report: AUDIT_REPORT.md
+
+openapi:
+  spec_url: /v3/api-docs
+  pinned_generator_version: springdoc-openapi 2.7.0
+
+legacy-migration:
+  # Absolute path. Legacy backend codebase the scout reads in deep_analysis mode.
+  legacy_source_root: /path/to/legacy/api/repo
+  # Optional. Absolute path to legacy frontend if the scout should also map UI -> API calls.
+  legacy_ui_source_root: /path/to/legacy/ui/repo
+  # Path relative to project root. Where the scout writes REQ blocks.
+  extracted_requirements: LEGACY_REQUIREMENTS.md
+  # Path relative to project root. Implementation-tracking document.
+  tracking_doc: CURRENT_REQUIREMENTS.md
+  # Optional. Where extract_legacy_context.py writes summary files. Default: legacy-analysis/.
+  legacy_analysis_root: legacy-analysis
+  # Optional. Legacy schema reference (DDL or ORM mappings) for the coder.
+  schema_path: legacy_ddl.sql
+  # Optional. Env-var prefix for schema-extractor scripts. Scripts read
+  # ${PREFIX}_ORA_DB_PROXY, ${PREFIX}_ORA_DB_PASSWORD (Oracle) or
+  # ${PREFIX}_PG_DB_USER, ${PREFIX}_PG_DB_PASSWORD (PostgreSQL).
+  schema_env_prefix: YOUR_PREFIX  # e.g. WIDGETS, ORDERS, etc.
+  # Optional. Frontend handoff contract path (relative to project root).
+  handoff_contract: FRONTEND_HANDOFF_CONTRACT.md
+  # Optional. Parity-harness config (the legacy-migration/parity reference
+  # scaffold, copied into the project, e.g. tools/parity/). The pack runbook
+  # resolves these into the PARITY_* env the harness reads. Present only when the
+  # project runs the parity harness.
+  parity:
+    legacy_url: https://legacy.example.gov/app              # -> PARITY_LEGACY_URL
+    # The modern app under test. The field/env name says "angular" (the reference
+    # stack); it is just the modern side, whatever framework you migrate to.
+    angular_url: http://localhost:4400/app                  # -> PARITY_ANGULAR_URL
+    # AuthAdapter: a shipped reference (client-openam-oidc | noop) or your own module.
+    auth_adapter: client-openam-oidc                           # -> PARITY_AUTH_ADAPTER
+    catalog: tools/parity/catalog.json                      # -> PARITY_CATALOG
+    legacy_storage: tools/parity/storage/dev.legacy.json    # -> PARITY_LEGACY_STORAGE
+    angular_storage: tools/parity/storage/dev.angular.json  # -> PARITY_ANGULAR_STORAGE
+    # Required for parameterized routes (a real id/code in YOUR data); no default.
+    test_user_id: "REPLACE"                                 # -> PARITY_TEST_USER_ID
+    test_prog_type: "REPLACE"                               # -> PARITY_TEST_PROG_TYPE
+    # Optional. Scope of your API surface (default /jsp/legacy-app/api/).
+    api_scope_regex: /api/                                  # -> PARITY_API_SCOPE_REGEX
+
+# ============================================================================
+# Example B: Angular frontend project (consumes the backend's OpenAPI spec)
+# Lives at:  <monorepo-root>/apps/<app-name>/wopr.yml
+# ============================================================================
+#
+# project:
+#   slug: [client-project-b]-admin
+#   name: [client-project-b] Admin (Frontend)
+#   target_source_root: src/app
+#   test_root: src/app
+#   build_file: project.json
+#   # base_package omitted; not applicable to Angular
+#
+# specs:
+#   coder_spec: CODER_SPEC.md
+#   tester_spec: TESTER_SPEC.md
+#   audit_report: AUDIT_REPORT.md
+#
+# openapi:
+#   spec_url: ../../libs/[client-project-b]-admin/api/src/lib/generated/openapi.json
+#   pinned_generator_version: openapi-generator-cli 7.21.0
+#
+# legacy-migration:
+#   # Frontend points at the legacy frontend codebase as its primary source.
+#   legacy_source_root: /path/to/legacy/ui/repo
+#   extracted_requirements: LEGACY_REQUIREMENTS.md
+#   tracking_doc: CURRENT_REQUIREMENTS.md
+#   # legacy_analysis_root omitted; frontend rarely needs the pre-extraction step
+#   # schema_path omitted; frontend does not migrate a database schema
+#   # schema_env_prefix omitted; frontend does not run schema extractors
+#   # The handoff_contract field on the frontend points at the BACKEND's contract
+#   # by absolute path, since the contract is the bridge between the two halves.
+#   handoff_contract: /path/to/backend/project/FRONTEND_HANDOFF_CONTRACT.md

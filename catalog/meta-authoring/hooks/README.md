@@ -1,0 +1,349 @@
+# meta-authoring hooks
+
+Hooks that run on lifecycle events during an AI CLI session.
+
+**Scope:** mostly `[CLAUDE]`, with one hook now also ported to `[COPILOT]`. Both CLIs (and Gemini) have real hook mechanisms — a claim to the contrary previously lived here and was wrong; corrected after checking each vendor's own documentation directly:
+
+- **Copilot CLI** has a real hook system (`docs.github.com/en/copilot/reference/hooks-reference`): config at `.github/hooks/*.json` (also `~/.copilot/hooks/` and org policy files), with events including `sessionStart`, `sessionEnd`, `agentStop`, `preToolUse`, `postToolUse`. `agentStop` is the Stop-equivalent — it supports `decision: "block"|"allow"` plus `reason`. Unlike Claude's Stop hook, there is no non-blocking equivalent to `additionalContext`.
+- **Gemini CLI** has a real hook system too (`geminicli.com/docs/hooks/reference/`, enabled by default since v0.26.0): config in `settings.json`, with events including `SessionStart`/`SessionEnd`, `BeforeTool`/`AfterTool`, and `AfterAgent` (the Stop-equivalent, firing once per turn with `decision: "deny"` for retry or `continue: false` to end the session). Not yet ported here.
+
+Porting a Claude hook to Copilot is not a config change — the event name, config file, input field casing, output schema, and (for anything that reads the transcript) the transcript format are all different, and none of it are things another CLI's own comments should be trusted to describe accurately. See `capture-skill-trigger-hook-copilot.py` below for what was actually verified in building the one port that exists.
+
+## Available hooks
+
+| Hook | CLI | Event | Purpose |
+|---|---|---|---|
+| [`prompt-log-hook.py`](#prompt-log-hookpy) | Claude | Stop | Append a one-line per-turn summary to the project's `PROMPT_LOG.md` |
+| [`git-branch-guard.sh`](#git-branch-guardsh) | Claude | PreToolUse | Block `git commit` and `git push` when the current branch does not match an allowed pattern |
+| [`capture-skill-trigger-hook.py`](#capture-skill-trigger-hookpy) | Claude | Stop | Nudge the agent to consider running `wopr-capture-skill` once a session crosses a tool-call threshold |
+| [`capture-skill-trigger-hook-copilot.py`](#capture-skill-trigger-hook-copilotpy) | Copilot | agentStop | Same as above, ported — forces a turn via `decision: block` instead of a soft nudge; **unverified against a live agentStop firing** |
+| [`skill-usage-hook.py`](#skill-usage-hookpy) | Claude | Stop | Count native `Skill` tool invocations into WOPR's usage sidecar (names and counts only) |
+
+Each ships a parameterized standalone configure command that idempotently registers the hook:
+
+- `/wopr-configure-prompt-log` (markdown source: `commands/wopr-configure-prompt-log.md`, registration script: `scripts/configure_prompt_log.py`) → `.claude/settings.json`
+- `/wopr-configure-git-guard` (markdown source: `commands/wopr-configure-git-guard.md`, registration script: `scripts/configure_git_guard.py`) → `.claude/settings.json`
+- `/wopr-configure-capture-skill-hook` (markdown source: `commands/wopr-configure-capture-skill-hook.md`) → `.claude/settings.json`
+- `/wopr-configure-capture-skill-hook-copilot` (markdown source: `commands/wopr-configure-capture-skill-hook-copilot.md`) → `.github/hooks/hooks.json`
+- `/wopr-configure-skill-usage-hook` (markdown source: `commands/wopr-configure-skill-usage-hook.md`) → `.claude/settings.json`
+
+The capture-skill and skill-usage commands shell out to the **one** generic registration script, `scripts/configure_hook.py`, which reads the declarative manifest described below. `configure_prompt_log.py` and `configure_git_guard.py` remain bespoke because they do more than register a hook (rewriting `permissions` entries, seeding `PROMPT_LOG.md`); their wiring is still declared in a `HOOK.yaml` so the entry shape has a single definition.
+
+## Declarative hook manifests (`*.HOOK.yaml`)
+
+Each hook declares its wiring once, beside its handler:
+
+```yaml
+name: capture-skill-trigger
+description: Nudge the agent to consider running wopr-capture-skill ...
+handler: capture-skill-trigger-hook.py
+targets:
+  claude:
+    event: Stop
+    matcher: ""
+  copilot:
+    event: agentStop
+    handler: capture-skill-trigger-hook-copilot.py   # a real port, not a rename
+```
+
+`src/ai_cli_mcp/hook_manifest.py` renders each target into the exact entry its CLI expects — Claude's nested `{matcher, hooks: [{type, command}]}` in `.claude/settings.json`, Copilot's flat `{type, bash, powershell}` in `.github/hooks/hooks.json` — the same author-once pattern `conversion_manifest.py` already applies to commands and agents.
+
+Registration is an **upsert by identity**: an existing entry is located by the handler *filename* appearing in its command string, not by exact command text. A hook whose absolute path changed (pipx reinstall, editable → wheel, moved catalog) is reconciled in place rather than appended next to its own stale twin, so re-running `--init` can never duplicate a registration.
+
+Note what the manifest does *not* do: it does not merge the two capture-skill handlers. Those are genuinely different programs (different transcript format, different output schema — see below). The duplication it removes is the wiring around them, which is where the entire cost of the original Copilot port actually went.
+
+Use `python3 scripts/configure_hook.py --list` to see every declared hook and its targets.
+
+The crew pack's `wopr-run-crew` skill optionally invokes both during project setup. See `catalog/crew/skills/wopr-run-crew/SKILL.md` `<project_setup>` for how the crew integrates them.
+
+### `prompt-log-hook.py`
+
+Appends one structured entry per turn to a prompt log file. Useful for long-running or unattended sessions where you want a skimmable record of what was asked and what the assistant did, separate from the full transcript.
+
+Each entry looks like:
+
+```
+---
+
+**[2026-04-09 | a1b2c3d4 | msg 47] <user message on one line>**
+> <one-line summary extracted from the assistant's response>
+```
+
+The fields are: `YYYY-MM-DD | <8-char-session-id> | msg <message-index>`. The 8-character session ID is the leading prefix of the full Claude Code session ID. The message index is the position of the assistant turn in the JSONL transcript, suitable for a `jq` lookup.
+
+The summary is extracted by preferring lines that start with common action verbs (Added, Built, Created, Fixed, Moved, Ran, Updated, etc.). If no action line is found, it falls back to the first non-trivial line.
+
+Trivial user messages (`test`, `ping`, `ok`, `yes`, `no`, `go`, `continue`, empty) are skipped so the log stays signal-dense.
+
+#### Looking up the full transcript for an entry
+
+Each Claude Code session writes a JSONL transcript to `~/.claude/projects/<encoded-cwd>/<full-session-id>.jsonl`. To open the exact assistant turn a log entry summarizes:
+
+1. Find the full session filename. The 8-character prefix in the log entry matches the start of the JSONL filename:
+   ```bash
+   ls ~/.claude/projects/<encoded-cwd>/ | grep ^a1b2c3d4
+   ```
+2. Jump to the recorded message index with `jq`:
+   ```bash
+   jq -s '.[47]' ~/.claude/projects/<encoded-cwd>/a1b2c3d4-....jsonl
+   ```
+
+This is what differentiates the prompt-log from a plain summary: every line is a navigable pointer back into the full conversation.
+
+#### Install
+
+**Recommended: slash command.** Run `/wopr-configure-prompt-log` (markdown source: `commands/wopr-configure-prompt-log.md`). The command shells out to `scripts/configure_prompt_log.py`, which creates `PROMPT_LOG.md`, registers the Stop hook in `.claude/settings.json`, and is idempotent on re-run. Restart Claude Code afterward for the hook to fire.
+
+**Manual fallback.** If you need to wire it up without the slash command, add to `.claude/settings.json` (or `~/.claude/settings.json` for global):
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /absolute/path/to/catalog/meta-authoring/hooks/prompt-log-hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Configuration (environment variables)
+
+All optional.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PROMPT_LOG_PATH` | `$cwd/PROMPT_LOG.md` | Absolute or relative path to the log file. |
+| `PROMPT_LOG_CREATE` | unset (off) | Set to `1` to create the log file if missing. With the default behavior, the hook is a silent no-op in directories that do not already have a `PROMPT_LOG.md`. |
+
+#### Opt-in behavior
+
+The hook is designed to be safe to install globally. If the target log file does not exist and `PROMPT_LOG_CREATE` is not set to `1`, the hook exits silently without doing anything. You opt in by either:
+
+1. Creating a `PROMPT_LOG.md` file in a project directory, or
+2. Setting `PROMPT_LOG_CREATE=1` in that project's settings env or in your shell.
+
+This means you can have the hook wired up globally and it will only fire in projects that want it.
+
+#### Output sink for the log
+
+The log is append-only plaintext markdown. Review it with any markdown viewer, grep it for specific actions, or use it as input to a pattern-extraction pass over a long migration run. It is not a replacement for the full transcript; it's a skimmable index over it.
+
+### `git-branch-guard.sh`
+
+Blocks `git commit` and `git push` when the current branch does not match an allowed pattern. The default pattern is `feature/*`, so commit and push are allowed only on branches whose names start with `feature/`. All other Bash commands pass through unaffected.
+
+The hook reads the `Bash` tool's intended command from the PreToolUse payload, parses it for `git commit` / `git push`, runs `git branch --show-current` (honoring `-C <dir>` if present), and returns a JSON decision document Claude Code uses to allow or block the call. A blocked call surfaces a clear reason back to the conversation:
+
+```
+git commit/push blocked: branch main does not match pattern feature/*
+```
+
+#### Install
+
+**Recommended: slash command.** Run `/wopr-configure-git-guard` (markdown source: `commands/wopr-configure-git-guard.md`). The command shells out to `scripts/configure_git_guard.py`, which makes the guard executable, strips conflicting `Bash(git commit *)` / `Bash(git push *)` entries from `permissions.allow` and `permissions.deny` (the hook supersedes them with branch-conditional logic), and registers the PreToolUse hook in `.claude/settings.json`. Idempotent on re-run. Restart Claude Code afterward for the hook to fire.
+
+**Manual fallback.** If you need to wire it up without the slash command, add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /absolute/path/to/catalog/meta-authoring/hooks/git-branch-guard.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+When wiring manually, also remove any `Bash(git commit *)` and `Bash(git push *)` entries from `permissions.allow` and `permissions.deny`. The hook is the source of truth for that decision; static permission rules covering the same commands will fight it.
+
+#### Configuration (environment variables)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `BRANCH_GUARD_PATTERN` | `feature/*` | Bash glob pattern. Branches matching this pattern are allowed; everything else is blocked. Examples: `feature/*`, `feature/*\|fix/*`, `release/*`, `*` (allow all, useful for temporary disable). |
+
+Set in your shell or in the project's `.claude/settings.json` `env` block.
+
+#### Why a hook instead of a static permission rule
+
+The static permission entries `Bash(git commit *)` and `Bash(git push *)` are unconditional. They cannot say "allow this command only on certain branches." Moving the rule into a PreToolUse hook lets the harness check the branch at the moment of the call, which is the only point at which the answer is reliably correct. The configure script removes any prior static rules covering the same commands so the two layers do not fight.
+
+#### Dependencies
+
+The script uses `jq` to parse the hook payload. Install with `brew install jq` on macOS or your distribution's package manager on Linux.
+
+### `capture-skill-trigger-hook.py`
+
+Makes `wopr-capture-skill` fire automatically instead of depending on a trigger phrase or the agent happening to offer proactively. The hook itself does not decide what's worth capturing — that judgment stays in the skill, which is the only thing that can actually read the conversation and weigh it. What the hook adds is unconditional asking: once a session crosses a tool-call threshold since the last check (default 8), it injects a nudge for the agent to run the evaluation now, while the context is still fresh.
+
+The nudge is delivered via `hookSpecificOutput.additionalContext`, not `decision: "block"`. A block would force the agent to resolve the hook's objection before the turn can end, which would immediately re-fire on the next Stop if the agent declined (the same tool calls are still in the transcript). `additionalContext` surfaces the same information without needing to be resolved, so the agent can act on it, defer it, or ignore it without the hook fighting the conversation.
+
+State (how much of the transcript has already been counted toward the threshold) is tracked per session in `.claude/.capture-skill-hook-state.json` — add that path to `.gitignore`, it is ephemeral machine state, not durable content.
+
+The hook is a silent no-op wherever no capture-skill is installed — checked at project-local and user-level `.claude/skills/`, under both the WOPR-pack name (`wopr-capture-skill`) and the unprefixed `capture-skill` name a real install can carry (confirmed against a live machine still running an install old enough that the skill predates the `wopr-` rename — a name-only check would have made this hook a silent, permanent no-op there). Safe to register globally either way: it never spams a project that has neither name installed.
+
+#### Install
+
+**Recommended: slash command.** Run `/wopr-configure-capture-skill-hook` (markdown source: `commands/wopr-configure-capture-skill-hook.md`). The command shells out to `scripts/configure_hook.py --hook capture-skill-trigger --cli claude`, which registers the Stop hook in `.claude/settings.json` and is idempotent on re-run. Restart Claude Code afterward for the hook to fire.
+
+**Manual fallback.** If you need to wire it up without the slash command, add to `.claude/settings.json` (or `~/.claude/settings.json` for global):
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /absolute/path/to/catalog/meta-authoring/hooks/capture-skill-trigger-hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Configuration (environment variables)
+
+All optional.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `CAPTURE_SKILL_HOOK_THRESHOLD` | `8` | Tool calls since the last nudge required to fire again. |
+| `CAPTURE_SKILL_HOOK_STATE_PATH` | `$cwd/.claude/.capture-skill-hook-state.json` | Where per-session nudge-checkpoint state is stored. |
+
+#### Why not fully autonomous
+
+This hook stops one step short of writing anything itself: the threshold decides *when to ask*, not *when to write*. That keeps the actual capture gated behind the same judgment `wopr-capture-skill` already applies (real effort, durable, likely to recur) rather than writing on every threshold crossing regardless of whether anything worth keeping happened. Whether a higher-trust project should let the threshold trigger the skill directly with no nudge step is an open design question, not a settled one — the hook is built so either direction is a small change (swap `additionalContext` for a direct invocation instruction, or leave it as-is).
+
+### `capture-skill-trigger-hook-copilot.py`
+
+Same purpose as `capture-skill-trigger-hook.py`, ported to Copilot's `agentStop` event. Not a copy with a renamed event — four things had to be verified separately rather than assumed from either product's docs or comments:
+
+1. **Event and config location**, confirmed against `docs.github.com/en/copilot/reference/hooks-reference`: `agentStop`, registered in `.github/hooks/*.json`, `version: 1`.
+2. **Input casing.** Copilot ships both camelCase (`sessionId`, `transcriptPath`) and PascalCase/VS-Code-format (`session_id`, `transcript_path`) payloads for the same event. This hook reads whichever is present.
+3. **Transcript format**, confirmed by inspecting a real local `~/.copilot/session-state/<id>/events.jsonl`, not from documentation — none of the fetched hooks-reference pages describe the transcript's internal schema. Each line is `{"type": "tool.execution_start", "data": {...}, ...}`, nothing like Claude's nested `tool_use` content blocks. Tool calls are counted by `type == "tool.execution_start"` lines.
+4. **How to reach the skill.** Copilot has no native skill file the way Claude does — `src/ai_cli_mcp/tools/resources.py`'s `run_skill()` docstring states it exists specifically "for CLIs like Copilot and Gemini that don't have native skill support," confirmed live against this machine's own `~/.copilot/mcp-config.json` (a real `wopr` MCP server entry). So this hook's availability check looks for that MCP server, not a skill directory, and its nudge text tells the agent to call `run_skill(skill_name="wopr-capture-skill")`, not to "run the skill."
+
+**Output schema difference.** Copilot's `agentStop` has no equivalent to Claude's non-blocking `hookSpecificOutput.additionalContext` — only `decision: "block"|"allow"` plus `reason`. Crossing the threshold here forces another turn; there is no soft-nudge option on this CLI. The state checkpoint still advances immediately after firing, so the forced turn doesn't cause an immediate re-block on the same batch of tool calls.
+
+**Not verified against live behavior.** Everything above was checked against GitHub's published schema and a real local transcript file. No one has confirmed an actual `agentStop` firing behaves as documented — that's the next thing to verify before trusting this in a real project, not something this port can claim on its own.
+
+#### Install
+
+**Recommended: slash command.** Run `/wopr-configure-capture-skill-hook-copilot` (markdown source: `commands/wopr-configure-capture-skill-hook-copilot.md`). The command shells out to `scripts/configure_hook.py --hook capture-skill-trigger --cli copilot`, which registers the `agentStop` hook in `.github/hooks/hooks.json` and is idempotent on re-run.
+
+**Manual fallback.** Add to `.github/hooks/hooks.json`:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "python3 /absolute/path/to/catalog/meta-authoring/hooks/capture-skill-trigger-hook-copilot.py",
+        "powershell": "python /absolute/path/to/catalog/meta-authoring/hooks/capture-skill-trigger-hook-copilot.py"
+      }
+    ]
+  }
+}
+```
+
+#### Configuration (environment variables)
+
+Same variable names as the Claude version, different default state path.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `CAPTURE_SKILL_HOOK_THRESHOLD` | `8` | Tool calls since the last nudge required to fire again. |
+| `CAPTURE_SKILL_HOOK_STATE_PATH` | `$cwd/.github/.capture-skill-hook-state.json` | Where per-session nudge-checkpoint state is stored. |
+
+### `skill-usage-hook.py`
+
+Counts native Claude Code skill invocations into WOPR's usage sidecar (`~/.wopr/skill-usage.json`, or `$WOPR_HOME/skill-usage.json`). It exists because of a specific blind spot: WOPR's MCP server only sees skills loaded through its own `run_skill` tool, while Claude Code invokes skills natively and never tells the server. Without this hook, a heavy Claude Code user's usage report is near-zero across the board — numbers that look authoritative and are wrong.
+
+What it records: skill **names and counts**, nothing else. It reads past `input.args` and never touches prompt text or file paths. Recording goes through `wopr skill-usage record hook:claude <name>...` rather than writing the JSON directly, so the sidecar schema has exactly one implementation.
+
+**Two transcript facts, verified on real sessions rather than assumed:**
+
+1. A native skill invocation is an assistant `tool_use` block named `Skill` with the skill in `input.skill` (`{"skill": ...}` or `{"skill": ..., "args": ...}`). Plugin-namespaced names (`superpowers:brainstorming`) are skipped — they are not WOPR skills.
+2. **`role` and `content` are nested under `message`, not at the top level of a transcript line.** Across 40 recent transcripts on a live machine: 9931 lines carrying `message.role`, zero carrying a top-level `role`. A hook that reads `line["role"]` counts nothing forever and reports no error. `skill-usage-hook.py` accepts both shapes.
+
+State (how far into the transcript has already been counted) lives per session in `.claude/.skill-usage-hook-state.json`; add it to `.gitignore`. The checkpoint advances even when nothing was recorded, so a Stop event never re-counts a span. Losing the state file causes a bounded **over**count of one session — the only error in this system that biases upward, which is why the checkpoint write is unconditional.
+
+The hook is a silent no-op when `wopr` is not on PATH, so it is safe to register globally.
+
+#### Coverage boundary
+
+This hook covers **Claude Code only**, and only on projects where it is registered. Native skill invocations on Copilot CLI (`~/.copilot/skills/`) and Gemini CLI (`~/.gemini/skills/`) are not counted by anything: both CLIs load skills entirely in-process. Copilot's `agentStop` hook plus its `events.jsonl` transcript make an equivalent counter *buildable*, but what a native skill invocation looks like in that transcript has not been verified on a real session, and an unverified counter that silently returns zero is worse than a documented gap. See `docs/skill-usage-telemetry.md`.
+
+#### Install
+
+**Recommended: slash command.** Run `/wopr-configure-skill-usage-hook` (markdown source: `commands/wopr-configure-skill-usage-hook.md`). The command shells out to `scripts/configure_hook.py --hook skill-usage --cli claude`, which registers the Stop hook in `.claude/settings.json` and is idempotent on re-run. Restart Claude Code afterward.
+
+`skill-usage.HOOK.yaml` declares a `claude` target only. That is a deliberate assertion, not a to-do: see the coverage boundary above. Declaring a `copilot` target would make `configure_hook.py --cli copilot` succeed and register a counter nobody has watched fire, which is how a report full of zeros starts looking authoritative.
+
+**Manual fallback.** Add to `.claude/settings.json` (or `~/.claude/settings.json` for global):
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /absolute/path/to/skill-usage-hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Configuration (environment variables)
+
+All optional.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SKILL_USAGE_HOOK_STATE_PATH` | `$cwd/.claude/.skill-usage-hook-state.json` | Where per-session counting checkpoints are stored. |
+| `SKILL_USAGE_HOOK_WOPR_BIN` | `wopr` | The executable used to record counts. |
+
+#### Reading the data
+
+`wopr skill-usage report` from a terminal, or the `skill_usage_report` MCP tool in a session. `wopr skill-usage pin <name>` (or the `pin_skill` tool) marks a deliberately-rare skill so it is never labelled stale.
+
+## Provenance
+
+`prompt-log-hook.py` was adapted from a project-specific version authored by [colleague] for the `webteam-[client-project-b]-api` migration POV. The original hardcoded the log file location and included action-verb preferences biased toward that project's agent names. This version is parameterized and stack-agnostic. Original source: `research/seeds/client-project-b-api/scripts/prompt-log-hook.py` in this repo.
+
+`git-branch-guard.sh` was adapted from `webteam-ai-scaffolding/ai/scripts/sh/git-branch-guard.sh`. The scaffolding version hardcoded the `feature/*` pattern; this version reads it from `BRANCH_GUARD_PATTERN`.
+
+`capture-skill-trigger-hook.py` is original WOPR code, not ported from anywhere and not based on a verified Hermes design precedent — an earlier draft of this doc claimed Hermes triggers autonomous skill-writing on "any run with 5+ tool calls" and that number could not be located in the cloned Hermes source (`hermes-agent/agent/curator.py`, `learn_prompt.py`, or elsewhere) when checked directly. See `docs/perpetual-learning.md` and `src/ai_cli_mcp/tools/_curator.py` for WOPR's other Hermes ports, which credit specific files rather than a paraphrased number.
+
+`skill-usage-hook.py` is original WOPR code. The sidecar it feeds is a port of hermes-agent's `tools/skill_usage.py` semantics (see `src/ai_cli_mcp/tools/_skill_usage.py` for what was and was not carried over); the hook itself has no upstream — Hermes bumps its counters from its own in-process skill tools and never needed to read a CLI's transcript.
+
+`capture-skill-trigger-hook-copilot.py` is a port of `capture-skill-trigger-hook.py` to Copilot's `agentStop` event, not a copy — see its own section above for exactly what had to be independently verified (event schema, input casing, transcript format, and how Copilot reaches a skill at all) rather than assumed to carry over.

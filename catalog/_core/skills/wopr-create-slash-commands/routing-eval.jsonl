@@ -1,0 +1,3 @@
+{"intent": "help me with creating custom commands for our repo", "expected_skill": "wopr-create-slash-commands"}
+{"intent": "I'm learning yaml configuration for a new command", "expected_skill": "wopr-create-slash-commands"}
+{"intent": "add an aria label to this button", "expected_skill": null}

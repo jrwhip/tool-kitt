@@ -1,0 +1,3 @@
+{"intent": "I need help working with subagents for this pipeline", "expected_skill": "wopr-create-subagents"}
+{"intent": "walk me through using the task tool to launch specialized agents", "expected_skill": "wopr-create-subagents"}
+{"intent": "fix the css spacing on the navbar", "expected_skill": null}

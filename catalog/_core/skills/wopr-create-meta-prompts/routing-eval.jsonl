@@ -1,0 +1,2 @@
+{"intent": "we are building prompts that produce outputs for other prompts to consume in this pipeline", "expected_skill": "wopr-create-meta-prompts"}
+{"intent": "check the color contrast on this hero banner", "expected_skill": null}
