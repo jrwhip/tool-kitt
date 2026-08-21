@@ -1,0 +1,37 @@
+# wopr.yml for the WOPR golden-REQ evaluation fixture.
+#
+# This is a deterministic, minimal FastAPI project. Its only purpose is to
+# give the WOPR crew skill (scout, coder, tester, auditor) a fast, cheap,
+# repeatable target to run REQ-GOLD-1 against, so results can be compared
+# across crew-skill versions. See README.md for the run procedure.
+#
+# Schema reference: webteam-ai-tools/docs/wopr-yml-schema.md
+
+project:
+  slug: wopr-golden-fixture
+  name: WOPR Golden Fixture
+  target_source_root: app
+  test_root: tests
+  build_file: pyproject.toml
+  # base_package omitted; the concept does not apply to a flat Python package.
+
+specs:
+  coder_spec: specs/coder-spec.md
+  tester_spec: specs/tester-spec.md
+  audit_report: AUDIT_REPORT.md
+
+openapi:
+  # FastAPI serves its generated OpenAPI document at this path on the running
+  # app; there is no separate static spec artifact for this fixture.
+  spec_url: /openapi.json
+  # FastAPI itself is the spec-generation tool for this stack (there is no
+  # separate springdoc/openapi-generator layer as in the Java/Angular
+  # examples). Pin the FastAPI version the spec is generated from so the
+  # auditor has a lockstep value to check, per the pattern the schema doc
+  # shows for springdoc-openapi.
+  pinned_generator_version: fastapi 0.141.1
+
+requirements:
+  source: local
+  local:
+    path: requirements/
