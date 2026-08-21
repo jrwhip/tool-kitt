@@ -1,3 +1,11 @@
 {"intent": "before the first crew run on a project, let's sanity check the setup", "expected_skill": "wopr-doctor"}
 {"intent": "double check our wopr wiring after dependency upgrades that may have changed the stack", "expected_skill": "wopr-doctor"}
+{"intent": "we've never done the first crew run on a project this messy, check the wiring", "expected_skill": "wopr-doctor"}
+{"intent": "rescan after dependency upgrades that may have changed the stack overnight", "expected_skill": "wopr-doctor"}
+{"intent": "any time the agent wants to confirm a project is correctly wired for wopr this is the move, so do it now", "expected_skill": "wopr-doctor"}
 {"intent": "write a new rest endpoint for orders", "expected_skill": null}
+{"intent": "run npm audit and patch the vulns", "expected_skill": null}
+{"intent": "which node version does this repo need", "expected_skill": null}
+{"intent": "my doctor appointment is on thursday", "expected_skill": null}
+{"intent": "diagnose why this container exits immediately", "expected_skill": null}
+{"intent": "list the mcp servers in my settings file", "expected_skill": null}

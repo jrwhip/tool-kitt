@@ -1,3 +1,13 @@
 {"intent": "I need help working with subagents for this pipeline", "expected_skill": "wopr-create-subagents"}
 {"intent": "walk me through using the task tool to launch specialized agents", "expected_skill": "wopr-create-subagents"}
+{"intent": "I'm working with subagents and they keep clobbering each other's files", "expected_skill": "wopr-create-subagents"}
+{"intent": "setting up agent configurations for a reviewer and a tester", "expected_skill": "wopr-create-subagents"}
+{"intent": "understanding how agents work under the hood before I write my own", "expected_skill": "wopr-create-subagents"}
+{"intent": "terse one: working with subagents, what tools do they inherit", "expected_skill": "wopr-create-subagents"}
+{"intent": "no, the other thing: authoring new skills, not agents", "expected_skill": "wopr-create-agent-skills"}
 {"intent": "fix the css spacing on the navbar", "expected_skill": null}
+{"intent": "the insurance agent never called me back", "expected_skill": null}
+{"intent": "our support agents need a new macro in zendesk", "expected_skill": null}
+{"intent": "spawn ten parallel jobs with xargs", "expected_skill": null}
+{"intent": "delegate this ticket to another engineer", "expected_skill": null}
+{"intent": "which model is this session running on", "expected_skill": null}

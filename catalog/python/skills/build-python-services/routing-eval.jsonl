@@ -1,0 +1,15 @@
+// No positive cue phrase in this skill's frontmatter description, so it
+// yields zero trigger phrases and cannot match under Layer A. Positive
+// cases are parked as comments until the description gains a cue clause.
+// Note also that this is the only catalog skill without the wopr- name
+// prefix. See P2B-OBSERVATIONS.md.
+// {"intent": "stand up a fastapi service with proper packaging and pytest", "expected_skill": "build-python-services"}
+// {"intent": "what's the modern way to package a python cli in 2026", "expected_skill": "build-python-services"}
+// {"intent": "wire this python service up to bedrock for the embedding calls", "expected_skill": "build-python-services"}
+// {"intent": "our pinecone client code looks like it came from a 2021 tutorial, modernize it", "expected_skill": "build-python-services"}
+{"intent": "our go service needs a health check endpoint", "expected_skill": null}
+{"intent": "the ruby script errors on line three", "expected_skill": null}
+{"intent": "there's a python in the reptile house exhibit", "expected_skill": null}
+{"intent": "which java version does maven use here", "expected_skill": null}
+{"intent": "rename this variable in the perl script", "expected_skill": null}
+{"intent": "the build service charges by the minute now", "expected_skill": null}

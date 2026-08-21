@@ -1,0 +1,14 @@
+// No positive cue phrase in this skill's frontmatter description, so it
+// yields zero trigger phrases and cannot match under Layer A. Positive
+// cases are parked as comments until the description gains a cue clause.
+// See P2B-OBSERVATIONS.md.
+// {"intent": "scaffold a wopr.yml at the repo root with the detected fields filled in", "expected_skill": "wopr-create-yml"}
+// {"intent": "the doctor says this package is missing its wopr.yml, create one", "expected_skill": "wopr-create-yml"}
+// {"intent": "show me the wopr.yml you'd write before you write it", "expected_skill": "wopr-create-yml"}
+// {"intent": "we need a wopr config file in this subfolder too", "expected_skill": "wopr-create-yml"}
+{"intent": "fix the indentation in this github actions workflow file", "expected_skill": null}
+{"intent": "why does my docker-compose file refuse to parse", "expected_skill": null}
+{"intent": "convert this json config to toml", "expected_skill": null}
+{"intent": "the yaml linter is complaining about line forty", "expected_skill": null}
+{"intent": "add a new key to package.json", "expected_skill": null}
+{"intent": "what's the difference between yaml anchors and aliases", "expected_skill": null}

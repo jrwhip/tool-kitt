@@ -1,3 +1,13 @@
 {"intent": "I'm setting up event listeners for pre commit checks", "expected_skill": "wopr-create-hooks"}
 {"intent": "help me with adding notifications when a build finishes", "expected_skill": "wopr-create-hooks"}
+{"intent": "I'm working with hooks for the first time, which event fires before a tool call", "expected_skill": "wopr-create-hooks"}
+{"intent": "we need a gate validating commands before they touch production", "expected_skill": "wopr-create-hooks"}
+{"intent": "walk me through understanding hook types, there are too many of them", "expected_skill": "wopr-create-hooks"}
+{"intent": "automating workflows so the formatter runs after every edit", "expected_skill": "wopr-create-hooks"}
+{"intent": "not a hook this time, I'm working with subagents", "expected_skill": "wopr-create-subagents"}
 {"intent": "explain the difference between rsa and ec keys", "expected_skill": null}
+{"intent": "this react component needs a custom hook for data fetching", "expected_skill": null}
+{"intent": "why is my stripe webhook returning a 401", "expected_skill": null}
+{"intent": "remove the event listener from this dom node", "expected_skill": null}
+{"intent": "hang the picture on the hook by the door", "expected_skill": null}
+{"intent": "the git pre-commit hook we wrote by hand is too slow", "expected_skill": null}

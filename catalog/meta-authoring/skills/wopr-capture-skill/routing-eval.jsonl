@@ -1,3 +1,13 @@
 {"intent": "that took forever to figure out, can you make a skill for this so we remember it", "expected_skill": "wopr-capture-skill"}
 {"intent": "we should update an existing skill when fresh findings refine it after today's investigation", "expected_skill": "wopr-capture-skill"}
+{"intent": "that was painful, make a skill for this before we forget how", "expected_skill": "wopr-capture-skill"}
+{"intent": "please make a skill for this deploy dance", "expected_skill": "wopr-capture-skill"}
+{"intent": "time to update an existing skill when fresh findings refine it, which is what just happened", "expected_skill": "wopr-capture-skill"}
+{"intent": "save today's fix: make a skill for this and file it under python", "expected_skill": "wopr-capture-skill"}
+{"intent": "not a capture, I'm authoring new skills from scratch for the pack", "expected_skill": "wopr-create-agent-skills"}
 {"intent": "deploy this branch to staging", "expected_skill": null}
+{"intent": "list the skills already installed here", "expected_skill": null}
+{"intent": "he has real skill at parallel parking", "expected_skill": null}
+{"intent": "document today's findings in the readme", "expected_skill": null}
+{"intent": "add this to my notes app", "expected_skill": null}
+{"intent": "delete that stale skill folder", "expected_skill": null}

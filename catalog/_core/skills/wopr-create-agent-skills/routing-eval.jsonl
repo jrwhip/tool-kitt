@@ -1,3 +1,14 @@
 {"intent": "I'm authoring new skills for the catalog", "expected_skill": "wopr-create-agent-skills"}
 {"intent": "help understanding skill structure and best practices before it ships", "expected_skill": "wopr-create-agent-skills"}
+{"intent": "we're working with SKILL.md files today and the frontmatter keeps failing validation", "expected_skill": "wopr-create-agent-skills"}
+{"intent": "spending this afternoon improving existing skills in the core pack", "expected_skill": "wopr-create-agent-skills"}
+{"intent": "quick question on authoring new skills: where does the description go", "expected_skill": "wopr-create-agent-skills"}
+{"intent": "the audit flagged three of ours, so I'm improving existing skills before release", "expected_skill": "wopr-create-agent-skills"}
+{"intent": "same idea but for slash commands: I'm creating custom commands this time", "expected_skill": "wopr-create-slash-commands"}
+{"intent": "that took hours to work out, make a skill for this so we keep it", "expected_skill": "wopr-capture-skill"}
 {"intent": "check the database migration for a typo", "expected_skill": null}
+{"intent": "what soft skills should I list on a resume", "expected_skill": null}
+{"intent": "rename SKILL.md to lowercase across the whole repo", "expected_skill": null}
+{"intent": "which skills are installed in this workspace right now", "expected_skill": null}
+{"intent": "the junior devs need to sharpen their debugging skills", "expected_skill": null}
+{"intent": "delete the unused skill directory from that pack", "expected_skill": null}

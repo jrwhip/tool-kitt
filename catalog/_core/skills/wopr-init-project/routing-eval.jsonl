@@ -1,0 +1,14 @@
+// No positive cue phrase in this skill's frontmatter description, so it
+// yields zero trigger phrases and cannot match under Layer A. Positive
+// cases are parked as comments until the description gains a cue clause.
+// See P2B-OBSERVATIONS.md.
+// {"intent": "this repo has no wopr setup at all, take it from zero to ai ready in one pass", "expected_skill": "wopr-init-project"}
+// {"intent": "do the whole onboarding: detect the stack, write wopr.yml, write the instructions files", "expected_skill": "wopr-init-project"}
+// {"intent": "one shot setup please, I don't want to run four separate skills", "expected_skill": "wopr-init-project"}
+// {"intent": "get this project wired for wopr end to end today", "expected_skill": "wopr-init-project"}
+{"intent": "run git init in this folder", "expected_skill": null}
+{"intent": "create a new github repo for this and push", "expected_skill": null}
+{"intent": "npm init a fresh package in packages/ui", "expected_skill": null}
+{"intent": "what should I name this project", "expected_skill": null}
+{"intent": "set up eslint and prettier from scratch", "expected_skill": null}
+{"intent": "initialize a postgres database with this schema", "expected_skill": null}

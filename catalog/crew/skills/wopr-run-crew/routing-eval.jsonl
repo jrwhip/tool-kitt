@@ -1,0 +1,12 @@
+{"intent": "this is ongoing iteration on an existing project, spin the crew up", "expected_skill": "wopr-run-crew"}
+{"intent": "addressing auditor blockers from the last pass, start now", "expected_skill": "wopr-run-crew"}
+{"intent": "we're handing off a backend change to a frontend track this afternoon", "expected_skill": "wopr-run-crew"}
+{"intent": "start running a legacy migration off the old jquery admin", "expected_skill": "wopr-run-crew"}
+{"intent": "kick it off: addressing auditor blockers first, then the new endpoint", "expected_skill": "wopr-run-crew"}
+{"intent": "back on it, ongoing iteration on an existing project again today", "expected_skill": "wopr-run-crew"}
+{"intent": "who should I hire for my crew", "expected_skill": null}
+{"intent": "the crew is coming to fix the roof on tuesday", "expected_skill": null}
+{"intent": "how many people are on the crew right now", "expected_skill": null}
+{"intent": "assign this ticket to bob and move on", "expected_skill": null}
+{"intent": "what does the auditor role actually do again", "expected_skill": null}
+{"intent": "the migration script needs a rollback step", "expected_skill": null}

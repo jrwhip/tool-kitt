@@ -1,0 +1,17 @@
+// This skill's frontmatter description contains no positive cue phrase
+// ("Use when", "Use for", "Activate when", ...), so extract_trigger_phrases
+// returns an empty list and the skill cannot participate in Layer A
+// structural matching at all. Positive cases are therefore parked as
+// comments below: they are the intents that SHOULD route here, and they
+// become live fixtures the moment the description gains a cue clause.
+// See P2B-OBSERVATIONS.md.
+// {"intent": "scaffold AGENTS.md and the per-CLI pointer files for this repo", "expected_skill": "wopr-create-agent-instructions"}
+// {"intent": "a fresh AI session in this project has no context, write the instructions files", "expected_skill": "wopr-create-agent-instructions"}
+// {"intent": "wopr.yml is in place, now generate the agent instructions from the detected stack", "expected_skill": "wopr-create-agent-instructions"}
+// {"intent": "we need CLAUDE.md, GEMINI.md and copilot-instructions.md pointing at one AGENTS.md", "expected_skill": "wopr-create-agent-instructions"}
+{"intent": "add a contributing section to the readme", "expected_skill": null}
+{"intent": "write onboarding docs for the new hire", "expected_skill": null}
+{"intent": "what license header goes at the top of these files", "expected_skill": null}
+{"intent": "our style guide says two spaces, enforce it in the formatter", "expected_skill": null}
+{"intent": "email the team last week's meeting notes", "expected_skill": null}
+{"intent": "the instructions on this coffee maker are useless", "expected_skill": null}
