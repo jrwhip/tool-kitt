@@ -1,0 +1,12 @@
+{"intent": "I have an app idea, help me start brainstorming requirements for it", "expected_skill": "wopr-wargame"}
+{"intent": "let's spend an hour rubber-ducking a new app idea I had this weekend", "expected_skill": "wopr-wargame"}
+{"intent": "I need help defining acceptance criteria for a feature before the crew touches it", "expected_skill": "wopr-wargame"}
+{"intent": "we should be building a product backlog before anyone writes code", "expected_skill": "wopr-wargame"}
+{"intent": "walk me through turning an idea into REQ files the crew can execute", "expected_skill": "wopr-wargame"}
+{"intent": "before we build anything I want to sit down and start brainstorming requirements together", "expected_skill": "wopr-wargame"}
+{"intent": "what are the requirements to renew a passport", "expected_skill": null}
+{"intent": "brainstorm some team names for trivia night", "expected_skill": null}
+{"intent": "write acceptance tests for the login page", "expected_skill": null}
+{"intent": "our client sent a requirements doc, summarize it for me", "expected_skill": null}
+{"intent": "groom the backlog in jira and close stale tickets", "expected_skill": null}
+{"intent": "help me plan the sprint ceremonies for next quarter", "expected_skill": null}
