@@ -23,19 +23,10 @@ ResourceType: TypeAlias = Literal["command", "agent"]
 # Commands by tier (all use wopr- prefix)
 COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
     "tier1": [
-        # Mental models (12)
-        "wopr-consider-10-10-10",
-        "wopr-consider-5-whys",
-        "wopr-consider-eisenhower-matrix",
-        "wopr-consider-first-principles",
-        "wopr-consider-inversion",
-        "wopr-consider-occams-razor",
-        "wopr-consider-one-thing",
-        "wopr-consider-opportunity-cost",
-        "wopr-consider-pareto",
-        "wopr-consider-second-order",
-        "wopr-consider-swot",
-        "wopr-consider-via-negativa",
+        # Mental models. The 12 per-framework commands collapsed into one
+        # argument-routed command in P2; the frameworks themselves are in
+        # its `<frameworks>` block, not in 12 files.
+        "wopr-consider",
         # Other generic commands
         "wopr-audit-skill",
         "wopr-audit-slash-command",
@@ -45,7 +36,6 @@ COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
         "wopr-debug",
         "wopr-heal-skill",
         "wopr-run-plan",
-        "wopr-run-prompt",
         # Now convertible via MCP tools
         "wopr-add-to-todos",
         # Alignment/intervention
@@ -54,14 +44,6 @@ COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
     "tier2": [
         # Path references only - need replacement
         "wopr-check-todos",
-        "wopr-create-prompt",
-        # Hook configurator whose *target* is Copilot state
-        # (.github/hooks/hooks.json, ~/.copilot/mcp-config.json). Its
-        # body carries no Claude-CLI feature dependency, so it converts
-        # on every CLI; tier 2 so path replacement keeps any incidental
-        # Claude paths coherent. Running it from Gemini or Copilot to
-        # configure a project's Copilot hook is legitimate.
-        "wopr-configure-capture-skill-hook-copilot",
     ],
     "tier3": {
         # Skill-tool wrappers: the body is a one-line ``Skill(...)``
@@ -228,19 +210,21 @@ CLI_EXTRA_CONVERTIBLE_COMMANDS: dict[str, frozenset[str]] = {
 # The rule: a command-skill is explicit-invocation-only when its value
 # comes from the operator deliberately choosing it, not from topical
 # relevance --
-#   - the 12 wopr-consider-* mental models are lenses the operator
-#     applies on demand; auto-selection would inject a framework the
-#     operator did not ask for into unrelated conversations;
+#   - wopr-consider is a lens the operator applies on demand; auto-
+#     selection would inject a decision framework the operator did not
+#     ask for into unrelated conversations;
 #   - wopr-realign is a frustration-reset the *operator* triggers; a
 #     model deciding to "realign" itself defeats the point;
 #   - the skill wrappers are aliases for skills that already carry
 #     their own auto-selection descriptions; letting both auto-select
 #     would double-register the same trigger surface.
+#
+# Listed by name rather than derived from a prefix: the 12
+# wopr-consider-* commands collapsed into one, so a prefix rule would
+# now match nothing and silently stop marking anything.
 EXPLICIT_INVOCATION_ONLY_COMMANDS: frozenset[str] = frozenset(
-    name
-    for name in COMMAND_TIERS["tier1"]
-    if name.startswith("wopr-consider-")
-) | {"wopr-realign"} | frozenset(SKILL_WRAPPER_COMMANDS)
+    {"wopr-consider", "wopr-realign"}
+) | frozenset(SKILL_WRAPPER_COMMANDS)
 
 # Path replacements per CLI
 PATH_REPLACEMENTS: dict[str, list[tuple[str, str]]] = {

@@ -7,15 +7,18 @@ project, for any CLI that hook declares a target for. Idempotent: re-running
 reconciles the existing entry in place instead of appending a duplicate,
 including after the handler's absolute path has changed.
 
-Replaces the former per-hook, per-CLI scripts
-(``configure_capture_skill_hook.py`` and
-``configure_capture_skill_hook_copilot.py``), which were near-identical apart
-from the event name, the config file, and the entry shape -- all three of
-which are now declared in the manifest and rendered by
-``ai_cli_mcp.hook_manifest``.
+Replaces the former per-hook, per-CLI scripts, which were near-identical
+apart from the event name, the config file, and the entry shape: all three
+are now declared in the manifest and rendered by ``wopr.hook_manifest``.
+
+KNOWN GAP (P2): ``wopr.hook_manifest`` does not exist in this package yet.
+The module was on the P1 do-not-port list (see P1-NOTES section 5.1), so
+this script raises ``ModuleNotFoundError`` on import until it is ported.
+Quarry source: ``ai_cli_mcp/hook_manifest.py`` (456 lines, depends only on
+``_atomic_write`` and PyYAML). Tracked in ``docs/slimming-ledger.md``.
 
 Usage:
-  python3 configure_hook.py --hook NAME --cli claude|copilot \
+  python3 configure_hook.py --hook NAME --cli claude \
       [--project-root PATH] [--dry-run]
   python3 configure_hook.py --list
 
@@ -29,7 +32,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from ai_cli_mcp.hook_manifest import (
+from wopr.hook_manifest import (
     HookManifestError,
     discover_hook_manifests,
     find_hook_manifest,

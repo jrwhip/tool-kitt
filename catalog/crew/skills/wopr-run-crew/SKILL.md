@@ -90,7 +90,7 @@ Skip the question if the operator's answer is already on file (a prior session c
 
 - The project's `.claude/settings.json` already contains a Stop hook whose command path matches `meta-authoring/hooks/prompt-log-hook.py` AND a PreToolUse hook whose command path matches `meta-authoring/hooks/git-branch-guard.sh`. Both hooks are wired; nothing to do.
 - The operator has previously declined both in this project's Migration Context summary. Honor the prior choice.
-- The operator is running in an environment where `python3 -c "import ai_cli_mcp"` fails (WOPR not installed). Surface the install instructions instead of attempting registration.
+- The operator is running in an environment where `python3 -c "import wopr"` fails (WOPR not installed). Surface the install instructions instead of attempting registration.
 
 **Why this is opt-in, not automatic:** the crew pack avoids touching project settings without explicit operator consent. The configure scripts modify `.claude/settings.json`, which is a project-scoped file the operator may have customized. Asking once per project, recording the choice, and respecting it on future runs is the conservative posture.
 </project_setup>

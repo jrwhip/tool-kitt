@@ -9,19 +9,19 @@ The hook fires at the end of every turn. Once a session has crossed a threshold 
 **Preview without making changes:**
 
 ```
-! WOPR_DIR=$(python3 -c "import ai_cli_mcp, pathlib; print(pathlib.Path(ai_cli_mcp.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook capture-skill-trigger --cli claude --dry-run
+! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook capture-skill-trigger --cli claude --dry-run
 ```
 
 **Apply:**
 
 ```
-! WOPR_DIR=$(python3 -c "import ai_cli_mcp, pathlib; print(pathlib.Path(ai_cli_mcp.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook capture-skill-trigger --cli claude
+! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook capture-skill-trigger --cli claude
 ```
 
 **Target a project other than the current directory:**
 
 ```
-! WOPR_DIR=$(python3 -c "import ai_cli_mcp, pathlib; print(pathlib.Path(ai_cli_mcp.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook capture-skill-trigger --cli claude --project-root /path/to/project
+! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook capture-skill-trigger --cli claude --project-root /path/to/project
 ```
 
 **After running:** Restart Claude Code for the Stop hook to take effect.
@@ -34,4 +34,4 @@ Reads `.claude/settings.json` (creates it if missing) and appends the Stop hook 
 
 **Idempotent.** Re-running is safe. Already-registered hooks are reported as `ok`.
 
-**Required:** WOPR must be installed (`pipx install wopr` or equivalent) so the `ai_cli_mcp` package is importable. The `python3 -c` shim resolves the meta-authoring scripts directory regardless of where WOPR was installed.
+**Required:** WOPR must be installed (`pipx install wopr` or equivalent) so the `wopr` package is importable. The `python3 -c` shim resolves the meta-authoring scripts directory regardless of where WOPR was installed.

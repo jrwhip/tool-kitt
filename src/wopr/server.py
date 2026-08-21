@@ -67,17 +67,16 @@ def _register_server_tools(mcp: FastMCP) -> None:
         """Get information about the current workspace configuration.
 
         Returns details about:
-        - Current workspace path
+        - Current workspace path and how it was resolved
         - Detected CLI type
-        - Available WOPR resources, split into LOCAL (workspace-resident
-          overrides under ``<workspace>/.ai-cli/shared/`` or
-          ``<workspace>/.claude/``) and GLOBAL (the per-CLI deploys
-          ``wopr --init`` maintains: ``~/.claude/{skills,agents,commands}/``,
-          ``~/.copilot/{skills,agents}/``, ``~/.gemini/{skills,commands}/``).
+        - WOPR resources, split into LOCAL (workspace-resident overrides
+          under ``<workspace>/.ai-cli/shared/``) and GLOBAL
+          (``~/.claude/{skills,agents,commands}/``)
+        - Which project files the surviving tools read or write
 
-        Useful for debugging configuration issues. Zero local counters
-        do NOT mean WOPR is broken; WOPR's default model is global
-        symlinks, with workspace-local overrides being optional.
+        Useful for debugging configuration issues. Zero counters do NOT
+        mean WOPR is broken: both locations are optional, and catalog
+        content is moving to per-pack Claude Code plugins.
         """
         server_ctx = ServerContext.get()
         try:
@@ -108,11 +107,10 @@ def _register_server_tools(mcp: FastMCP) -> None:
         )
         local_context_count = _count_in_dir(shared_dir / "context", "*.md")
 
-        # GLOBAL: the per-CLI deploys ``wopr --init`` maintains. These
-        # are what each CLI's sessions see, regardless of workspace:
-        # Claude gets commands/agents/skills, Copilot gets agents plus
-        # native skills (commands are installed as generated skills),
-        # Gemini gets generated TOML commands plus skills.
+        # GLOBAL: what a Claude Code session sees regardless of
+        # workspace. The ~/.gemini and ~/.copilot counters that used to
+        # sit beside these were removed in P2: WOPR targets Claude Code
+        # only, so they could report nothing but zero.
         global_counts = {
             "claude": {
                 "skills": _count_skills_in(home / ".claude" / "skills"),
@@ -120,16 +118,6 @@ def _register_server_tools(mcp: FastMCP) -> None:
                 "commands": _count_in_dir(
                     home / ".claude" / "commands", "wopr-*.md", recurse=True
                 ),
-            },
-            "copilot": {
-                "skills": _count_skills_in(home / ".copilot" / "skills"),
-                "agents": _count_in_dir(
-                    home / ".copilot" / "agents", "wopr-*.agent.md"
-                ),
-            },
-            "gemini": {
-                "skills": _count_skills_in(home / ".gemini" / "skills"),
-                "commands": _count_in_dir(home / ".gemini" / "commands", "wopr-*.toml"),
             },
         }
 
@@ -147,12 +135,11 @@ def _register_server_tools(mcp: FastMCP) -> None:
             "using_local_resources": has_local_shared,
             "installed_packs": installed_packs,
             "resources_note": (
-                "WOPR resources live globally by default, deployed per CLI: "
-                "~/.claude/{skills,agents,commands}/, ~/.copilot/{skills,agents}/ "
-                "(commands install there as generated skills), and "
-                "~/.gemini/{skills,commands}/. The local counters are "
-                "workspace-resident overrides only and are typically zero on "
-                "projects that have not customized WOPR."
+                "Global counters read ~/.claude/{skills,agents,commands}/. "
+                "Local counters read workspace-resident overrides under "
+                ".ai-cli/shared/ and are typically zero. Both may be zero on "
+                "a healthy install: catalog content is moving to per-pack "
+                "Claude Code plugins, which land outside either location."
             ),
             "resources": {
                 "local": {
@@ -163,17 +150,17 @@ def _register_server_tools(mcp: FastMCP) -> None:
                 },
                 "global": global_counts,
             },
+            # Only files a surviving tool or catalog skill reads or
+            # writes. time-tracking.json and notes.json went with the
+            # tools that owned them; GEMINI.md and
+            # .github/copilot-instructions.md went with Gemini and
+            # Copilot support.
             "files": {
                 "todos": (workspace / "TO-DOS.md").exists(),
                 "handoff": (workspace / "whats-next.md").exists(),
-                "time_tracking": (workspace / "time-tracking.json").exists(),
-                "notes": (workspace / "notes.json").exists(),
+                "learnings": (workspace / "LEARNINGS.md").exists(),
                 "agents_md": (workspace / "AGENTS.md").exists(),
                 "claude_md": (workspace / "CLAUDE.md").exists(),
-                "gemini_md": (workspace / "GEMINI.md").exists(),
-                "copilot_instructions_md": (
-                    workspace / ".github" / "copilot-instructions.md"
-                ).exists(),
                 "wopr_yml": (workspace / "wopr.yml").exists(),
             },
         }
@@ -189,8 +176,8 @@ def _register_server_tools(mcp: FastMCP) -> None:
         """Get help on how to use WOPR.
 
         Args:
-            topic: Help topic. Options: overview, install, packs, commands, skills,
-                   agents, mcp, cli. Leave empty to see all topics.
+            topic: Help topic. Options: overview, packs, tools, cli,
+                   learnings. Leave empty to see the topic index.
 
         Returns help text for the given topic, or a topic index if no topic given.
         Useful when users ask "how do I use this?" or need guidance on WOPR features.

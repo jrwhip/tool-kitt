@@ -189,7 +189,7 @@ class TestToCopilotSkill:
 
     def test_consider_command_gets_disable_model_invocation(self):
         content = "---\ndescription: d\n---\nBody"
-        parsed = parse_claude(to_copilot_skill(content, "wopr-consider-pareto"))
+        parsed = parse_claude(to_copilot_skill(content, "wopr-consider"))
         assert parsed.frontmatter["disable-model-invocation"] is True
 
     def test_wrapper_body_rewritten_to_native_skill_invocation(self):

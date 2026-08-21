@@ -9,19 +9,19 @@ The hook intercepts every `Bash` tool call. If the command is `git commit` or `g
 **Preview without making changes:**
 
 ```
-! WOPR_DIR=$(python3 -c "import ai_cli_mcp, pathlib; print(pathlib.Path(ai_cli_mcp.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py" --dry-run
+! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py" --dry-run
 ```
 
 **Apply:**
 
 ```
-! WOPR_DIR=$(python3 -c "import ai_cli_mcp, pathlib; print(pathlib.Path(ai_cli_mcp.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py"
+! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py"
 ```
 
 **Target a project other than the current directory:**
 
 ```
-! WOPR_DIR=$(python3 -c "import ai_cli_mcp, pathlib; print(pathlib.Path(ai_cli_mcp.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py" --project-root /path/to/project
+! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py" --project-root /path/to/project
 ```
 
 **After running:** Restart Claude Code for the PreToolUse hook to take effect.
@@ -42,4 +42,4 @@ The hook intercepts every `Bash` tool call. If the command is `git commit` or `g
 
 **Idempotent.** Re-running is safe. Already-completed steps are skipped and reported as `ok`.
 
-**Required:** WOPR must be installed (`pipx install wopr` or equivalent) so the `ai_cli_mcp` package is importable. The `python3 -c` shim resolves the meta-authoring scripts directory regardless of where WOPR was installed. The guard script itself uses `jq`; install it with `brew install jq` on macOS or your distribution's package manager on Linux.
+**Required:** WOPR must be installed (`pipx install wopr` or equivalent) so the `wopr` package is importable. The `python3 -c` shim resolves the meta-authoring scripts directory regardless of where WOPR was installed. The guard script itself uses `jq`; install it with `brew install jq` on macOS or your distribution's package manager on Linux.

@@ -3,6 +3,8 @@
 from pathlib import Path
 
 from wopr.conversion_manifest import (
+    COMMAND_TIERS,
+    EXPLICIT_INVOCATION_ONLY_COMMANDS,
     SKILL_WRAPPER_COMMANDS,
     apply_path_replacements,
     get_convertible_agents,
@@ -11,6 +13,12 @@ from wopr.conversion_manifest import (
     get_tier3_reason,
 )
 from wopr.converters import is_convertible
+
+CATALOG_DIR = Path(__file__).resolve().parents[1] / "catalog"
+
+
+def _catalog_command_names() -> set[str]:
+    return {p.stem for p in CATALOG_DIR.glob("*/commands/wopr-*.md")}
 
 
 class TestGetTier:
@@ -44,17 +52,53 @@ class TestGetConvertible:
         assert "wopr-create-hook" not in commands
 
     def test_catalog_has_no_command_skill_name_collisions(self):
-        catalog_dir = Path(__file__).resolve().parents[1] / "catalog"
         commands = {
             path.stem: path
-            for path in catalog_dir.glob("*/commands/wopr-*.md")
+            for path in CATALOG_DIR.glob("*/commands/wopr-*.md")
         }
         skills = {
             path.parent.name: path.parent
-            for path in catalog_dir.glob("*/skills/wopr-*/SKILL.md")
+            for path in CATALOG_DIR.glob("*/skills/wopr-*/SKILL.md")
         }
 
         assert commands.keys().isdisjoint(skills.keys())
+
+
+class TestManifestMatchesCatalog:
+    """The tier tables are hand-maintained; the catalog is the truth.
+
+    A command deleted from the catalog but left in a tier list makes
+    ``get_convertible_commands`` advertise a file that is not there. A
+    command added to the catalog but missing from every tier silently
+    defaults to tier 3 and is skipped forever with no recorded reason.
+    Both happened during the P2 command consolidation, which is why this
+    is a test rather than a convention.
+    """
+
+    def test_every_catalog_command_is_classified(self):
+        classified = (
+            set(COMMAND_TIERS["tier1"])
+            | set(COMMAND_TIERS["tier2"])
+            | set(COMMAND_TIERS["tier3"])
+        )
+        assert _catalog_command_names() - classified == set()
+
+    def test_every_classified_command_exists_in_the_catalog(self):
+        classified = (
+            set(COMMAND_TIERS["tier1"])
+            | set(COMMAND_TIERS["tier2"])
+            | set(COMMAND_TIERS["tier3"])
+        )
+        assert classified - _catalog_command_names() == set()
+
+    def test_explicit_invocation_only_commands_exist(self):
+        """The set was derived from a ``wopr-consider-`` prefix until the
+        12 framework commands collapsed into one. A prefix rule now
+        matches nothing, so the names are listed literally and pinned
+        here against the catalog."""
+        assert EXPLICIT_INVOCATION_ONLY_COMMANDS - _catalog_command_names() == set()
+        assert "wopr-consider" in EXPLICIT_INVOCATION_ONLY_COMMANDS
+        assert "wopr-realign" in EXPLICIT_INVOCATION_ONLY_COMMANDS
 
     def test_agents_include_tier1_and_tier2(self):
         agents = get_convertible_agents()

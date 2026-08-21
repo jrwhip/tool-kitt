@@ -95,7 +95,7 @@ The orchestrator validates the contract via `mcp__wopr__validate_scout_contract`
 
 Why this exists: scout-first discovery was the single biggest token drain in early crew runs. Without an enforced handoff, downstream coder and tester agents independently re-grepped the codebase at Opus prices, producing hundreds of thousands of tokens of duplicate discovery per project. Worse, the lack of a shared contract let the same entity field name land in three different forms across three agents. The contract is the gate that fixes both.
 
-The contract format and the validator's specific rules live in `src/ai_cli_mcp/tools/crew_contracts.py`. The scout's writing instructions live under "Scout contract format" in `agents/wopr-crew-scout.md`. The orchestrator's gate enforcement lives under "Gate (scout-contract validation)" in `skills/wopr-run-crew/SKILL.md`.
+The contract format and the validator's specific rules live in `src/wopr/tools/crew_contracts.py`. The scout's writing instructions live under "Scout contract format" in `agents/wopr-crew-scout.md`. The orchestrator's gate enforcement lives under "Gate (scout-contract validation)" in `skills/wopr-run-crew/SKILL.md`.
 
 ## Scripts vs agents
 

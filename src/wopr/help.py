@@ -2,6 +2,10 @@
 Help system for WOPR.
 
 Shared logic used by both the CLI (`wopr help`) and the MCP tool (`get_help`).
+
+Audience: the agent, not a first-time human reader. Every topic states what
+exists in THIS repository. Nothing here describes a planned surface, and
+nothing re-explains a concept the model already knows.
 """
 
 from __future__ import annotations
@@ -15,14 +19,11 @@ from .catalog import (
 )
 
 HELP_TOPICS = {
-    "overview": "What WOPR is and how it works",
-    "install": "Installation and initialization",
-    "packs": "Pack and profile system",
-    "commands": "Slash commands (thinking models, planning, debugging, etc.)",
-    "skills": "Autonomous workflows (create plans, skills, prompts, etc.)",
-    "agents": "Specialized sub-agents (reviewers, architects, auditors, etc.)",
-    "mcp": "MCP tools available to all CLIs",
-    "cli": "CLI usage for Claude Code, Gemini CLI, and Copilot CLI",
+    "overview": "What WOPR is, and what it deliberately is not",
+    "packs": "The six catalog packs and the profiles over them",
+    "tools": "The 23 MCP tools, by group",
+    "cli": "The wopr command line surface",
+    "learnings": "The learnings corpus, retrieval, and curation",
 }
 
 
@@ -34,13 +35,10 @@ def get_help(topic: str | None = None, workspace: Path | None = None) -> str:
     topic = topic.lower().strip()
     handler = {
         "overview": _help_overview,
-        "install": _help_install,
         "packs": _help_packs,
-        "commands": _help_commands,
-        "skills": _help_skills,
-        "agents": _help_agents,
-        "mcp": _help_mcp,
+        "tools": _help_tools,
         "cli": _help_cli,
+        "learnings": _help_learnings,
     }.get(topic)
 
     if handler:
@@ -53,10 +51,10 @@ def get_help(topic: str | None = None, workspace: Path | None = None) -> str:
 
 def _topic_index(workspace: Path | None = None) -> str:
     lines = [
-        "WOPR - Webteam Orchestrated Prompt Runner",
-        "Your AI coding assistant's Swiss Army knife.",
+        "WOPR",
         "",
-        "Commands, agents, skills, and MCP tools for Claude Code, Gemini CLI, and Copilot CLI.",
+        "An MCP server plus a catalog of Claude Code commands, skills, and",
+        "agents. Target: Claude Code only.",
         "",
         "HELP TOPICS",
         "",
@@ -64,10 +62,12 @@ def _topic_index(workspace: Path | None = None) -> str:
     for name, desc in HELP_TOPICS.items():
         lines.append(f"  {name:12s} {desc}")
 
-    lines.append("")
-    lines.append("Usage:")
-    lines.append("  CLI:  wopr help <topic>")
-    lines.append("  MCP:  get_help(topic='<topic>')")
+    lines.extend([
+        "",
+        "Usage:",
+        "  CLI:  wopr help <topic>",
+        "  MCP:  get_help(topic='<topic>')",
+    ])
 
     if workspace:
         installed = _get_installed_packs(workspace)
@@ -82,82 +82,34 @@ def _help_overview(workspace: Path | None = None) -> str:
     lines = [
         "OVERVIEW",
         "",
-        "WOPR is a library of commands, agents, skills, and MCP tools designed to",
-        "make AI coding assistants more effective. It works with Claude Code, Gemini",
-        "CLI, and Copilot CLI.",
+        "Two halves:",
         "",
-        "Resources are organized into packs that you install selectively. The _core",
-        "pack is always installed and provides foundation tools (thinking models,",
-        "debugging, planning, todo management). Additional packs add language-specific",
-        "or domain-specific capabilities.",
+        "  MCP server   23 tools. Every one is deterministic work the model",
+        "               cannot do from context alone: reading and writing a",
+        "               shared corpus, validating a contract against a",
+        "               schema, scanning files, scoring routing fixtures.",
         "",
-        "RESOURCE TYPES",
+        "  Catalog      Six packs of Claude Code commands, skills, and",
+        "               agents under `catalog/`. Content, not code.",
         "",
-        "  Commands    Slash commands that expand into structured workflows.",
-        "              Invoked with /wopr-<name> in Claude Code or Gemini CLI.",
+        "WHAT WOPR DOES NOT DO",
         "",
-        "  Skills      Autonomous multi-step workflows. The agent researches, generates,",
-        "              and self-corrects. Invoked by name or via /wopr-<name> wrapper commands.",
+        "  - No installer. There is no `wopr --init`, no `add`/`remove`, and",
+        "    no `--uninstall`. Catalog content reaches a session as Claude",
+        "    Code plugins; that generator is not built yet, so today the",
+        "    catalog is read from this repository.",
+        "  - No Gemini or Copilot support. Converters for both still exist",
+        "    in `converters.py`, unused by any shipped command path.",
+        "  - No skill-loading tiers and no skill resolver. Which pack you",
+        "    install is the tiering.",
+        "  - Nothing that restates general knowledge. If Claude already",
+        "    knows it, it is not in the catalog.",
         "",
-        "  Agents      Specialized sub-agents that run in isolated contexts with a specific",
-        "              persona and focus (e.g., code reviewer, architect, Angular reviewer).",
+        "WORKSPACE RESOLUTION",
         "",
-        "  MCP Tools   Programmatic tools available to all CLIs via the MCP server.",
-        "              Includes todo management, git operations, shared resource access,",
-        "              and utility tools.",
-        "",
-        "HOW IT WORKS",
-        "",
-        "  1. Install:   pipx install wopr",
-        "  2. Init:      wopr --init --packs angular,security",
-        "  3. Use:       /wopr-consider-pareto, @wopr-code-reviewer, etc.",
-        "  4. Manage:    wopr add <pack>, wopr remove <pack>, wopr list",
-    ]
-    return "\n".join(lines)
-
-
-def _help_install(workspace: Path | None = None) -> str:
-    lines = [
-        "INSTALLATION",
-        "",
-        "Install with pipx (recommended):",
-        "",
-        "  pip install pipx",
-        "  pipx ensurepath",
-        "  pipx install git+https://github.com/[client-org]/webteam-ai-tools.git",
-        "",
-        "Or from a local clone:",
-        "",
-        "  pipx install /path/to/webteam-ai-tools",
-        "  pipx install -e /path/to/webteam-ai-tools   # editable, for development",
-        "",
-        "INITIALIZATION",
-        "",
-        "  wopr --init                                  # core pack only",
-        "  wopr --init --packs angular,security         # specific packs",
-        "  wopr --init --profile angular-team           # predefined profile",
-        "",
-        "This installs resources for all supported CLIs:",
-        "  - Claude Code:  commands, agents, and skills symlinked to ~/.claude/",
-        "  - Gemini CLI:   commands converted to TOML in ~/.gemini/commands/,",
-        "                  skills symlinked to ~/.gemini/skills/",
-        "  - Copilot CLI:  skills symlinked to ~/.copilot/skills/, commands",
-        "                  generated as slash-invocable skills, agents converted",
-        "                  to .agent.md in ~/.copilot/agents/",
-        "",
-        "All CLIs also get MCP server access. An install manifest is written to",
-        "~/.wopr/install-manifest.json recording what landed where.",
-        "",
-        "UPGRADING",
-        "",
-        "  pipx upgrade wopr",
-        "  wopr --init                                  # re-sync resources",
-        "",
-        "UNINSTALLING",
-        "",
-        "  wopr --uninstall                             # dry run",
-        "  wopr --uninstall --force                     # actually remove",
-        "  wopr --uninstall --force --global            # also remove ~/.wopr/",
+        "  Most tools take an optional `target_workspace_path`. Empty means",
+        "  the workspace the server was started in. A path outside the",
+        "  server's allowed roots is rejected, not silently redirected.",
     ]
     return "\n".join(lines)
 
@@ -171,10 +123,7 @@ def _help_packs(workspace: Path | None = None) -> str:
     lines = [
         "PACKS AND PROFILES",
         "",
-        "Resources are organized into packs. The _core pack is always installed.",
-        "Everything else is opt-in.",
-        "",
-        "AVAILABLE PACKS",
+        "PACKS",
         "",
     ]
 
@@ -185,326 +134,170 @@ def _help_packs(workspace: Path | None = None) -> str:
             marker = " [always installed]"
         elif name in installed:
             marker = " [installed]"
-        lines.append(f"  {name:18s} {desc}{marker}")
+        lines.append(f"  {name:16s} {desc}{marker}")
 
     if profiles:
-        lines.append("")
-        lines.append("PROFILES")
-        lines.append("")
+        lines.extend(["", "PROFILES", ""])
         for name, info in sorted(profiles.items()):
             desc = info.get("description", "")
             pack_list = ", ".join(info.get("packs", []))
-            lines.append(f"  {name:18s} {desc}")
-            lines.append(f"  {'':18s} packs: {pack_list}")
+            lines.append(f"  {name:16s} {desc}")
+            lines.append(f"  {'':16s} packs: {pack_list}")
 
     lines.extend([
         "",
-        "MANAGING PACKS",
+        "LAYOUT",
         "",
-        "  wopr --init --packs angular,security    Install with specific packs",
-        "  wopr --init --profile angular-team       Install with a profile",
-        "  wopr add angular security                Add packs after install",
-        "  wopr remove angular                      Remove a pack",
-        "  wopr list                                Show installed packs",
-        "  wopr catalog                             Show all available packs",
+        "  catalog/<pack>/commands/<name>.md        slash commands",
+        "  catalog/<pack>/skills/<name>/SKILL.md    skills",
+        "  catalog/<pack>/agents/<name>.md          subagents",
+        "  catalog/<pack>/templates/                crew stub templates",
+        "",
+        "  Read a file directly. `wopr catalog` lists packs and profiles;",
+        "  `wopr list` shows what a workspace's lock file records.",
     ])
 
     return "\n".join(lines)
 
 
-def _help_commands(workspace: Path | None = None) -> str:
-    shared_dir = _get_shared_dir(workspace)
-    commands = _list_resources(shared_dir / "commands", "*.md") if shared_dir else []
-
+def _help_tools(workspace: Path | None = None) -> str:
     lines = [
-        "COMMANDS",
+        "MCP TOOLS (23)",
         "",
-        "Slash commands expand into structured workflows when invoked.",
+        "LEARNINGS (5)",
         "",
-        "USAGE",
+        "  learnings_search        Retrieve entries for a query. Deterministic",
+        "                          prefilter, optional fastembed reranking.",
+        "  append_learnings        Add an entry. LRN- header format is",
+        "                          validated; malformed entries are rejected.",
+        "  learnings_path          Resolve the corpus path for a workspace.",
+        "  seed_learnings          Copy stack-tagged seed entries into a new",
+        "                          corpus (angular, fastapi, spring-boot).",
+        "  curate_learnings        Deduplicate and compact an existing corpus.",
         "",
-        "  Claude Code:  /wopr-consider-pareto",
-        "  Gemini CLI:   /wopr-consider-pareto",
-        "  Copilot CLI:  /wopr-consider-pareto (commands install as native skills)",
+        "CREW SUBSTRATE (7)",
         "",
-        "CORE COMMANDS (_core pack, always installed)",
+        "  detect_stack            Scan a workspace and return detection JSON.",
+        "  propose_wopr_yml        Turn detection JSON into a proposed wopr.yml.",
+        "  write_wopr_yml          Write it. Takes the same detection JSON.",
+        "  write_spec_stubs        Create the spec files the crew treats as",
+        "                          authority.",
+        "  write_tracking_doc_stub      Implementation-tracking stub.",
+        "  write_handoff_contract_stub  Frontend handoff-contract stub.",
+        "  validate_scout_contract      Validate a scout contract file. This",
+        "                          is the crew's gate: invalid means stop.",
         "",
-        "  Thinking Models     Mental frameworks for decisions and problems.",
-        "                      /wopr-consider-pareto, /wopr-consider-first-principles,",
-        "                      /wopr-consider-inversion, /wopr-consider-5-whys, etc.",
+        "  detect_stack feeds propose_wopr_yml and write_wopr_yml; both",
+        "  require its output as `detection_json`.",
         "",
-        "  Meta-Prompting      Separate analysis from execution.",
-        "                      /wopr-create-prompt, /wopr-run-prompt",
+        "SKILL QA AND TELEMETRY (4)",
         "",
-        "  Todo Management     Capture tasks mid-work, resume later.",
-        "                      /wopr-add-to-todos, /wopr-check-todos",
+        "  check_routing_evals     Score every routing-eval.jsonl in the",
+        "                          catalog. The merge gate for slimming work.",
+        "  scan_skill_directory    Scan a skill directory for prompt-injection",
+        "                          and exfiltration patterns before install.",
+        "  skill_usage_report      Observed skill usage. A LOWER BOUND: only",
+        "                          the optional Claude Code Stop hook feeds it.",
+        "  pin_skill               Mark a deliberately rare skill so it is",
+        "                          never reported stale.",
         "",
-        "  Context Handoff     Continue work in a fresh context.",
-        "                      wopr-whats-next skill",
+        "SUPPLY CHAIN (1)",
         "",
-        "  Debugging           Systematic debugging methodology.",
-        "                      /wopr-debug",
+        "  check_mcp_servers_for_malware  Resolve configured MCP server",
+        "                          packages against OSV and report advisories.",
         "",
-        "  Alignment           Reset when the AI goes off track.",
-        "                      /wopr-realign",
+        "HANDOFF (2)",
         "",
-        "  Planning            Create and execute project plans.",
-        "                      /wopr-create-plan, /wopr-run-plan",
+        "  create_handoff, get_handoff    Read and write whats-next.md.",
         "",
-        "PACK COMMANDS (installed with packs)",
+        "PACK TEMPLATES (2)",
         "",
-        "  Authoring           Slash command wrappers for core skills. (meta-authoring pack)",
-        "                      /wopr-create-agent-skill, /wopr-create-slash-command,",
-        "                      /wopr-create-subagent, /wopr-create-hook, /wopr-create-meta-prompt",
+        "  list_pack_templates, get_pack_template   Read templates shipped",
+        "                          under a pack (crew is the only pack with",
+        "                          templates today).",
         "",
-        "  Auditing            Quality auditing for skills, commands, agents. (auditors pack)",
-        "                      /wopr-audit-skill, /wopr-audit-slash-command,",
-        "                      /wopr-audit-subagent, /wopr-heal-skill",
-    ]
-
-    if commands:
-        lines.extend([
-            "",
-            f"INSTALLED ({len(commands)} commands)",
-            "",
-        ])
-        for cmd in sorted(commands):
-            lines.append(f"  /wopr-{cmd}" if not cmd.startswith("wopr-") else f"  /{cmd}")
-
-    return "\n".join(lines)
-
-
-def _help_skills(workspace: Path | None = None) -> str:
-    shared_dir = _get_shared_dir(workspace)
-    skills = _list_skill_dirs(shared_dir / "skills") if shared_dir else []
-
-    lines = [
-        "SKILLS",
+        "SERVER (2)",
         "",
-        "Skills are autonomous workflows. The agent reads the skill instructions,",
-        "asks clarifying questions, then executes multi-step work independently.",
+        "  get_workspace_info      Resolved workspace, local and global",
+        "                          resource counts, which project files exist.",
+        "  get_help                This.",
         "",
-        "USAGE",
-        "",
-        "  Claude Code:  invoke by name or use the wrapper /wopr-<name> command",
-        "                (wrapper commands require the meta-authoring pack)",
-        "  Gemini CLI:   symlinked to ~/.gemini/skills/",
-        "  Copilot CLI:  symlinked to ~/.copilot/skills/; invoke as /wopr-<name>",
-        "                or by name (run_skill MCP tool remains as a fallback)",
-        "",
-        "LOADING TIERS",
-        "",
-        "  A skill declares how it is surfaced with a `wopr-loading:` frontmatter key:",
-        "",
-        "    always    (default) installed natively; the CLI lists it every session",
-        "    resolver  not listed natively; one line in the generated",
-        "              wopr-skill-resolver skill, loaded on demand via run_skill",
-        "    dormant   not listed anywhere; still loadable by exact name",
-        "",
-        "  Every catalog skill is `always` today. Use the other tiers when a pack of",
-        "  specialists starts costing more context than it earns.",
-        "",
-        "CORE SKILLS",
-        "",
-        "  wopr-doctor                  Read-only scan; reports stack, missing setup, readiness",
-        "  wopr-init-project            One-shot project scaffold (wopr.yml + specs + AGENTS.md)",
-        "  wopr-create-yml              Just the wopr.yml part of init-project",
-        "  wopr-create-agent-instructions  AGENTS.md plus per-CLI pointer files",
-        "  wopr-create-plans            Create project plans for agentic execution",
-        "  wopr-create-agent-skills     Build new skills by describing what you want",
-        "  wopr-create-meta-prompts     Generate staged workflow prompts",
-        "  wopr-create-slash-commands   Build custom slash commands",
-        "  wopr-create-subagents        Build specialized agent instances",
-        "  wopr-create-hooks            Build event-driven automation",
-        "  wopr-debug-like-expert       Systematic debugging with evidence gathering",
-        "",
-        "CREW SKILLS (installed with the crew pack)",
-        "",
-        "  wopr-run-crew                Four-role crew orchestrator skill.",
-        "                               On Copilot the wopr-crew agent is the",
-        "                               recommended entry; see wopr help agents.",
-        "",
-        "PACK SKILLS (installed with packs)",
-        "",
-        "  wopr-build-angular-apps      Angular conventions and patterns (angular pack)",
-        "  wopr-angular-developer       Official Angular skill, from Google (angular pack)",
-        "  wopr-build-spring-boot-apps  Spring Boot conventions and patterns (java pack)",
-        "",
-        "  For .NET: install Microsoft's official plugins directly (Copilot CLI",
-        "  and Claude Code): /plugin marketplace add dotnet/skills",
-    ]
-
-    if skills:
-        lines.extend([
-            "",
-            f"INSTALLED ({len(skills)} skills)",
-            "",
-        ])
-        for skill in sorted(skills):
-            lines.append(f"  {skill}")
-
-    return "\n".join(lines)
-
-
-def _help_agents(workspace: Path | None = None) -> str:
-    shared_dir = _get_shared_dir(workspace)
-    agents = _list_resources(shared_dir / "agents", "*.md") if shared_dir else []
-
-    lines = [
-        "AGENTS",
-        "",
-        "Agents are specialized sub-agents that run in isolated contexts with a",
-        "specific persona. They have access to all tools and focus on a single concern.",
-        "",
-        "USAGE",
-        "",
-        "  Claude Code:  select from the agent picker, or the AI spawns them as sub-agents",
-        "  Copilot CLI:  /agent wopr-<name>",
-        "  Gemini CLI:   use the invoke_agent MCP tool",
-        "",
-        "CORE AGENTS",
-        "",
-        "  wopr-architect                  Software architecture advisor",
-        "  wopr-code-auditor               Code quality and security auditor",
-        "  wopr-code-reviewer              Thorough code reviewer",
-        "  wopr-mentor                     Patient teacher and guide",
-        "  wopr-refactor                   Clean up and improve existing code",
-        "",
-        "CREW AGENTS (installed with the crew pack)",
-        "",
-        "  wopr-crew                    Four-role orchestrator. Dispatches scout/coder/",
-        "                               tester/auditor and enforces gates. The Copilot",
-        "                               counterpart to the wopr-run-crew skill;",
-        "                               also usable on Claude Code / Gemini CLI.",
-        "  wopr-crew-scout              Read-only discovery agent (terminal worker)",
-        "  wopr-crew-coder              Implements a single REQ (terminal worker)",
-        "  wopr-crew-tester             Writes tests + measures coverage (terminal worker)",
-        "  wopr-crew-auditor            Final-gate audit + LEARNINGS distillation",
-        "  wopr-crew-evaluator          Grades CRAG candidate entries (read-only)",
-        "",
-        "PACK AGENTS",
-        "",
-        "  wopr-angular-perfectionist-reviewer   Angular-specific reviewer (angular pack)",
-        "  wopr-java-perfectionist-reviewer      Spring Boot reviewer (java pack)",
-        "  wopr-python-perfectionist-reviewer    Python reviewer (python pack)",
-        "  wopr-*-architect                      Stack architects (angular/ios/java/python)",
-        "  wopr-skill-auditor                    Skill quality auditor (auditors pack)",
-        "  wopr-slash-command-auditor            Command quality auditor (auditors pack)",
-        "  wopr-subagent-auditor                 Agent config auditor (auditors pack)",
-    ]
-
-    if agents:
-        lines.extend([
-            "",
-            f"INSTALLED ({len(agents)} agents)",
-            "",
-        ])
-        for agent in sorted(agents):
-            lines.append(f"  {agent}")
-
-    return "\n".join(lines)
-
-
-def _help_mcp(workspace: Path | None = None) -> str:
-    lines = [
-        "MCP TOOLS",
-        "",
-        "The MCP server provides tools available to all CLIs. These are always",
-        "available regardless of which packs are installed.",
-        "",
-        "RESOURCE ACCESS",
-        "",
-        "  list_shared_commands, get_shared_command     Browse and read commands",
-        "  list_shared_skills, get_shared_skill         Browse and read skills",
-        "  list_shared_agents, get_shared_agent         Browse and read agents",
-        "  list_shared_context, get_shared_context       Browse and read context docs",
-        "  run_skill                                    Load skill for inline execution",
-        "                                               (legacy fallback; Copilot and",
-        "                                               Gemini have native skills)",
-        "  invoke_agent                                 Load agent for inline execution",
-        "                                               (Gemini's agent path; legacy",
-        "                                               fallback elsewhere)",
-        "",
-        "SKILL TELEMETRY",
-        "",
-        "  skill_usage_report                           Observed usage per skill. Counts",
-        "                                               are a LOWER BOUND: only run_skill",
-        "                                               and the optional Claude Stop hook",
-        "                                               are observed; Copilot and Gemini",
-        "                                               native invocations are not counted",
-        "  pin_skill                                    Never mark a rare skill stale",
-        "",
-        "TODO MANAGEMENT",
-        "",
-        "  add_todo, list_todos, complete_todo          Manage TO-DOS.md",
-        "",
-        "CONTEXT HANDOFF",
-        "",
-        "  create_handoff, get_handoff                  Manage whats-next.md",
-        "",
-        "PROJECT AND GIT",
-        "",
-        "  list_projects, get_project_context           Project discovery",
-        "  git_status, git_diff, git_log                Git operations",
-        "  run_npm_script, check_build                  Build and script runner",
-        "",
-        "WORKSPACE",
-        "",
-        "  get_workspace_info                           Debug configuration",
-        "  get_help                                     This help system",
-        "",
-        "UTILITY (extras pack)",
-        "",
-        "  roll_dice, flip_coin, random_choice          Dice and random",
-        "  random_number                                Random number in range",
-        "  get_weather, get_forecast                    Weather (Open-Meteo, no API key)",
-        "  add_note, list_notes, search_notes           Notes",
-        "  delete_note                                  Remove a note",
-        "  start_timer, stop_timer, log_time            Time tracking",
-        "  list_time_entries, time_summary              Time reports",
+        "The set is pinned by name in",
+        "tests/test_server.py::test_registers_exactly_the_expected_tool_set,",
+        "so a tool appearing or vanishing is a deliberate diff.",
     ]
     return "\n".join(lines)
 
 
 def _help_cli(workspace: Path | None = None) -> str:
     lines = [
-        "CLI USAGE",
+        "CLI",
         "",
-        "TERMINAL",
+        "  wopr                             Run the MCP server on stdio.",
+        "                                   No subcommand means server mode.",
+        "  wopr list                        Packs recorded in a workspace's",
+        "                                   .ai-cli lock file.",
+        "  wopr catalog                     All packs and profiles in the",
+        "                                   catalog.",
+        "  wopr help [topic]                This help.",
+        "  wopr skill-usage report          Observed skill usage.",
+        "  wopr skill-usage pin <name>      Never report a rare skill stale.",
+        "  wopr skill-usage unpin <name>    Undo a pin.",
+        "  wopr skill-usage record <source> <name>...",
+        "                                   Record invocations. What the",
+        "                                   Claude Code Stop hook calls.",
         "",
-        "  wopr --init                      Initialize (core pack only)",
-        "  wopr --init --packs a,b          Initialize with specific packs",
-        "  wopr --init --profile name       Initialize with a profile",
-        "  wopr add <pack> [pack...]        Add packs to workspace",
-        "  wopr remove <pack> [pack...]     Remove packs from workspace",
-        "  wopr list                        Show installed packs",
-        "  wopr catalog                     Show all available packs",
-        "  wopr skill-usage report          Observed skill usage (a lower bound)",
-        "  wopr skill-usage pin <name>      Never mark a rare skill stale",
-        "  wopr help [topic]                Show help",
-        "  wopr --uninstall [--force]       Remove wopr from all CLIs",
-        "  wopr --version                   Show version",
+        "FLAGS",
         "",
-        "CLAUDE CODE",
+        "  --workspace PATH, -w    Workspace for a subcommand or the server.",
+        "  --catalog PATH          External catalog directory.",
+        "  --global, -g            Inspect ~/.wopr instead of the workspace.",
+        "  --version, -v           Version.",
         "",
-        "  /wopr-<command>                  Invoke a slash command",
-        "  Select from agent picker         Use an agent as a sub-agent",
-        "  Skills invoked by name           Or via /wopr-<skill> wrapper commands",
-        "  MCP tools called automatically   The AI uses them as needed",
+        "There is no install, add, remove, or uninstall subcommand. Pack",
+        "deployment is being replaced by per-pack Claude Code plugins.",
+    ]
+    return "\n".join(lines)
+
+
+def _help_learnings(workspace: Path | None = None) -> str:
+    lines = [
+        "LEARNINGS",
         "",
-        "GEMINI CLI",
+        "A per-workspace LEARNINGS.md of `LRN-` entries: things discovered by",
+        "working in THIS codebase that no model knows from training. Failures",
+        "with a fix, local conventions, non-obvious constraints. Not tutorials.",
         "",
-        "  /wopr-<command>                  Invoke a slash command (TOML format)",
-        "  Skills in ~/.gemini/skills/      Symlinked from shared resources",
-        "  MCP tools called automatically   The AI uses them as needed",
+        "FORMAT",
         "",
-        "COPILOT CLI",
+        "  Each entry opens with an `LRN-` header line. append_learnings",
+        "  validates it and rejects anything malformed rather than writing a",
+        "  corpus that later retrieval cannot parse.",
         "",
-        "  /wopr-<command>                  Invoke a command (installed as a skill)",
-        "  /wopr-<skill>                    Invoke a skill (~/.copilot/skills/)",
-        "  /agent wopr-<name>               Use a custom agent",
-        "  MCP tools called automatically   The AI uses them as needed",
-        "  run_skill('<name>') via MCP      Legacy fallback for inline skill load",
+        "RETRIEVAL",
+        "",
+        "  learnings_search runs a deterministic prefilter over the corpus.",
+        "  With the optional `[embeddings]` extra installed, a fastembed",
+        "  sidecar reranks the prefiltered set. Without it, search still",
+        "  works; results are prefilter order.",
+        "",
+        "  Retrieval is local. There is no hosted corpus and no promotion of",
+        "  project entries into a shared one.",
+        "",
+        "CREW INTEGRATION",
+        "",
+        "  The crew's CRAG pre-step runs learnings_search before each",
+        "  working-agent Task call, has wopr-crew-evaluator grade the",
+        "  candidates, and hands the graded subset to that role as",
+        "  `relevant_learnings`. Empty candidate set skips the evaluator.",
+        "  See <crag_pre_step> in",
+        "  catalog/crew/skills/wopr-run-crew/SKILL.md.",
+        "",
+        "SEEDS",
+        "",
+        "  seed_learnings copies stack-tagged starter entries from",
+        "  catalog/crew/data/learnings-seed/ (angular, fastapi, spring-boot)",
+        "  into a new workspace corpus.",
     ]
     return "\n".join(lines)
 
@@ -520,25 +313,3 @@ def _get_installed_packs(workspace: Path | None) -> list[str]:
     if not lock:
         return []
     return lock.get("installed_packs", [])
-
-
-def _get_shared_dir(workspace: Path | None) -> Path | None:
-    if not workspace:
-        return None
-    shared = workspace / ".ai-cli" / "shared"
-    return shared if shared.exists() else None
-
-
-def _list_resources(directory: Path | None, pattern: str) -> list[str]:
-    if not directory or not directory.exists():
-        return []
-    return [f.stem for f in directory.glob(pattern)]
-
-
-def _list_skill_dirs(directory: Path | None) -> list[str]:
-    if not directory or not directory.exists():
-        return []
-    return [
-        d.name for d in directory.iterdir()
-        if d.is_dir() and (d / "SKILL.md").exists()
-    ]
