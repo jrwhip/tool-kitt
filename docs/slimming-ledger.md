@@ -107,22 +107,26 @@ count is checkable rather than asserted.
 | `auditors` | 4 | 4 |
 | Total | 35 | 21 |
 
+## P2c: crew skill rewrite (eval-gated, landed)
+
+| Artifact | Verdict | Evidence | Phase | Date |
+| --- | --- | --- | --- | --- |
+| `wopr-run-crew/SKILL.md` | SLIMMED 473 to 119 lines | Golden-REQ eval: 2 baseline + 2 post-rewrite runs, all UNBLOCKED, 9/9 criteria, dispatches 5 to 4, tokens -18%, auditor warnings 1-2 to 0. Full data: `evals/golden-req/results/rewrite-comparison.md` | P2c | 2026-08-21 |
+| Phase-0 scout dispatch | CUT (merged into Step 1) | Both baseline runs showed the Phase-0 scout writing the Step-1 contract anyway; the mode boundary did not hold. Post-rewrite single dispatch produced the same verdict and validated contract at 47% fewer scout tokens | P2c | 2026-08-21 |
+| Coder status-flip round-trip | CUT (orchestrator flips, closes gap row) | Skipped as over-orchestration in both baseline runs; baseline run 2 auditor flagged the stale gap row the close-out rule now prevents; both post-rewrite audits: 0 warnings | P2c | 2026-08-21 |
+| CRAG 4x pre-step | SLIMMED to 1x + <=5-candidate evaluator bypass | All 4 baseline pre-steps short-circuited identically; evaluator kept threshold-gated as the self-bias circuit breaker | P2c | 2026-08-21 |
+| `wopr-run-crew` description | SLIMMED (first trigger clause unroutable per P2B-OBSERVATIONS item 3) | Routing evals 172/172 before and after | P2c | 2026-08-21 |
+| `docs/wopr-yml-schema.md` | ADDED (ported from quarry, placeholders neutralized, `requirements` section documented, dead fields marked) | Cross-checked against wopr_yml.py / stack_detect.py / stub_writers.py | P2c | 2026-08-21 |
+
+Caveat recorded with the evidence: the golden REQ exercises the happy
+path only; blocker-fix, frontend-handoff, jira-source, and
+above-threshold CRAG paths were compressed, not removed, and are
+exercised at demo rehearsal (jira, multi-REQ) or need a second fixture.
+
 ## Pending
 
 Not yet cut. Each of these is gated on evidence that does not exist yet,
 and none should land before its gate is in place.
-
-- **`wopr-run-crew/SKILL.md` rewrite.** 473 lines. Gate: a golden crew
-  run on a small deterministic REQ, recorded 2 to 3 times against the
-  current text, then re-run after the rewrite. Pass means the same gate
-  outcome, no new blocker class, and lower token counts. The current
-  text is the baseline, so it must not be edited beforehand: the only
-  P2a change to that file was the one-line `import wopr` fix.
-- **CRAG pre-step change.** Run once per crew run instead of once per
-  working-agent Task call, and skip the evaluator when the prefilter
-  returns few enough entries. Same golden-run gate. The evaluator is a
-  circuit breaker against self-bias, not a verification step, so it is
-  threshold-gated rather than deleted.
 - **References pruning.** Roughly 50k catalog lines targeted at well
   under 10k. Gate: per-skill `routing-eval.jsonl` fixtures including
   negatives, scored by `check_routing_evals`.
