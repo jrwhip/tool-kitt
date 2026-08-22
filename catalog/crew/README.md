@@ -80,8 +80,10 @@ After the gate, the auditor performs a **distillation step**: zero to three new 
 
 Two file locations:
 
-- `<workspace>/LEARNINGS.md`: committable, per-project. Lives in the project repo, travels with the project.
-- `~/.wopr/LEARNINGS.md`: per-machine, used when working outside any workspace (no `wopr.yml` in scope). The registry at `~/.wopr/workspaces.txt` lets outside-workspace reads aggregate across every known workspace path.
+- `<workspace root>/LEARNINGS.md`: committable, per-project. Lives in the project repo, travels with the project.
+- `~/.wopr/LEARNINGS.md`: per-machine, used only when a call names no target workspace at all and none is in scope. The registry at `~/.wopr/workspaces.txt` lets outside-workspace reads aggregate across every known workspace path.
+
+The workspace root is resolved the same way by every learnings tool (seed, append, search, curate): starting at the target path and walking up, the nearest directory carrying `wopr.yml` **or** `LEARNINGS.md` wins, and the search stops at the git toplevel. A repo whose `wopr.yml` files live in subpackages declares where its corpus lives by seeding the directory that should own it; `seed_learnings` writes `LEARNINGS.md` there, and that file is itself the marker. A call that names a target which resolves to no workspace root gets an error listing the searched paths, not a silent write to `~/.wopr/LEARNINGS.md`. The algorithm and its edge cases are documented in `src/wopr/tools/_workspace_root.py`.
 
 Three new MCP tools register with the WOPR server: `mcp__wopr__append_learnings`, `mcp__wopr__learnings_search`, `mcp__wopr__learnings_path`. The auditor uses the first; the orchestrator uses the second during the pre-step; the third is diagnostic.
 

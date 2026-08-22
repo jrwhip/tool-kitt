@@ -274,6 +274,7 @@ class TestAppendLearnings:
 
     async def test_accepts_clean_entry_after_rejection(self, isolated_env):
         workspace, _home = isolated_env
+        _mark_in_workspace(workspace)
         bad = (
             "## LRN-2026-05-01-a: Bad path in lesson\n\n"
             "**What happened.** Fix landed in /Users/jsmith/Projects/foo.\n"
@@ -292,10 +293,36 @@ class TestAppendLearnings:
         assert target.exists()
         assert "LRN-2026-05-01-a" in target.read_text(encoding="utf-8")
 
-    async def test_outside_workspace_writes_to_system_file(self, isolated_env):
+    async def test_named_target_that_resolves_to_nothing_is_an_error(
+        self, isolated_env
+    ):
+        """Was: silently wrote to ~/.wopr/LEARNINGS.md.
+
+        The caller named a directory. If that directory belongs to no
+        workspace, the honest answer is to say so and name the
+        directories that were searched -- not to write the entry
+        somewhere the caller will never look for it.
+        """
         workspace, home = isolated_env
-        # No wopr.yml in workspace -> system path.
+        # No wopr.yml and no LEARNINGS.md anywhere up the tree.
         result = await append_learnings(str(workspace), entry_markdown=_make_entry())
+        assert result.startswith("Error")
+        assert "no workspace root found" in result
+        assert str(workspace) in result  # the searched paths are named
+        assert not (home / "LEARNINGS.md").exists()  # nothing written elsewhere
+        assert not (workspace / "LEARNINGS.md").exists()
+
+    async def test_no_named_target_still_falls_back_to_the_system_file(
+        self, isolated_env, monkeypatch
+    ):
+        """The one fallback that survives: the caller named nothing.
+
+        With no target path there is no caller expectation to violate,
+        so the system corpus is the right home for the entry.
+        """
+        workspace, home = isolated_env
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(workspace))
+        result = await append_learnings(entry_markdown=_make_entry())
         assert "Appended" in result
         target = home / "LEARNINGS.md"
         assert target.exists()
@@ -576,8 +603,22 @@ class TestCurateLearnings:
 
     async def test_missing_file_reports_nothing_to_curate(self, isolated_env):
         workspace, _home = isolated_env
+        _mark_in_workspace(workspace)
         result = await curate_learnings(str(workspace))
         assert result.startswith("Nothing to curate")
+
+    async def test_named_target_that_resolves_to_nothing_is_an_error(
+        self, isolated_env
+    ):
+        """Was: silently curated ~/.wopr/LEARNINGS.md.
+
+        Curation rewrites a corpus. Rewriting the wrong one because the
+        named target did not resolve is strictly worse than refusing.
+        """
+        workspace, _home = isolated_env
+        result = await curate_learnings(str(workspace))
+        assert result.startswith("Error")
+        assert "no workspace root found" in result
 
     async def test_dry_run_default_does_not_mutate(self, isolated_env):
         workspace, _home = isolated_env

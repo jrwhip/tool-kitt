@@ -10,18 +10,30 @@ Single source of truth per entry. No mirroring. Workspace mode reads only the
 workspace's ``LEARNINGS.md``; outside-workspace mode aggregates ``~/.wopr/LEARNINGS.md``
 plus every registered workspace's file via ``~/.wopr/workspaces.txt``.
 
-Workspace identity is signalled by ``wopr.yml`` at the workspace root (the
-crew pack's source of truth, distinct from ``catalog.read_wopr_config``'s
-``.wopr.yaml`` catalog config).
+Workspace identity is resolved by :func:`._workspace_root.find_workspace_root`,
+which every tool in this module shares: seed, append, curate and the read
+path all ask the same question and get the same answer. A directory is a
+workspace root when it carries ``wopr.yml`` **or** ``LEARNINGS.md``; otherwise
+the search walks up parent by parent, nearest match wins, stopping at the git
+toplevel. That module's docstring is the authority on the algorithm and on the
+multi-package repository loop (``wopr.yml`` in subpackages, corpus at the repo
+root) it exists to close. ``wopr.yml`` here is the crew pack's source of truth,
+distinct from ``catalog.read_wopr_config``'s ``.wopr.yaml`` catalog config.
+
+When resolution fails, these tools say so. ``~/.wopr/LEARNINGS.md`` is used
+only when the caller named no target at all; a caller who named a directory
+that does not resolve gets an error listing the searched paths, never a
+silent write somewhere else.
 """
 
 from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from .._atomic_write import atomic_write_text
 from ..catalog import get_global_home
@@ -50,6 +62,13 @@ from ._learnings_sidecar import (
 from ._learnings_sidecar import (
     load_or_rebuild_sidecar as _load_or_rebuild_sidecar,
 )
+from ._workspace_root import (
+    MARKER_FILENAMES,
+    WOPR_YML_FILENAME,
+    WorkspaceRoot,
+    find_workspace_root,
+    has_marker,
+)
 from ._workspace_target import (
     InvalidTargetWorkspaceError,
     resolve_request_workspace,
@@ -72,6 +91,7 @@ if TYPE_CHECKING:
 # ``from .learnings import LEARNINGS_FILENAME`` consumers continue to work.
 __all__ = [
     "LEARNINGS_FILENAME",
+    "MARKER_FILENAMES",
     "WOPR_YML_FILENAME",
     "WORKSPACES_REGISTRY_FILENAME",
     "LearningEntry",
@@ -84,28 +104,86 @@ __all__ = [
 ]
 
 WORKSPACES_REGISTRY_FILENAME = "workspaces.txt"
-WOPR_YML_FILENAME = "wopr.yml"
+
+# Outcome of one :func:`_ensure_workspace_registered` call. Returned
+# rather than swallowed so a status message can report what actually
+# happened instead of asserting an outcome the code may have skipped.
+RegistrationResult = Literal[
+    "added",  # the root was appended to workspaces.txt on this call
+    "already-registered",  # it was already there; nothing written
+    "not-a-workspace",  # no marker at the path; registration skipped
+    "failed",  # the registry could not be read or written
+]
 
 
-def _is_in_workspace(workspace: Path) -> bool:
-    """A workspace is in scope when ``wopr.yml`` exists at its root."""
-    return (workspace / WOPR_YML_FILENAME).exists()
+@dataclass(frozen=True)
+class _CorpusTarget:
+    """Which ``LEARNINGS.md`` a write-side tool acts on, and who owns it."""
+
+    #: The file to write. Always set.
+    file: Path
+
+    #: The workspace root that owns ``file``, or ``None`` when ``file``
+    #: is the system corpus under ``~/.wopr``. Callers use this to decide
+    #: whether registration and the ``.gitignore`` touch-up apply: both
+    #: are workspace concepts and neither means anything for the system
+    #: corpus.
+    root: Path | None
 
 
-def _resolve_write_path(workspace: Path) -> Path:
-    if _is_in_workspace(workspace):
-        return workspace / LEARNINGS_FILENAME
-    return get_global_home() / LEARNINGS_FILENAME
+def _resolve_corpus_target(
+    workspace: Path, *, explicit_target: bool
+) -> _CorpusTarget | str:
+    """Resolve the corpus a write-side tool should act on, or say why not.
 
+    Returns a :class:`_CorpusTarget`, or an error string ready to be
+    handed straight back to the caller (this module's tools report
+    failure by returning ``Error: ...`` rather than raising).
 
-def _resolve_read_paths(workspace: Path) -> list[Path]:
-    """In-workspace mode returns the workspace's file only.
-
-    Outside-workspace mode aggregates the system file plus every registered
-    workspace's file. Missing paths are skipped silently.
+    The asymmetry between the two failure paths is the whole point of
+    the function. ``~/.wopr/LEARNINGS.md`` is a reasonable home for an
+    entry when the caller named no target: there is no expectation to
+    violate. It is never a reasonable home for an entry when the caller
+    DID name a target that turned out not to resolve, because the entry
+    then lands somewhere the caller will never look. That case is an
+    error.
     """
-    if _is_in_workspace(workspace):
-        return [workspace / LEARNINGS_FILENAME]
+    resolution = find_workspace_root(workspace)
+    if resolution.root is not None:
+        return _CorpusTarget(
+            file=resolution.root / LEARNINGS_FILENAME, root=resolution.root
+        )
+    if explicit_target:
+        return _unresolved_workspace_error(workspace, resolution)
+    return _CorpusTarget(file=get_global_home() / LEARNINGS_FILENAME, root=None)
+
+
+def _unresolved_workspace_error(workspace: Path, resolution: WorkspaceRoot) -> str:
+    """Error text for a named target that resolves to no workspace root.
+
+    Deliberately verbose. This replaces a silent fallback to
+    ``~/.wopr/LEARNINGS.md`` that produced a corpus nobody could find,
+    so the message has to name the searched paths and the fix.
+    """
+    return (
+        f"Error: no workspace root found for {workspace}, so nothing was "
+        f"written. {resolution.explain()} Create wopr.yml or LEARNINGS.md at "
+        "the directory that should own the corpus (seed_learnings writes "
+        "LEARNINGS.md and is the supported way to do this for a repo whose "
+        "wopr.yml files live in subpackages), or pass a target path inside "
+        "an existing workspace."
+    )
+
+
+def _resolve_read_paths(root: Path | None) -> list[Path]:
+    """In-workspace mode returns the resolved root's file only.
+
+    Outside-workspace mode (``root`` is ``None``) aggregates the system file
+    plus every registered workspace's file. Missing paths are skipped
+    silently.
+    """
+    if root is not None:
+        return [root / LEARNINGS_FILENAME]
 
     paths: list[Path] = []
     home = get_global_home()
@@ -128,10 +206,12 @@ def _resolve_read_paths(workspace: Path) -> list[Path]:
     return paths
 
 
-def _ensure_workspace_registered(workspace: Path) -> None:
+def _ensure_workspace_registered(workspace: Path) -> RegistrationResult:
     """Append ``workspace`` to ``~/.wopr/workspaces.txt`` if not already present.
 
-    No-op when the workspace is not actually in scope (no ``wopr.yml``).
+    Callers pass an already-resolved workspace root. The marker check
+    is kept as a guard so a path that carries no marker is skipped
+    rather than registering a directory whose corpus nothing owns.
     Idempotent: subsequent calls with the same path do nothing.
 
     Failures to read or write the registry are logged at WARNING and
@@ -139,9 +219,15 @@ def _ensure_workspace_registered(workspace: Path) -> None:
     outside-workspace ``learnings_search`` will not aggregate this
     workspace's entries until a later call succeeds. It must not break
     the auditor's append or the operator's search.
+
+    Returns:
+        Which of the four things actually happened. Callers that report
+        registration to an operator must use this instead of asserting
+        success; a skipped registration reported as "registered" is how
+        an orphaned corpus goes unnoticed.
     """
-    if not _is_in_workspace(workspace):
-        return
+    if not has_marker(workspace):
+        return "not-a-workspace"
     home = get_global_home()
     home.mkdir(parents=True, exist_ok=True)
     registry = home / WORKSPACES_REGISTRY_FILENAME
@@ -158,13 +244,13 @@ def _ensure_workspace_registered(workspace: Path) -> None:
                 registry,
                 e,
             )
-            return
+            return "failed"
         for line in registry_text.splitlines():
             entry = line.strip()
             if entry:
                 existing.add(entry)
     if workspace_str in existing:
-        return
+        return "already-registered"
     try:
         with registry.open("a", encoding="utf-8") as f:
             f.write(f"{workspace_str}\n")
@@ -176,6 +262,33 @@ def _ensure_workspace_registered(workspace: Path) -> None:
             registry,
             e,
         )
+        return "failed"
+    return "added"
+
+
+def _registration_note(result: RegistrationResult, workspace: Path) -> str:
+    """Human-readable, and true, sentence for a registration outcome.
+
+    The point of the function: ``seed_learnings`` used to append the
+    literal string "Workspace registered." to its result whether or not
+    registration ran, including the case where the code explicitly
+    skipped it. Every status message now derives from what happened.
+    """
+    if result == "added":
+        return "Workspace registered."
+    if result == "already-registered":
+        return "Workspace already registered."
+    if result == "not-a-workspace":
+        markers = " or ".join(MARKER_FILENAMES)
+        return (
+            f"Registration skipped: no {markers} at {workspace}, so there is "
+            "no workspace root to register."
+        )
+    return (
+        "Registration failed: the workspace registry could not be updated "
+        "(see the WOPR log). Cross-workspace search will not see this "
+        "workspace until a later call succeeds."
+    )
 
 
 # ``_parse_entries``, ``LearningEntry``, ``_split_list_value``,
@@ -289,9 +402,18 @@ async def append_learnings(
     """Append a LEARNINGS.md entry to the workspace or system file.
 
     The entry must start with a valid ``## LRN-YYYY-MM-DD-<letter>: <title>``
-    header. The workspace's own ``LEARNINGS.md`` is used when ``wopr.yml`` is
-    present at ``target_workspace_path``; otherwise the system file at
-    ``~/.wopr/LEARNINGS.md`` is used.
+    header.
+
+    Where it lands: the workspace root that owns ``target_workspace_path``
+    is resolved by walking up from that path to the nearest directory
+    carrying ``wopr.yml`` or ``LEARNINGS.md``, stopping at the git toplevel
+    (see :mod:`._workspace_root`). That root's ``LEARNINGS.md`` gets the
+    entry. When no root is found, the outcome depends on how the call was
+    made: a call that named ``target_workspace_path`` gets an error naming
+    every directory searched and writes nothing, while a call that named no
+    target at all falls back to the system file at ``~/.wopr/LEARNINGS.md``.
+    An entry is never quietly diverted away from a workspace the caller
+    named.
 
     Concurrency posture: WOPR is operator-driven, so the auditor's
     append is effectively single-writer per gate. The function does
@@ -303,11 +425,13 @@ async def append_learnings(
     workspace-registry writer.
 
     Args:
-        target_workspace_path: Absolute path to the project workspace root,
-            and must exist. Optional on Claude Code (defaults to the
-            session's project via CLAUDE_PROJECT_DIR); on other CLIs pass it
-            explicitly. Determines whether the entry lands in the workspace
-            file or the system file (see above).
+        target_workspace_path: Absolute path to the project this entry
+            belongs to, and must exist. Normally the workspace root, but any
+            existing directory inside the workspace works: resolution walks
+            up. Optional on Claude Code (defaults to the session's project
+            via CLAUDE_PROJECT_DIR); on other CLIs pass it explicitly.
+            Determines whether the entry lands in the workspace file or the
+            system file (see above).
         entry_markdown: One full entry as markdown. Must include the section
             header line. Entries are appended verbatim, with a blank line
             separator if the target file is already non-empty.
@@ -319,6 +443,7 @@ async def append_learnings(
             ``entry_markdown`` already declares ``origin`` in its meta
             block, the entry's own value wins.
     """
+    explicit_target = bool(target_workspace_path and str(target_workspace_path).strip())
     try:
         workspace = await resolve_request_workspace(
             target_workspace_path, ctx, allow_legacy_config=False
@@ -352,7 +477,10 @@ async def append_learnings(
     if leak_findings:
         return format_leak_report(leak_findings)
 
-    target = _resolve_write_path(workspace)
+    resolved = _resolve_corpus_target(workspace, explicit_target=explicit_target)
+    if isinstance(resolved, str):
+        return resolved
+    target = resolved.file
     target.parent.mkdir(parents=True, exist_ok=True)
 
     # Wrap both the existence check and the append in one try so a
@@ -370,9 +498,9 @@ async def append_learnings(
     except OSError as e:
         return f"Error: failed to write {target}: {e}"
 
-    _ensure_workspace_registered(workspace)
-    if _is_in_workspace(workspace):
-        ensure_sidecar_gitignored(workspace)
+    if resolved.root is not None:
+        _ensure_workspace_registered(resolved.root)
+        ensure_sidecar_gitignored(resolved.root)
 
     # Best-effort: keep the sidecar in lockstep with the markdown
     # corpus by embedding just the newly appended entry.
@@ -402,9 +530,11 @@ async def learnings_search(
 ) -> str:
     """Retrieve the top-N most relevant LEARNINGS entries for the current context.
 
-    In-workspace mode reads ``<workspace>/LEARNINGS.md`` only. Outside-workspace
-    mode aggregates ``~/.wopr/LEARNINGS.md`` plus every registered workspace's
-    ``<path>/LEARNINGS.md``.
+    In-workspace mode reads ``<workspace root>/LEARNINGS.md`` only, where the
+    root is resolved by the same walk-up ``append_learnings`` uses, so reads
+    and writes always address the same file. Outside-workspace mode (no root
+    resolved) aggregates ``~/.wopr/LEARNINGS.md`` plus every registered
+    workspace's ``<path>/LEARNINGS.md``.
 
     Two candidate paths run in parallel and the results are unioned:
 
@@ -448,10 +578,12 @@ async def learnings_search(
     if stack_tags is None:
         stack_tags = []
 
-    _ensure_workspace_registered(workspace)
+    root = find_workspace_root(workspace).root
+    if root is not None:
+        _ensure_workspace_registered(root)
 
     entries: list[LearningEntry] = []
-    for path in _resolve_read_paths(workspace):
+    for path in _resolve_read_paths(root):
         try:
             text = path.read_text(encoding="utf-8")
         except OSError:
@@ -615,21 +747,29 @@ async def learnings_path(
     candidate read path is reported with a populated/empty flag so an
     operator can tell which case applies. The write path is reported
     regardless of whether the file currently exists.
+
+    Reports the resolved workspace root alongside the requested
+    workspace, because on a multi-package repo the two differ and the
+    difference is exactly what an operator debugging a missing entry
+    needs to see. When no root resolves, every searched directory is
+    listed.
     """
+    explicit_target = bool(target_workspace_path and str(target_workspace_path).strip())
     try:
         workspace = await resolve_request_workspace(target_workspace_path, ctx)
     except InvalidTargetWorkspaceError as e:
         return str(e)
-    in_workspace = _is_in_workspace(workspace)
-    write_path = _resolve_write_path(workspace)
+    resolution = find_workspace_root(workspace)
+    root = resolution.root
+    in_workspace = resolution.found
 
     # Enumerate the FULL candidate set for reads, then annotate each
     # with present/absent + populated/empty. ``_resolve_read_paths``
     # drops missing entries silently which obscures the misconfigured-
     # vs-empty distinction; recompute the full list here for reporting.
     candidate_reads: list[Path] = []
-    if in_workspace:
-        candidate_reads.append(workspace / LEARNINGS_FILENAME)
+    if root is not None:
+        candidate_reads.append(root / LEARNINGS_FILENAME)
     else:
         home = get_global_home()
         candidate_reads.append(home / LEARNINGS_FILENAME)
@@ -646,20 +786,41 @@ async def learnings_path(
 
     lines = [
         f"workspace: {workspace}",
+        f"workspace_root: {root if root is not None else '(none found)'}",
         f"in_workspace: {in_workspace}",
-        f"write_path: {write_path}",
     ]
-    if write_path.exists():
-        try:
-            size = write_path.stat().st_size
-        except OSError:
-            size = -1
-        if size >= 0:
-            lines.append(f"write_path_status: exists ({size} bytes)")
+    if root is None:
+        lines.append(f"searched: {', '.join(str(p) for p in resolution.searched)}")
+        if resolution.git_toplevel is not None:
+            lines.append(f"search_boundary: git toplevel {resolution.git_toplevel}")
         else:
-            lines.append("write_path_status: exists")
+            lines.append("search_boundary: filesystem root")
+
+    # Ask the same resolver append_learnings and curate_learnings ask, so
+    # the diagnostic cannot drift from the behavior it describes. A
+    # returned error string means those tools would refuse this target.
+    resolved = _resolve_corpus_target(workspace, explicit_target=explicit_target)
+    write_path = None if isinstance(resolved, str) else resolved.file
+
+    if write_path is None:
+        lines.append("write_path: (unresolved)")
+        lines.append(
+            "write_path_status: append_learnings would refuse this target; no "
+            "workspace root was found and a target path was named explicitly."
+        )
     else:
-        lines.append("write_path_status: not yet created")
+        lines.append(f"write_path: {write_path}")
+        if write_path.exists():
+            try:
+                size = write_path.stat().st_size
+            except OSError:
+                size = -1
+            if size >= 0:
+                lines.append(f"write_path_status: exists ({size} bytes)")
+            else:
+                lines.append("write_path_status: exists")
+        else:
+            lines.append("write_path_status: not yet created")
 
     lines.append("read_paths:")
     if not candidate_reads:
@@ -705,10 +866,21 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
     their meta block; the prefilter bypasses the recency cutoff for
     them.
 
+    Writes ``<target_workspace_path>/LEARNINGS.md`` and nowhere else.
+    That is deliberate and load-bearing: ``LEARNINGS.md`` is itself a
+    workspace-root marker, so seeding a directory is how an operator
+    declares which directory owns the corpus. For a repository whose
+    ``wopr.yml`` files live in subpackages, seeding the repo root is
+    what makes later ``append_learnings`` and ``learnings_search``
+    calls from the repo root resolve there (see
+    :mod:`._workspace_root`).
+
     Args:
-        target_workspace_path: Absolute path to the project's
-            workspace root (the directory containing ``wopr.yml``).
-            Required; this tool does NOT infer the workspace.
+        target_workspace_path: Absolute path to the directory that
+            should own the corpus, normally the project's workspace
+            root (the directory containing ``wopr.yml``, or the repo
+            root of a multi-package repo). Required; this tool does
+            NOT infer the workspace.
         stack_tags: List of stack identifiers to seed. Known values:
             ``angular``, ``spring-boot``, ``fastapi``. Unknown tags
             are silently skipped (the seeded set is conservative;
@@ -718,9 +890,10 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
     Returns:
         Status string. Begins with ``Seeded`` on success listing the
         number of entries appended and the stacks included, or
-        ``Error:`` on failure. Also registers the workspace in
-        ``~/.wopr/workspaces.txt`` so cross-workspace reads can
-        aggregate it.
+        ``Error:`` on failure. The status ends with what registration
+        in ``~/.wopr/workspaces.txt`` actually did on this call:
+        registered, already registered, skipped, or failed. It never
+        claims an outcome the code did not reach.
     """
     if not target_workspace_path:
         return "Error: target_workspace_path is required."
@@ -775,12 +948,12 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
 
     if not appended:
         # Seeds already present; do not rewrite the file.
-        _ensure_workspace_registered(workspace)
-        if _is_in_workspace(workspace):
+        note = _registration_note(_ensure_workspace_registered(workspace), workspace)
+        if has_marker(workspace):
             ensure_sidecar_gitignored(workspace)
         return (
             "Seeded 0 entries (all seed entries for the requested stacks "
-            "already exist in LEARNINGS.md). Workspace registered."
+            f"already exist in LEARNINGS.md). {note}"
         )
 
     final_text = "\n\n".join(pieces).rstrip() + "\n"
@@ -789,13 +962,16 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
     except OSError as e:
         return f"Error: failed to write {target_file}: {e}"
 
-    _ensure_workspace_registered(workspace)
-    if _is_in_workspace(workspace):
-        ensure_sidecar_gitignored(workspace)
+    # Registration runs AFTER the write, not before: the file just
+    # written is itself the marker that makes ``workspace`` a workspace
+    # root, which is what lets a multi-package repo root be registered
+    # at all.
+    note = _registration_note(_ensure_workspace_registered(workspace), workspace)
+    ensure_sidecar_gitignored(workspace)
 
     return (
         f"Seeded {len(appended)} entries into {target_file}: "
-        f"{', '.join(appended)}. Workspace registered."
+        f"{', '.join(appended)}. {note}"
     )
 
 
@@ -821,10 +997,18 @@ async def curate_learnings(
     file. Seed entries (``seed: true``) are never touched. Entries with no
     parseable date are left alone.
 
+    Curates the same file ``append_learnings`` writes and
+    ``learnings_search`` reads, resolved the same way, and refuses on the
+    same terms: a named target that resolves to no workspace root is an
+    error, not a quiet redirect to ``~/.wopr/LEARNINGS.md``. Curation
+    rewrites a corpus, so curating the wrong one is worse than curating
+    none.
+
     Args:
-        target_workspace_path: Absolute path to the project workspace root.
-            Optional on Claude Code (defaults to the session's project via
-            CLAUDE_PROJECT_DIR); on other CLIs pass it explicitly.
+        target_workspace_path: Absolute path to the project workspace root
+            or any path inside it. Optional on Claude Code (defaults to the
+            session's project via CLAUDE_PROJECT_DIR); on other CLIs pass it
+            explicitly.
         stale_after_days: Age threshold in days. Default 365 — a full year,
             deliberately longer than ``learnings_search``'s 180-day
             *retrieval* cutoff (Dim: an entry can be too old to surface by
@@ -833,6 +1017,7 @@ async def curate_learnings(
         dry_run: When True (default), reports what would be archived
             without writing anything. Pass False to actually apply.
     """
+    explicit_target = bool(target_workspace_path and str(target_workspace_path).strip())
     try:
         workspace = await resolve_request_workspace(
             target_workspace_path, ctx, allow_legacy_config=False
@@ -840,7 +1025,10 @@ async def curate_learnings(
     except InvalidTargetWorkspaceError as e:
         return str(e)
 
-    target = _resolve_write_path(workspace)
+    resolved = _resolve_corpus_target(workspace, explicit_target=explicit_target)
+    if isinstance(resolved, str):
+        return resolved
+    target = resolved.file
     if not target.is_file():
         return f"Nothing to curate: {target} does not exist."
 

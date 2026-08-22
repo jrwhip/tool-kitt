@@ -92,6 +92,22 @@ explicitly skipped.
 is the emotional close of the talk, and today it would show nothing at the repo
 root. Needs a decision before P4 rehearsals.
 
+> **Update, 2026-08-21 (fixed).** The observation above stands as recorded; this
+> is what changed in response. Workspace-root resolution is now one shared
+> function, `find_workspace_root` in `src/wopr/tools/_workspace_root.py`, used by
+> seed, append, search and curate alike: walk up from the target path, accept the
+> nearest directory carrying `wopr.yml` **or** `LEARNINGS.md`, stop at the git
+> toplevel. `LEARNINGS.md` counting as a marker is what closes the loop for a
+> repo like Arcade, and `seed_learnings` writing that file at the target is what
+> establishes it. Appends and searches from the Arcade root now both resolve to
+> `arcade/LEARNINGS.md`; the file is no longer an orphan. Nearest match still
+> wins, so a call naming `arcade/backend` resolves to `arcade/backend`, which has
+> its own `wopr.yml`: target the repo root to keep one corpus for the repo. The
+> `~/.wopr` fallback survives only for calls that name no target at all; a named
+> target that resolves to nothing is now an error listing every searched path.
+> `seed_learnings` reports what registration actually did rather than asserting
+> "Workspace registered." unconditionally (item 2 of the improvement list below).
+
 ### 4. `ensure_sidecar_gitignored` is gated on the server's pinned workspace
 
 Seeding a project other than the server's own workspace skips the gitignore
