@@ -6,7 +6,7 @@
 # In a real project, only ONE of these blocks would appear at the project root,
 # named exactly `wopr.yml`. They are colocated here for reference.
 #
-# Schema reference: webteam-ai-tools/docs/wopr-yml-schema.md
+# Schema reference: docs/wopr-yml-schema.md
 
 # ============================================================================
 # Example A: Spring Boot backend project (legacy migration)

@@ -148,7 +148,7 @@ Doctor surfaces `requirements.local_path_missing` (warning) when `source: local`
 Every project using the crew has a `wopr.yml` at its project root. The schema is shared across WOPR packs (any pack that needs project context reads `wopr.yml`). See:
 
 - `templates/wopr.example.yml`: worked examples for backend and frontend projects
-- `webteam-ai-tools/docs/wopr-yml-schema.md`: full schema with field tables
+- `docs/wopr-yml-schema.md`: full schema with field tables
 
 The crew does not run without `wopr.yml`. If it is missing, every agent stops and reports.
 

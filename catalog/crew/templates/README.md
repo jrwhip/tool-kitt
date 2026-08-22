@@ -4,7 +4,7 @@ Two kinds of templates live here:
 
 **Tracking-document templates** (the four `*.template.md` files): skeletons for the documents a crew run produces and consumes. The caller fills in `[STACK: ...]` markers with stack specifics before the crew starts.
 
-**Project config example** (`wopr.example.yml`): a worked example of the WOPR-shared project configuration file. Each project has its own `wopr.yml` at its project root. Schema reference: `webteam-ai-tools/docs/wopr-yml-schema.md`.
+**Project config example** (`wopr.example.yml`): a worked example of the WOPR-shared project configuration file. Each project has its own `wopr.yml` at its project root. Schema reference: `docs/wopr-yml-schema.md`.
 
 ## Tracking-document templates
 
@@ -24,7 +24,7 @@ For migration projects, an additional template lives in the `legacy-migration` p
 See:
 
 - `wopr.example.yml` (this directory): worked examples for both a backend and a frontend project.
-- `webteam-ai-tools/docs/wopr-yml-schema.md`: full schema with section-by-section field tables.
+- `docs/wopr-yml-schema.md`: full schema with section-by-section field tables.
 
 The crew does not run without `wopr.yml`. If it is missing at the resolved path, every agent stops and reports.
 
