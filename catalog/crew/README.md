@@ -60,7 +60,7 @@ The crew decomposes work into four roles. Each role is a separate agent with a s
 The crew's principles, full step-by-step orchestration, intake routing (crew run, blocker fix, frontend handoff, unattended), and verification checklist live in two parallel forms:
 
 * **`skills/wopr-run-crew/SKILL.md`**, the skill form, loaded via the Skill tool on Claude Code and Gemini CLI and available as a native skill on Copilot CLI.
-* **`agents/wopr-crew.md`**, the agent form: the recommended entry on Copilot CLI, and an alternative for Claude / Gemini operators who prefer agent dispatch over skill invocation. Same semantics, same procedure, same outputs; just loaded as a custom agent rather than a skill.
+* The crew's single orchestration source is `skills/wopr-run-crew/SKILL.md`. The former agent-mode duplicate (`agents/wopr-crew.md`, the Copilot entry) was removed when Copilot support was deferred; one procedure, one file.
 
 How to invoke per CLI:
 

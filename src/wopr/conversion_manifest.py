@@ -123,8 +123,7 @@ AGENT_TIERS: dict[str, list[str] | dict[str, str]] = {
         # of `custom-agent`) per `to_copilot_agent`'s tool_map, giving
         # Copilot subagent parity with Claude / Gemini's Task-based
         # dispatch.
-        "wopr-crew",
-        "wopr-crew-scout",
+                "wopr-crew-scout",
         "wopr-crew-coder",
         "wopr-crew-tester",
         "wopr-crew-auditor",

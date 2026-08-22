@@ -106,7 +106,7 @@ class TestManifestMatchesCatalog:
         assert "wopr-angular-perfectionist-reviewer" in agents
 
     def test_crew_agents_are_tier1(self):
-        """The five role agents plus the orchestrator must convert
+        """The five role agents must convert
         across all CLIs so Copilot operators get parity with Claude /
         Gemini for the four-role crew ([TICKET-ID]). Listed in
         tier1 because their tool surface (Read / Write / Glob / Grep
@@ -114,8 +114,7 @@ class TestManifestMatchesCatalog:
         ``to_copilot_agent`` tool_map (Task -> custom-agent).
         """
         for name in (
-            "wopr-crew",
-            "wopr-crew-scout",
+                        "wopr-crew-scout",
             "wopr-crew-coder",
             "wopr-crew-tester",
             "wopr-crew-auditor",
@@ -126,8 +125,7 @@ class TestManifestMatchesCatalog:
             )
         agents = get_convertible_agents()
         for name in (
-            "wopr-crew",
-            "wopr-crew-scout",
+                        "wopr-crew-scout",
             "wopr-crew-coder",
             "wopr-crew-tester",
             "wopr-crew-auditor",
