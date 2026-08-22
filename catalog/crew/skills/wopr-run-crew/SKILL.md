@@ -114,6 +114,6 @@ Run the standard sequence against the frontend project with two differences: the
 - Config: `docs/wopr-yml-schema.md` (this repo), `catalog/crew/templates/wopr.example.yml`
 - Agents: `catalog/crew/agents/wopr-crew-{scout,coder,tester,auditor,evaluator}.md`
 - Templates: `catalog/crew/templates/{coder-spec,tester-spec,implementation-tracking,frontend-handoff-contract}.template.md`
-- Scripts and hooks: `catalog/crew/scripts/autorun.sh`, `catalog/meta-authoring/hooks/` (prompt-log, git-branch-guard)
+- Scripts and hooks: `catalog/crew/scripts/autorun.sh`, `catalog/_core/hooks/` (prompt-log, git-branch-guard)
 - Pack overview: `catalog/crew/README.md`
 </reference_index>

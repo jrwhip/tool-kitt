@@ -56,7 +56,7 @@ CLI-agnostic by design. Defaults target Claude Code (`claude --resume -y`, Claud
 | `SCRIPT_DIR` | `$WORK_DIR/.autorun` | Where run artifacts land (log file, last session output, etc). |
 | `LOG_FILE` | `$SCRIPT_DIR/autorun_YYYYMMDD.log` | Combined stdout/stderr log for the autorun loop. |
 | `SESSION_OUTPUT` | `$SCRIPT_DIR/.last_session_output.txt` | Captures the tail of the most recent session, used by rate-limit and user-input detection. |
-| `PROMPT_LOG` | empty (disabled) | Optional path to a prompt log file. When set, lifecycle events (session resumed, rate limit hit, paused for input) get appended here. Works alongside `prompt-log-hook.py` in `meta-authoring/hooks/`. |
+| `PROMPT_LOG` | empty (disabled) | Optional path to a prompt log file. When set, lifecycle events (session resumed, rate limit hit, paused for input) get appended here. Works alongside `prompt-log-hook.py` in `_core/hooks/`. |
 
 ### Optional environment variables (timing)
 
@@ -81,7 +81,7 @@ Minimal (defaults to Claude Code):
 WORK_DIR=/Users/you/Projects/my-migration ./autorun.sh
 ```
 
-Integrated with the meta-authoring prompt log hook:
+Integrated with the core pack's prompt log hook:
 
 ```sh
 WORK_DIR=/Users/you/Projects/my-migration \

@@ -55,7 +55,7 @@ Write the full report to `specs.audit_report`, overwriting (each run is self-con
 
 ## Learnings distillation (required final step)
 
-Distill 0-3 entries via `append_learnings` (pass `target_workspace_path` = the wopr.yml directory). Distill only: novel patterns no spec rule covered; recurring root causes across >= 2 REQs (check the prior report); generalizable cross-stack gotchas. Do not distill REQ-specific fixes, one-off typos, restatements of spec rules, or the verdict itself. Zero entries is often correct. Entry format: `## LRN-YYYY-MM-DD-<letter>: <title>`, a fenced `meta` block (date, project slug, stack tags, req list, auditor_run path@timestamp, severity), then three labeled paragraphs: What happened / Why it matters / Pattern to encode. <= 200 words per entry; append-only, never edit existing entries.
+Distill 0-3 entries via `append_learnings` (pass `target_workspace_path` = the wopr.yml directory). If the tool is unavailable in your session, do not fabricate the call: record the entries verbatim in the report's Learnings section flagged as not persisted, and the orchestrator appends them. Distill only: novel patterns no spec rule covered; recurring root causes across >= 2 REQs (check the prior report); generalizable cross-stack gotchas. Do not distill REQ-specific fixes, one-off typos, restatements of spec rules, or the verdict itself. Zero entries is often correct. Entry format: `## LRN-YYYY-MM-DD-<letter>: <title>`, a fenced `meta` block (date, project slug, stack tags, req list, auditor_run path@timestamp, severity), then three labeled paragraphs: What happened / Why it matters / Pattern to encode. <= 200 words per entry; append-only, never edit existing entries.
 
 ## Boundaries
 

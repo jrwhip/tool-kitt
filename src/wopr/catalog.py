@@ -21,6 +21,7 @@ import yaml
 
 from . import __version__
 from ._atomic_write import atomic_write_text
+from .config import plugin_resources_root
 from .models import LockFileData
 
 logger = logging.getLogger("wopr")
@@ -59,6 +60,15 @@ def load_catalog(catalog_path: Path | None = None) -> dict[str, Any]:
     if catalog_path:
         candidates.append(catalog_path / "catalog.yaml")
         candidates.append(catalog_path.parent / "catalog.yaml")
+
+    # Plugin install: `wopr build-plugins` copies catalog.yaml into the
+    # bundled server's resources dir, which neither of the two
+    # path-arithmetic candidates below can reach (the server package
+    # sits at <plugin>/server/src/wopr/, its resources one level up
+    # and outside the package). Set only when WOPR_PLUGIN_ROOT is.
+    plugin_resources = plugin_resources_root()
+    if plugin_resources is not None:
+        candidates.append(plugin_resources / "catalog.yaml")
 
     # Bundled catalog.yaml (installed via pip)
     candidates.append(get_bundled_catalog_yaml())

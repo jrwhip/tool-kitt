@@ -11,12 +11,6 @@ Replaces the former per-hook, per-CLI scripts, which were near-identical
 apart from the event name, the config file, and the entry shape: all three
 are now declared in the manifest and rendered by ``wopr.hook_manifest``.
 
-KNOWN GAP (P2): ``wopr.hook_manifest`` does not exist in this package yet.
-The module was on the P1 do-not-port list (see P1-NOTES section 5.1), so
-this script raises ``ModuleNotFoundError`` on import until it is ported.
-Quarry source: ``ai_cli_mcp/hook_manifest.py`` (456 lines, depends only on
-``_atomic_write`` and PyYAML). Tracked in ``docs/slimming-ledger.md``.
-
 Usage:
   python3 configure_hook.py --hook NAME --cli claude \
       [--project-root PATH] [--dry-run]

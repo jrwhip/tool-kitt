@@ -9,26 +9,26 @@ The hook intercepts every `Bash` tool call. If the command is `git commit` or `g
 **Preview without making changes:**
 
 ```
-! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py" --dry-run
+! uv run "${CLAUDE_PLUGIN_ROOT}/scripts/configure_git_guard.py" --dry-run
 ```
 
 **Apply:**
 
 ```
-! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py"
+! uv run "${CLAUDE_PLUGIN_ROOT}/scripts/configure_git_guard.py"
 ```
 
 **Target a project other than the current directory:**
 
 ```
-! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_git_guard.py" --project-root /path/to/project
+! uv run "${CLAUDE_PLUGIN_ROOT}/scripts/configure_git_guard.py" --project-root /path/to/project
 ```
 
 **After running:** Restart Claude Code for the PreToolUse hook to take effect.
 
 **What it does:**
 
-1. Makes the guard script (`meta-authoring/hooks/git-branch-guard.sh`) executable.
+1. Makes the guard script (`hooks/git-branch-guard.sh`) executable.
 2. Reads `.claude/settings.json` (creates it if missing), removes any conflicting `Bash(git commit *)` or `Bash(git push *)` entries from `permissions.allow` / `permissions.deny` (the hook supersedes them with branch-conditional logic), then appends the PreToolUse hook entry. All other settings and hooks are preserved.
 
 **Branch rule (default):**
@@ -42,4 +42,4 @@ The hook intercepts every `Bash` tool call. If the command is `git commit` or `g
 
 **Idempotent.** Re-running is safe. Already-completed steps are skipped and reported as `ok`.
 
-**Required:** WOPR must be installed (`pipx install wopr` or equivalent) so the `wopr` package is importable. The `python3 -c` shim resolves the meta-authoring scripts directory regardless of where WOPR was installed. The guard script itself uses `jq`; install it with `brew install jq` on macOS or your distribution's package manager on Linux.
+**Required:** [uv](https://docs.astral.sh/uv/) on PATH; `configure_git_guard.py` is stdlib-only, so `uv run` executes it directly with no project or dependency resolution needed. The guard script itself uses `jq`; install it with `brew install jq` on macOS or your distribution's package manager on Linux.

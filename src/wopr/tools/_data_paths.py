@@ -19,14 +19,25 @@ then into either ``catalog/`` or ``resources/`` was duplicated across
 the duplication as a fragility risk: if the module layout ever
 changes, all three modules need parallel surgery.
 
+3. The ``resources/`` directory of a Claude Code plugin install, at
+   ``$WOPR_PLUGIN_ROOT/server/resources/``. ``wopr build-plugins``
+   copies the runtime-relevant catalog subtrees there, and the
+   generated ``.mcp.json`` sets ``WOPR_PLUGIN_ROOT`` for the server
+   process. Neither of the two path-arithmetic candidates can find
+   that layout: the bundled server lives at ``<plugin>/server/src/
+   wopr/`` with its resources one level up and outside the package.
+
 Single source of truth here. Callers describe the file or directory
-they want as a sequence of path parts; this module checks the repo
-location first, then the bundled location, returning whichever exists.
+they want as a sequence of path parts; this module checks the plugin
+location (only when the env var says there is one), then the repo
+location, then the bundled location, returning whichever exists.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
+
+from ..config import plugin_resources_root
 
 # Anchored once at module import; the math is exactly what the three
 # tool modules previously inlined:
@@ -49,11 +60,18 @@ def candidate_data_paths(
     repo_subtree: str = "catalog",
     bundled_subtree: str = "resources",
 ) -> list[Path]:
-    """Return the dev and bundled candidate paths for a data file.
+    """Return the candidate paths for a data file, in resolution order.
 
-    Always returns both candidates in order (repo first, bundled
-    second), without filtering by existence. Callers that want only
-    the first existing path should use :func:`resolve_data_path`.
+    Returns the dev (repo) and bundled candidates always, without
+    filtering by existence, and prepends the plugin-install candidate
+    when ``WOPR_PLUGIN_ROOT`` is set. Callers that want only the first
+    existing path should use :func:`resolve_data_path`.
+
+    The plugin candidate goes first because it is the only one set
+    explicitly by the environment: if a process was told where its
+    plugin lives, that beats path arithmetic derived from
+    ``__file__``. It costs nothing outside a plugin install, where the
+    env var is unset and the list is exactly the historical two.
 
     Args:
         *parts: Path components joined under the chosen subtree (e.g.
@@ -64,13 +82,16 @@ def candidate_data_paths(
             holds the install-time copy. Defaults to ``"resources"``.
 
     Returns:
-        A list of two :class:`Path` objects: ``[repo_path,
-        bundled_path]``. Neither is guaranteed to exist.
+        ``[plugin_path?, repo_path, bundled_path]``. None is
+        guaranteed to exist.
     """
-    return [
-        _REPO_ROOT.joinpath(repo_subtree, *parts),
-        _PACKAGE_ROOT.joinpath(bundled_subtree, *parts),
-    ]
+    candidates: list[Path] = []
+    plugin_resources = plugin_resources_root()
+    if plugin_resources is not None:
+        candidates.append(plugin_resources.joinpath(*parts))
+    candidates.append(_REPO_ROOT.joinpath(repo_subtree, *parts))
+    candidates.append(_PACKAGE_ROOT.joinpath(bundled_subtree, *parts))
+    return candidates
 
 
 def resolve_data_path(
@@ -81,8 +102,9 @@ def resolve_data_path(
     """Return the first existing candidate path, or ``None`` if neither exists.
 
     Useful when the caller wants the file/dir directly without
-    iterating over candidates themselves. When both candidates exist
-    the repo one wins (the dev iteration story).
+    iterating over candidates themselves. When several candidates
+    exist the explicit plugin one wins, then the repo one (the dev
+    iteration story), then the bundled one.
 
     Args:
         *parts: See :func:`candidate_data_paths`.

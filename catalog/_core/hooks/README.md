@@ -1,6 +1,13 @@
-# meta-authoring hooks
+# wopr-core hooks
 
-Hooks that run on lifecycle events during an AI CLI session.
+Hooks that run on lifecycle events during an AI CLI session. This
+infrastructure ships in the `wopr-core` plugin, alongside the MCP server,
+rather than in `meta-authoring`: `configure_hook.py` needs the bundled
+`wopr` package to render registrations, and `wopr-core` is the one plugin
+guaranteed to carry a server bundle for it to run inside via `uv run
+--project`. `meta-authoring` keeps the authoring-side `wopr-create-hook`
+command and `wopr-create-hooks` skill; this directory is the machinery
+those author *for*.
 
 **Scope:** `[CLAUDE]` only. Copilot CLI and Gemini CLI both have real hook systems, and a Copilot port of the capture-skill trigger existed here until P2; it was removed with the rest of WOPR's Copilot surface and remains in the quarry if Copilot support returns.
 
@@ -38,7 +45,7 @@ targets:
     matcher: ""
 ```
 
-`src/wopr/hook_manifest.py` renders each target into the exact entry its CLI expects (Claude's nested `{matcher, hooks: [{type, command}]}` in `.claude/settings.json`), the same author-once pattern `conversion_manifest.py` already applies to commands and agents. **That module is not in this package yet:** it was on the P1 do-not-port list, so `scripts/configure_hook.py` currently fails to import. Use each hook's manual-fallback JSON below until it is ported. Tracked in `docs/slimming-ledger.md`.
+`src/wopr/hook_manifest.py` renders each target into the exact entry its CLI expects (Claude's nested `{matcher, hooks: [{type, command}]}` in `.claude/settings.json`), the same author-once pattern `conversion_manifest.py` already applies to commands and agents. `scripts/configure_hook.py` imports it directly; the manual-fallback JSON below remains as a wire-it-up-by-hand option, not a workaround for a missing module.
 
 Registration is an **upsert by identity**: an existing entry is located by the handler *filename* appearing in its command string, not by exact command text. A hook whose absolute path changed (pipx reinstall, editable → wheel, moved catalog) is reconciled in place rather than appended next to its own stale twin, so re-running `--init` can never duplicate a registration.
 
@@ -95,7 +102,7 @@ This is what differentiates the prompt-log from a plain summary: every line is a
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /absolute/path/to/catalog/meta-authoring/hooks/prompt-log-hook.py"
+            "command": "python3 /absolute/path/to/wopr-core/hooks/prompt-log-hook.py"
           }
         ]
       }
@@ -151,7 +158,7 @@ git commit/push blocked: branch main does not match pattern feature/*
         "hooks": [
           {
             "type": "command",
-            "command": "bash /absolute/path/to/catalog/meta-authoring/hooks/git-branch-guard.sh"
+            "command": "bash /absolute/path/to/wopr-core/hooks/git-branch-guard.sh"
           }
         ]
       }
@@ -203,7 +210,7 @@ The hook is a silent no-op wherever no capture-skill is installed — checked at
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /absolute/path/to/catalog/meta-authoring/hooks/capture-skill-trigger-hook.py"
+            "command": "python3 /absolute/path/to/wopr-core/hooks/capture-skill-trigger-hook.py"
           }
         ]
       }

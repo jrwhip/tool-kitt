@@ -11,19 +11,19 @@ The hook fires at the end of every turn, reads Claude Code's own transcript, and
 **Preview without making changes:**
 
 ```
-! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook skill-usage --cli claude --dry-run
+! uv run --project "${CLAUDE_PLUGIN_ROOT}/server" python "${CLAUDE_PLUGIN_ROOT}/scripts/configure_hook.py" --hook skill-usage --cli claude --dry-run
 ```
 
 **Apply:**
 
 ```
-! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook skill-usage --cli claude
+! uv run --project "${CLAUDE_PLUGIN_ROOT}/server" python "${CLAUDE_PLUGIN_ROOT}/scripts/configure_hook.py" --hook skill-usage --cli claude
 ```
 
 **Target a project other than the current directory:**
 
 ```
-! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" --hook skill-usage --cli claude --project-root /path/to/project
+! uv run --project "${CLAUDE_PLUGIN_ROOT}/server" python "${CLAUDE_PLUGIN_ROOT}/scripts/configure_hook.py" --hook skill-usage --cli claude --project-root /path/to/project
 ```
 
 **After running:** Restart Claude Code for the Stop hook to take effect.
@@ -36,4 +36,4 @@ Reads `.claude/settings.json` (creates it if missing) and appends the Stop hook 
 
 **Idempotent.** Re-running is safe. Already-registered hooks are reported as `ok`.
 
-**Required:** WOPR must be installed (`pipx install wopr` or equivalent) so the `wopr` package is importable and `wopr` is on PATH. The hook is a silent no-op when `wopr` is not on PATH.
+**Required:** [uv](https://docs.astral.sh/uv/) on PATH. This command runs `configure_hook.py` inside the `wopr-core` plugin's bundled server environment via `uv run --project`, which resolves the `wopr` package (for `wopr.hook_manifest`) the same way the MCP server itself does. The hook it registers shells out to `wopr skill-usage record`, and is a silent no-op wherever `wopr` is not on PATH at hook-fire time.

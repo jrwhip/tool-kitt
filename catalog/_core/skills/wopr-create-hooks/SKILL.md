@@ -6,7 +6,7 @@ description: Expert guidance for creating, configuring, and using hooks. Use whe
 <agent_identification>
 **Before proceeding, identify which agent you are:**
 - **I am Claude Code** → Follow [CLAUDE] instructions (uses `.claude/hooks.json`)
-- **I am GitHub Copilot** → [COPILOT] Copilot CLI has a full native hook system: `.github/hooks/*.json` (project) and `~/.copilot/hooks/*.json` (user), 14+ events, with documented Claude compatibility (PascalCase event names, Claude-style matchers, tool-name mapping). Porting a Claude hook is not a config-only change; see `catalog/meta-authoring/hooks/README.md` for the verified event and schema differences
+- **I am GitHub Copilot** → [COPILOT] Copilot CLI has a full native hook system: `.github/hooks/*.json` (project) and `~/.copilot/hooks/*.json` (user), 14+ events, with documented Claude compatibility (PascalCase event names, Claude-style matchers, tool-name mapping). Porting a Claude hook is not a config-only change; see `catalog/_core/hooks/README.md` for the verified event and schema differences
 - **I am Gemini CLI** → Follow [GEMINI] instructions (uses `settings.json` hooks)
 
 **Event name mapping:**

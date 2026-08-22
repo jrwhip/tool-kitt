@@ -29,6 +29,10 @@ dependencies = [
 
 [project.scripts]
 wopr = "wopr.cli:main"
+# Same entry point the generated plugin bundle declares, so the launch
+# contract in the emitted `.mcp.json` is exercised from a dev checkout
+# too. `wopr` with no subcommand does the same thing.
+wopr-serve = "wopr.cli:serve"
 
 # [project.urls] is deliberately absent until this repo has a public
 # home. The prior toolset's URLs pointed at a private client org and do

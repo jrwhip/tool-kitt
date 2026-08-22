@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal, TypeAlias
 
 CliType: TypeAlias = Literal["claude", "copilot", "gemini", "unknown"]
@@ -28,6 +29,9 @@ ENV_WOPR_WORKSPACE = "WOPR_WORKSPACE"
 ENV_TOOL_KITT_WORKSPACE = "TOOL_KITT_WORKSPACE"
 ENV_WOPR_CATALOG = "WOPR_CATALOG"
 ENV_WOPR_HOME = "WOPR_HOME"
+# Set by the generated ``wopr-core/.mcp.json`` to ``${CLAUDE_PLUGIN_ROOT}``.
+# Present only when the server runs from a Claude Code plugin install.
+ENV_WOPR_PLUGIN_ROOT = "WOPR_PLUGIN_ROOT"
 
 ENV_CLAUDE_CODE_ENTRYPOINT = "CLAUDE_CODE_ENTRYPOINT"
 ENV_GITHUB_COPILOT_TOKEN = "GITHUB_COPILOT_TOKEN"
@@ -35,6 +39,44 @@ ENV_GH_COPILOT_TOKEN = "GH_COPILOT_TOKEN"
 ENV_GEMINI_API_KEY = "GEMINI_API_KEY"
 
 ENV_TOGGL_API_KEY = "TOGGL_API_KEY"
+
+
+# ============================================================================
+# Plugin install layout
+# ============================================================================
+#
+# ``wopr build-plugins`` emits the server INSIDE the wopr-core plugin.
+# These two names are the contract between the generator and the
+# runtime: change them here and both sides move together.
+
+PLUGIN_SERVER_DIRNAME = "server"
+PLUGIN_RESOURCES_DIRNAME = "resources"
+
+
+def plugin_resources_root() -> Path | None:
+    """Return the bundled resources directory of a plugin install.
+
+    ``None`` when ``WOPR_PLUGIN_ROOT`` is unset, which is every
+    non-plugin context (source checkout, editable install, pip
+    install). Callers treat that as "fall back to the existing
+    repo-then-package path arithmetic".
+
+    Read straight from the environment rather than from
+    :class:`ServerConfig`, for the same reason
+    :func:`catalog.get_global_home` does: the resource resolvers are
+    module-level helpers that run on CLI paths where no
+    ``ServerContext`` exists yet. The value is process-level and
+    immutable, so there is nothing for a config object to add beyond
+    an import cycle.
+    """
+    raw = os.environ.get(ENV_WOPR_PLUGIN_ROOT, "").strip()
+    if not raw:
+        return None
+    return (
+        Path(raw).expanduser().resolve()
+        / PLUGIN_SERVER_DIRNAME
+        / PLUGIN_RESOURCES_DIRNAME
+    )
 
 
 def _detect_cli_type(

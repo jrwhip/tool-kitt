@@ -179,5 +179,5 @@ Grounding material from the original extraction lives at `research/seeds/client-
 - **`legacy-migration`** depends on this pack. Composes on top for migration projects.
 - **`java`** ships Spring Boot patterns and reviewers. Independent of this pack but commonly composed via the `legacy-migration-team` and `java-team` profiles.
 - **`angular`** ships Angular patterns and reviewers. Same shape.
-- **`meta-authoring`** ships the prompt-log Stop hook and git-branch-guard PreToolUse hook that the project setup section above references.
+- **`_core`** ships the prompt-log Stop hook and git-branch-guard PreToolUse hook that the project setup section above references.
 - **`auditors`** ships skill/command/subagent quality auditors. Useful when authoring new packs but not required for crew runs.

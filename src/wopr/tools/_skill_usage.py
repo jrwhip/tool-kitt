@@ -49,7 +49,7 @@ numbers instead of presenting a total that looks authoritative:
   currently historical: records written by an older install are still
   read and reported, but nothing here writes new ones.
 * ``hook:claude`` -- the optional ``skill-usage-hook.py`` Stop hook
-  (``catalog/meta-authoring/hooks/``), which reads Claude Code's own
+  (``catalog/_core/hooks/``), which reads Claude Code's own
   transcript and counts native ``Skill`` tool calls. Covers Claude Code
   natively-invoked skills, but ONLY on projects where the operator
   registered the hook. Not registered by default; zero counts from this

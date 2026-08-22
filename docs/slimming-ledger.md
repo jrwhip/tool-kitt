@@ -12,6 +12,8 @@ Verdicts:
 | COLLAPSED | Several artifacts replaced by one that covers the same surface. |
 | SLIMMED | Kept, with content removed. |
 | KEPT | Considered for removal and deliberately retained. |
+| PORTED | Previously cut, then re-added because a surviving consumer needed it. |
+| MOVED | Relocated to another catalog pack. Content and behavior unchanged; only the owning pack and its downstream references changed. |
 
 The quarry (`webteam-ai-tools` v0.24.4) is read-only and still holds
 everything listed as CUT. Nothing is unrecoverable.
@@ -53,7 +55,7 @@ count is checkable rather than asserted.
 | --- | --- | --- | --- | --- |
 | `cli_setup.py` (84 KB), `init.py`, `install_manifest.py`, `uninstall.py` | CUT | The per-CLI symlink installer behind `wopr --init` / `add` / `remove` / `--uninstall`. Per-pack Claude Code plugins replace the whole mechanism. | P1 | 2026-08-21 |
 | `resolver.py` and `loading_manifest.py` | CUT | The skill-loading-tier mechanism: classify each skill `always` / `resolver` / `dormant` and render a generated `wopr-skill-resolver` skill. Every symbol `resolver.py` imports comes from `loading_manifest.py`, and its only caller was `cli_setup`. Which pack you install is the tiering now, so porting it would have re-introduced the retired mechanism as dead code with no caller and no test. | P1 | 2026-08-21 |
-| `fingerprint.py`, `hook_manifest.py` | CUT | Both served the installer. `hook_manifest.py` has a surviving consumer and is listed under Pending below. | P1 | 2026-08-21 |
+| `fingerprint.py`, `hook_manifest.py` | CUT | Both served the installer. `hook_manifest.py` had a surviving consumer; ported back in P2a (see below). | P1 | 2026-08-21 |
 | `doctor_readiness.py`, `doctor_recommendations.py` | CUT | Support modules for the retired recommend-and-dismiss engine. | P1 | 2026-08-21 |
 | `is_safe_entry_name`, `_request_workspace`, `_all_available` | KEPT | Small functions that lived in dropped modules and had surviving callers. Inlined verbatim into `tools/_skill_usage.py` and `tools/skill_usage.py`. `_all_available` was a three-branch generic; only the `skills` branch was reachable, so it was inlined as `_installed_skill_names`. | P1 | 2026-08-21 |
 | `llms.txt` and `tests/test_llms_txt.py` | CUT | `llms.txt` indexes a `docs/` tree, `CONTRIBUTING.md`, a `docker/` sandbox and four pack READMEs, of which exactly one exists here. Its test asserts both that every indexed path exists and that nothing outside the index is present, so it can only be restored honestly once this repo has its own docs tree. Regenerate, do not port. | P1 | 2026-08-21 |
@@ -97,6 +99,7 @@ count is checkable rather than asserted.
 | `hooks/README.md` (349 lines to 294) | SLIMMED | Removed the `capture-skill-trigger-hook-copilot.py` section, its table row, its configure-command bullet, its provenance paragraph, the `copilot:` block in the manifest example, and the paragraph explaining why the two capture-skill handlers stay unmerged. The Copilot and Gemini mentions that remain are honest coverage-boundary statements about what telemetry does not see. | P2a | 2026-08-21 |
 | `conversion_manifest.py` `EXPLICIT_INVOCATION_ONLY_COMMANDS` | SLIMMED | Was derived by a `wopr-consider-` prefix comprehension over tier 1. After the collapse that prefix matches nothing, so the rule would have silently stopped marking anything. Now a literal set, pinned against the catalog by `test_explicit_invocation_only_commands_exist`. | P2a | 2026-08-21 |
 | `TestManifestMatchesCatalog` (3 new cases) | KEPT | Added, not removed. The tier tables are hand-maintained and the catalog is the truth; both drift directions (a classified command with no file, a file in no tier) occurred during this consolidation and were caught by hand. Now they fail the suite. | P2a | 2026-08-21 |
+| `hook_manifest.py` | PORTED | Quarry source `ai_cli_mcp/hook_manifest.py`, 456 lines, depending only on `_atomic_write` and PyYAML; ported verbatim except for the package rename. Unblocks `scripts/configure_hook.py` and the two Claude-targeted configure commands that shell out to it (`wopr-configure-capture-skill-hook.md`, `wopr-configure-skill-usage-hook.md`), both of which were non-functional until this landed. `tests/test_hook_manifest.py` ported alongside it, with the catalog-parity cases adjusted for this repo's Claude-only manifests (the Copilot target this repo never shipped). | P2a | 2026-08-21 |
 
 ## Command counts
 
@@ -134,6 +137,15 @@ exercised at demo rehearsal (jira, multi-REQ) or need a second fixture.
 
 Caveat on record: both post-slim REQ-2 runs required a blocker-fix cycle for orchestrator close-out errors (tracking-table shape variance); remediation-inclusive tokens exceeded baseline. Blocker class pre-existed in the old spec; the slimmed spec enforces it harder by design.
 
+## P3: hook infrastructure relocated to `_core`
+
+| Artifact | Verdict | Evidence or rationale | Phase | Date |
+| --- | --- | --- | --- | --- |
+| `meta-authoring/hooks/`, `meta-authoring/scripts/`, and the four `wopr-configure-*.md` commands | MOVED to `catalog/_core/` | P3-NOTES' "Open issue" documented two breakages under marketplace-only distribution: `configure_hook.py` imports `wopr.hook_manifest`, reachable only from a plugin carrying the server bundle, and `meta-authoring` ships no server; and every command body still ran the retired wheel-layout `python3 -c "import wopr, pathlib..."` shim. `_core` maps to `wopr-core`, the one plugin guaranteed to bundle the server, so hook registration can `uv run --project "${CLAUDE_PLUGIN_ROOT}/server" python ...` instead of guessing at an ambient `python3` with `wopr` importable. `hooks/` and `scripts/` moved as whole directories to the same subdirectory names, preserving the sibling relationship `configure_hook.py`, `configure_git_guard.py` and `configure_prompt_log.py` all resolve their targets through (`SCRIPT_DIR.parent / "hooks" / ...`), so no path-resolution code changed. `meta-authoring` keeps its authoring-only surface: `wopr-capture`, the four `wopr-create-*` skill-wrapper commands, and `wopr-capture-skill`. | P3 | 2026-08-21 |
+| Command bodies (4): wheel-layout `python3 -c "import wopr, pathlib; ... / 'resources'"` shim | SLIMMED | Replaced with `uv run --project "${CLAUDE_PLUGIN_ROOT}/server" python "${CLAUDE_PLUGIN_ROOT}/scripts/configure_hook.py" ...` for the two commands that shell out to `configure_hook.py` (imports `wopr.hook_manifest`), and plain `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/<name>.py" ...` for `configure_git_guard.py` and `configure_prompt_log.py` (stdlib-only, no `wopr` import). "Required" footers rewritten from "WOPR must be installed (`pipx install wopr`...)" to "uv on PATH"; no pip install exists under marketplace-only distribution. | P3 | 2026-08-21 |
+| `hooks/README.md`, `_skill_usage.py`, `wopr-run-crew/SKILL.md`, `wopr-create-hooks/SKILL.md`, `crew/README.md`, `crew/scripts/README.md` | SLIMMED | Updated every `catalog/meta-authoring/hooks` or `.../scripts` path reference, and the "WOPR meta-authoring pack" wording in `configure_git_guard.py` / `configure_prompt_log.py` docstrings and error strings, to point at `_core` / `wopr-core`. `tests/test_hook_manifest.py`'s three `REPO_ROOT`-relative catalog paths updated the same way. | P3 | 2026-08-21 |
+| `src/wopr/build_plugins.py`, `src/wopr/conversion_manifest.py` | KEPT unchanged | The generator's `AUXILIARY_DIRS` allowlist (`hooks`, `scripts`, `templates`, `data`) already copies whatever a pack directory has under those names; it does not special-case `meta-authoring` or `_core`, so `wopr-core` picking up `hooks/` and `scripts/` needed no generator change. `conversion_manifest.py` classifies commands by name, not by owning pack, so the four moved commands' tier-3 entries needed no change either. | P3 | 2026-08-21 |
+
 ## Pending
 
 Not yet cut. Each of these is gated on evidence that does not exist yet,
@@ -145,14 +157,6 @@ and none should land before its gate is in place.
   negatives, scored by `check_routing_evals`.
 - **Per-skill content slimming.** Same gate as references pruning, per
   surviving skill.
-- **`hook_manifest.py`.** Retired in P1 as installer machinery, but
-  `catalog/meta-authoring/scripts/configure_hook.py` imports it and two
-  surviving configure commands shell out to that script. Those two
-  commands are non-functional until the module is ported or the script
-  is rewritten. Both the script docstring and `hooks/README.md` state
-  this, and each hook's manual-fallback JSON still works. Quarry source:
-  `ai_cli_mcp/hook_manifest.py`, 456 lines, depending only on
-  `_atomic_write` and PyYAML.
 - **Placeholder markers.** Roughly 20 `[TICKET-ID]`,
   `[client-project-cac]`, `[client-project-b]` and `[colleague]` markers
   remain in comments, docstrings and `hooks/README.md`, inherited from
