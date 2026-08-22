@@ -925,7 +925,6 @@ class TestWriteSpecStubs:
         tester = (app_dir / "specs" / "tester-spec.md").read_text(encoding="utf-8")
         # Angular-specific content shipped, not the generic template.
         assert "Vitest" in coder or "vitest" in coder
-        assert "pnpm" in coder
         assert "Vitest" in tester or "vitest" in tester
         # [TICKET-ID] regression guard. The Angular coder-spec used to
         # claim `pnpm nx run-many --target=lint --all` performed

@@ -409,7 +409,7 @@ Anything the above sections did not cover. Examples: file upload handling, webso
 2. **Tests pass.** `[STACK: full test command]` exits 0. Zero new failures.
 3. **Coverage thresholds met** per the tester spec: line coverage ≥ `[STACK: floor, e.g. 80%]`, branch coverage ≥ `[STACK: floor, e.g. 70%]`. See `[STACK: tester-spec path]` section 6.
 4. **Handoff contract current.** If the REQ changed the API surface (new endpoint, removed endpoint, changed status code, changed request or response shape, changed header), `[STACK: handoff contract path]` has a line item covering the change with a JSON Pointer into the published spec.
-5. **Static-analysis quality gate passes.** The project's static-analysis platform (SonarCloud, SonarQube, or equivalent) reports the configured Quality Gate as `Passed` for the latest scan covering this REQ's commits. Critical, blocker, and major issues introduced by this REQ count as failures even when the project's overall gate would otherwise pass.
+5. **Static-analysis quality gate passes.** The project's configured static-analysis tool (e.g. SonarCloud, SonarQube, ruff, ESLint, or equivalent) reports the configured Quality Gate as `Passed` for the latest scan covering this REQ's commits. Critical, blocker, and major issues introduced by this REQ count as failures even when the project's overall gate would otherwise pass.
 
 If any condition fails, the REQ stays `🔄` and the failure is logged in the implementation-tracking document's `coverage_status` field for that log entry.
 
@@ -417,9 +417,9 @@ The auditor verifies all five conditions independently before issuing an `UNBLOC
 
 **This stack (static-analysis gate):**
 
-- [STACK: platform, e.g. SonarCloud, SonarQube self-hosted, none-yet]
+- [STACK: platform, e.g. SonarCloud, SonarQube self-hosted, ruff/mypy CI gate, ESLint CI gate, none-yet]
 - [STACK: project key or organization, e.g. `your-org_your-repo` on `your-org` org]
-- [STACK: how the scan runs, e.g. `mvn sonar:sonar -Dsonar.token=$SONAR_TOKEN` locally and via `.github/workflows/sonar.yml` on every push]
+- [STACK: how the scan runs, e.g. `mvn sonar:sonar -Dsonar.token=$SONAR_TOKEN` locally and via `.github/workflows/sonar.yml` on every push, or `ruff check .` / `eslint .` locally and via CI on every push]
 - [STACK: where the gate result is fetched from, e.g. `GET /api/qualitygates/project_status?projectKey=<key>` against the platform's API; auditor reads the response]
 - [STACK: which severities count as failures for this gate, e.g. BLOCKER, CRITICAL, MAJOR; informational and minor flagged but not gating]
 - [STACK: who configures the platform-side Quality Gate (project lead, security team)]

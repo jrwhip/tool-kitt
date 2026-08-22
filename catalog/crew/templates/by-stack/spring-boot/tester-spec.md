@@ -28,7 +28,7 @@
 | Run a single test class | `mvn test -Dtest=<ClassName>` |
 | Run a single test method | `mvn test -Dtest=<ClassName>#<method>` |
 
-The tester records coverage from JaCoCo's XML report at `target/site/jacoco/jacoco.xml` (parsed by Sonar) or the HTML at `target/site/jacoco/index.html` (human-readable).
+The tester records coverage from JaCoCo's XML report at `target/site/jacoco/jacoco.xml` (parsed by the project's static-analysis platform, e.g. SonarCloud or SonarQube) or the HTML at `target/site/jacoco/index.html` (human-readable).
 
 ---
 
@@ -132,20 +132,20 @@ If OpenAPI declares `uniqueItems: true`, the project's DTO uses `Set<T>`. Build 
 After tests pass, record on the REQ's implementation-tracking log entry:
 
 ```
-coverage_status: line XX% / branch YY% / sonar: PASS / gate: PASS
+coverage_status: line XX% / branch YY% / static_analysis: PASS / gate: PASS
 ```
 
 Or on failure:
 
 ```
-coverage_status: line XX% / branch YY% / sonar: PASS / gate: FAIL (specific reason)
+coverage_status: line XX% / branch YY% / static_analysis: PASS / gate: FAIL (specific reason)
 ```
 
 PASS means:
 - `mvn clean verify` exits 0.
 - All `*Test` and `*IT` classes run; zero new failures.
 - Line >= `[TODO: floor]`, branch >= `[TODO: floor]` per JaCoCo.
-- SonarCloud (or equivalent) Quality Gate is `Passed` for the relevant commit. New BLOCKER / CRITICAL / MAJOR findings introduced by this REQ fail the gate.
+- The project's static-analysis Quality Gate (SonarCloud, SonarQube, or equivalent) is `Passed` for the relevant commit. New BLOCKER / CRITICAL / MAJOR findings introduced by this REQ fail the gate.
 
 Never report `gate: PASS` without a fresh `mvn clean verify` measurement.
 

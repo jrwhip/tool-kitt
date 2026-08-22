@@ -1,6 +1,6 @@
 # Coder Spec - TODO: project name
 
-> **Stack:** Angular 21+, TypeScript, Nx monorepo, Vitest, pnpm, OpenAPI consumer.
+> **Stack:** Angular 21+, TypeScript, Vitest, OpenAPI consumer. Works for a standalone Angular CLI project or an Nx monorepo; adjust the commands below to match.
 > **This file:** stack-pre-filled starting point. Adjust per project; do not start from scratch.
 > **For the deep version with every consideration spelled out:** see `catalog/crew/templates/by-stack/_generic/coder-spec.md` (the generic template the crew agents originally consumed).
 
@@ -21,31 +21,31 @@ If this is a net-new project, write `No structural changes this session; impleme
 
 ## Build and Test Commands
 
-The coder runs these before marking any requirement complete. Use the workspace package manager prefix.
+The coder runs these before marking any requirement complete. Use the project's package manager (npm, pnpm, yarn) for install; standalone Angular CLI projects use `ng`, Nx monorepos use the workspace's Nx runner.
 
-| Purpose | Command |
-|---|---|
-| Install dependencies | `pnpm install` |
-| Build the affected app(s) | `pnpm nx build <app>` |
-| Build everything | `pnpm nx run-many --target=build --all` |
-| Run tests for an app | `pnpm nx test <app>` |
-| Run all tests | `pnpm nx run-many --target=test --all` |
-| Lint | `pnpm nx lint <app>` |
-| Regenerate the OpenAPI client | `pnpm nx run <api-lib>:generate-api` |
+| Purpose | Standalone (Angular CLI) | Nx monorepo |
+|---|---|---|
+| Install dependencies | `npm install` | `npm install` |
+| Build the affected app(s) | `ng build` | `npx nx build <app>` |
+| Build everything | `ng build` | `npx nx run-many --target=build --all` |
+| Run tests for an app | `ng test` | `npx nx test <app>` |
+| Run all tests | `ng test` | `npx nx run-many --target=test --all` |
+| Lint | `ng lint` | `npx nx lint <app>` |
+| Regenerate the OpenAPI client | [STACK: project-specific script] | `npx nx run <api-lib>:generate-api` |
 
-The coder does NOT point at individual test files. Always use the Nx target.
+The coder does NOT point at individual test files. Always use the `ng`/Nx target above.
 
 ---
 
 ## Source Layout
 
-| Concern | Path |
-|---|---|
-| Apps | `apps/*/src/app/` |
-| Shared libraries | `libs/*/src/lib/` |
-| Generated API clients | `libs/<api-name>/src/api/` (DO NOT EDIT) |
-| App-level routes | `apps/*/src/app/app.routes.ts` |
-| Standalone components | colocated with their feature or route |
+| Concern | Standalone (Angular CLI) | Nx monorepo |
+|---|---|---|
+| App source | `src/app/` | `apps/*/src/app/` |
+| Shared libraries | n/a (or a local `src/lib/`) | `libs/*/src/lib/` |
+| Generated API clients | `src/api/` (DO NOT EDIT) | `libs/<api-name>/src/api/` (DO NOT EDIT) |
+| App-level routes | `src/app/app.routes.ts` | `apps/*/src/app/app.routes.ts` |
+| Standalone components | colocated with their feature or route | colocated with their feature or route |
 
 `base_package` does not apply to Angular. Omit it from `wopr.yml`.
 
@@ -115,11 +115,11 @@ If a needed endpoint is missing from the generated client, STOP and flag it as a
 
 The five-condition gate (auditor enforces; tester records):
 
-1. Build passes. `pnpm nx build <app>` exits 0.
-2. Full test suite passes. `pnpm nx run-many --target=test --all` exits 0.
+1. Build passes. `ng build` (or `npx nx build <app>` in an Nx monorepo) exits 0.
+2. Full test suite passes. `ng test` (or `npx nx run-many --target=test --all` in an Nx monorepo) exits 0.
 3. Line coverage >= **TODO: project floor (start at 80)**. Branch coverage >= **TODO: project floor (start at 70)**.
 4. If the REQ touched the API surface, the frontend handoff contract has a line item with a JSON Pointer into the OpenAPI spec.
-5. Static-analysis Quality Gate (SonarCloud or equivalent) reports `Passed` for the latest scan covering this REQ's commits.
+5. Static-analysis Quality Gate (the project's configured tool, e.g. SonarCloud, SonarQube, or ESLint CI gate) reports `Passed` for the latest scan covering this REQ's commits.
 
 ---
 
@@ -130,6 +130,6 @@ When `spec_writes` is ON (default), the coder amends this spec when a new patter
 - A new component pattern this project will repeat (a route guard idiom, a form composition shape, etc.).
 - A naming convention for a new category of file.
 - A decision about how to handle a specific Angular API quirk.
-- A build-config rule the next coder needs (Nx target tweak, dependency version pin, profile gotcha).
+- A build-config rule the next coder needs (build-target tweak, dependency version pin, profile gotcha).
 
 Two inconsistent patterns are NEVER tolerated. If the new pattern replaces an old one, rewrite the old usage.

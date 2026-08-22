@@ -58,18 +58,18 @@ Example output shape:
 
 ## Stack detected
 
-- Nx monorepo (14 apps under `apps/`)
-- Angular 21 (apps/example-app, apps/[client-project-c], ...)
+- Monorepo (14 apps under `apps/`)
+- Angular 21 (apps/example-app, apps/example-app-2, ...)
 - AG-Grid community
 - Vitest test runner
-- pnpm package manager
+- npm package manager
 
 ## wopr.yml status
 
 No `wopr.yml` files found.
 
-- Recommend creating `apps/example-app/wopr.yml` (per-app placement for Nx monorepos).
-- Recommend creating `apps/[client-project-c]/wopr.yml` (same).
+- Recommend creating `apps/example-app/wopr.yml` (per-app placement for monorepos).
+- Recommend creating `apps/example-app-2/wopr.yml` (same).
 
 ## WOPR packs
 

@@ -61,8 +61,8 @@ What would you like to do?
 <verification_checklist>
 ## After Every Change
 
-- Does it build? `pnpm nx build <app-name>`
-- Do tests pass? `pnpm nx test <app-name>`
+- Does it build? `ng build <app-name>` (or `npx nx build <app-name>` in an Nx monorepo)
+- Do tests pass? `ng test <app-name>` (or `npx nx test <app-name>` in an Nx monorepo)
 - OnPush change detection set?
 - Standalone components (no `standalone: true` needed in Angular 20+)?
 - Signals for local state, `computed()` for derived state?

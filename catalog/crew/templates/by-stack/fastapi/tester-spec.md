@@ -91,7 +91,7 @@ The exclusion list lives in `pyproject.toml` under `[tool.coverage.run] omit = [
 After tests pass, record on the REQ's implementation-tracking log entry:
 
 ```
-coverage_status: line XX% / branch YY% / sonar: PASS / gate: PASS
+coverage_status: line XX% / branch YY% / static_analysis: PASS / gate: PASS
 ```
 
 PASS means:

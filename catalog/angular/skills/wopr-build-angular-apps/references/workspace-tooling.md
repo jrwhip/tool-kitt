@@ -16,16 +16,16 @@ Some projects use an NX monorepo. When working in one, follow NX conventions:
 
 ### Running Tasks
 
-Always run tasks through NX, prefixed with the package manager. The workspace may alias `ng` to `nx`.
+Always run tasks through NX, invoked via the project's package manager (e.g. `npx nx`, `pnpm nx`, `yarn nx`). The workspace may alias `ng` to `nx`.
 
 ```bash
-pnpm nx serve <app>                          # Dev server
-pnpm nx build <app>                          # Build
-pnpm nx test <app>                           # Unit tests
-pnpm nx lint <app>                           # Lint
-pnpm nx e2e <app>-e2e                        # E2E tests
-pnpm nx affected -t test                     # Test only what changed
-pnpm nx graph                                # Dependency graph
+npx nx serve <app>                           # Dev server
+npx nx build <app>                           # Build
+npx nx test <app>                            # Unit tests
+npx nx lint <app>                            # Lint
+npx nx e2e <app>-e2e                         # E2E tests
+npx nx affected -t test                      # Test only what changed
+npx nx graph                                 # Dependency graph
 ```
 
 ### Generators
@@ -33,9 +33,9 @@ pnpm nx graph                                # Dependency graph
 Use NX generators instead of bare `ng generate` for consistency with the workspace structure. Check `nx.json` for workspace-level generator defaults before scaffolding.
 
 ```bash
-pnpm nx generate @nx/angular:application my-app
-pnpm nx generate @nx/angular:library my-lib
-pnpm nx generate @nx/angular:component my-component --project=my-app
+npx nx generate @nx/angular:application my-app
+npx nx generate @nx/angular:library my-lib
+npx nx generate @nx/angular:component my-component --project=my-app
 ```
 
 ### Non-Monorepo Projects
@@ -51,9 +51,11 @@ ng generate component my-component
 
 Check the project's `package.json` scripts for any custom commands.
 
-## PNPM and Supply Chain Protection
+## Package Manager and Supply Chain Protection
 
-Use PNPM as the package manager. Do not use npm or yarn unless the project specifically requires it.
+Use whichever package manager the project has standardized on (npm, pnpm, yarn, bun). Do not switch package managers mid-project without a documented reason.
+
+Some package managers offer additional supply-chain protections worth knowing about. PNPM is used below as a concrete example; check whether the project's chosen package manager has equivalent settings.
 
 ### Minimum Release Age
 

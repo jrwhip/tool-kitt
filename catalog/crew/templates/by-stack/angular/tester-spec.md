@@ -1,6 +1,6 @@
 # Tester Spec - TODO: project name
 
-> **Stack:** Angular 21+, Vitest, pnpm, OpenAPI client. NOT Jest.
+> **Stack:** Angular 21+, Vitest, OpenAPI client. NOT Jest. Works for a standalone Angular CLI project or an Nx monorepo; adjust the commands below to match.
 > **This file:** stack-pre-filled starting point.
 > **For the deep version:** `catalog/crew/templates/by-stack/_generic/tester-spec.md`.
 
@@ -19,15 +19,15 @@
 
 ## Build and Test Commands
 
-| Purpose | Command |
-|---|---|
-| Run tests for the affected app | `pnpm nx test <app>` |
-| Run all tests | `pnpm nx run-many --target=test --all` |
-| Run a single test with watch | `pnpm nx test <app> --watch` |
-| Run with coverage | `pnpm nx test <app> --coverage` |
-| Lint | `pnpm nx lint <app>` |
+| Purpose | Standalone (Angular CLI) | Nx monorepo |
+|---|---|---|
+| Run tests for the affected app | `ng test` | `npx nx test <app>` |
+| Run all tests | `ng test` | `npx nx run-many --target=test --all` |
+| Run a single test with watch | `ng test --watch` | `npx nx test <app> --watch` |
+| Run with coverage | `ng test --coverage` | `npx nx test <app> --coverage` |
+| Lint | `ng lint` | `npx nx lint <app>` |
 
-Never point Vitest at individual files (`vitest tests/foo.spec.ts`). Always go through `pnpm nx test`.
+Never point Vitest at individual files (`vitest tests/foo.spec.ts`). Always go through the `ng`/Nx target above.
 
 ---
 
@@ -39,7 +39,7 @@ Never point Vitest at individual files (`vitest tests/foo.spec.ts`). Always go t
 | Service test | next to the service | `<name>.service.spec.ts` |
 | Pipe / directive | next to the source | `<name>.pipe.spec.ts` / `<name>.directive.spec.ts` |
 | Route guard | next to the guard | `<name>.guard.spec.ts` |
-| E2E (Playwright) | `apps/<app>-e2e/src/` | `<feature>.e2e-spec.ts` |
+| E2E (Playwright) | `e2e/` (standalone) or `apps/<app>-e2e/src/` (Nx monorepo) | `<feature>.e2e-spec.ts` |
 
 Co-location is mandatory. Tests do NOT live in a separate `tests/` tree.
 
@@ -93,7 +93,7 @@ Never declare shape-only copies of API models in test files. When the spec chang
 If an OpenAPI schema declares `uniqueItems: true`, the generator may emit `Set<T>` at that boundary. Build fixtures with the same container type the generator emits.
 
 ### Coverage exclusions
-Generated files (`libs/<api-name>/src/api/**`) MUST be excluded from coverage denominators. The exclusion pattern lives in the project's `vitest.config.ts` `coverage.exclude` list. If the coverage math looks wrong on a regenerated client, check this list first.
+Generated files (`src/api/**`, or `libs/<api-name>/src/api/**` in an Nx monorepo) MUST be excluded from coverage denominators. The exclusion pattern lives in the project's `vitest.config.ts` `coverage.exclude` list. If the coverage math looks wrong on a regenerated client, check this list first.
 
 ---
 
@@ -127,9 +127,9 @@ PASS means:
 - Build passes.
 - Full test suite passes (zero new failures).
 - Line >= `[TODO: floor]`, branch >= `[TODO: floor]`.
-- Quality Gate (SonarCloud or equivalent) is `Passed` for the relevant commit.
+- Quality Gate (the project's configured static-analysis tool, e.g. SonarCloud, SonarQube, or ESLint CI gate) is `Passed` for the relevant commit.
 
-Never report `gate: PASS` without a fresh `pnpm nx test <app> --coverage` measurement. The auditor re-measures and drift is a BLOCKER.
+Never report `gate: PASS` without a fresh `ng test --coverage` (or `npx nx test <app> --coverage` in an Nx monorepo) measurement. The auditor re-measures and drift is a BLOCKER.
 
 ---
 

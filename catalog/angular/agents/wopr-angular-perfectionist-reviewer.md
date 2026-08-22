@@ -121,7 +121,7 @@ Most Angular code in your training data is React patterns wearing Angular syntax
 - See `angular-aria.md` for accessible component patterns.
 
 ### Workspace Conventions
-- When the project uses NX, run tasks through `pnpm nx`, not the Angular CLI directly.
+- When the project uses NX, run tasks through the workspace's Nx runner (e.g. `pnpm nx`, `npx nx`), not the Angular CLI directly.
 - When the project uses generated API services (OpenAPI/Swagger), never hand-write `HttpClient` calls for endpoints that have a generated service. Never modify generated files by hand.
 - See `workspace-tooling.md` for full details.
 

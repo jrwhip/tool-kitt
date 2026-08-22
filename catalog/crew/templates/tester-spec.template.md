@@ -213,28 +213,28 @@ The auditor cross-checks the tracking document's `coverage_status` against a fre
 
 The tester is responsible for triggering the static-analysis scan after writing tests and before reporting `coverage_status: gate: PASS`. Coverage and static-analysis findings are evaluated together; coverage measurement alone does not satisfy the gate (see coder spec section 22 condition 5).
 
-**Universal rule:** the tester runs the project's configured static-analysis scan against the latest commit, fetches the Quality Gate result, and includes the verdict in the `coverage_status` field. Format: `line XX% / branch YY% / sonar: PASS|FAIL (reason) / gate: PASS|FAIL`. Both `sonar` and the overall `gate` must be PASS for the REQ to advance.
+**Universal rule:** the tester runs the project's configured static-analysis scan against the latest commit, fetches the Quality Gate result, and includes the verdict in the `coverage_status` field. Format: `line XX% / branch YY% / static_analysis: PASS|FAIL (reason) / gate: PASS|FAIL`. Both `static_analysis` and the overall `gate` must be PASS for the REQ to advance.
 
 **This stack:**
 
-- **Platform:** [STACK: e.g. SonarCloud, SonarQube self-hosted]
+- **Platform:** [STACK: e.g. SonarCloud, SonarQube self-hosted, ruff/mypy CI gate, ESLint CI gate]
 - **Project key:** [STACK: e.g. `your-org_<repo-name>`]
-- **Local scan command:** [STACK: e.g. `mvn -B verify sonar:sonar -Dsonar.token=$SONAR_TOKEN -Dsonar.projectKey=<key>`]
+- **Local scan command:** [STACK: e.g. `mvn -B verify sonar:sonar -Dsonar.token=$SONAR_TOKEN -Dsonar.projectKey=<key>`, or `ruff check .` / `eslint .`]
 - **CI scan workflow:** [STACK: e.g. `.github/workflows/sonar.yml` runs on push to feature branches and on PR open]
-- **Quality Gate fetch:** [STACK: e.g. tester runs `curl -sS -u "$SONAR_TOKEN:" "$SONAR_URL/api/qualitygates/project_status?projectKey=<key>"` and parses `projectStatus.status` (`OK` or `ERROR`)]
+- **Quality Gate fetch:** [STACK: e.g. tester runs `curl -sS -u "$SONAR_TOKEN:" "$SONAR_URL/api/qualitygates/project_status?projectKey=<key>"` and parses `projectStatus.status` (`OK` or `ERROR`); for a plain linter gate, the exit code of the local scan command doubles as the fetch]
 - **Severity thresholds for this gate:** [STACK: e.g. BLOCKER, CRITICAL, and MAJOR issues introduced on this branch fail the gate; MINOR and INFO are reported but non-blocking]
 - **Required token environment variables:** [STACK: e.g. `SONAR_TOKEN` set in CI secrets and in developer's `~/.zshrc` or `.env.local`]
 
 **What the tester does:**
 
 1. After running the test suite and confirming pass + coverage thresholds, runs the local scan command (or pulls the CI scan result if CI ran first on the same commit).
-2. Polls the platform until the analysis completes for the current commit (Sonar's analysis runs asynchronously; project size determines wait time).
+2. Polls the platform until the analysis completes for the current commit (some platforms, e.g. SonarCloud, run analysis asynchronously; project size determines wait time).
 3. Records the Quality Gate verdict and any new BLOCKER/CRITICAL/MAJOR findings introduced by this REQ in the implementation-tracking log entry.
 4. If the gate fails, treats the failure the same as a coverage-floor failure: REQ stays `🔄`, the gap is described concretely, and the coder addresses it before re-entry.
 
 **What the auditor cross-checks:** fresh fetch of the Quality Gate from the platform's API; comparison against the tester's recorded verdict; drift is a BLOCKER finding. The coder spec section 22 condition 5 is the canonical rule; this section operationalizes it for the tester.
 
-If the project does not yet have a static-analysis platform configured, the tester records `sonar: SKIPPED (platform not configured)` and the auditor produces a WARNING flagging the absence. Skipping is allowed only as a project-level deferral with explicit acknowledgment in the Migration Context; default expectation is a configured platform.
+If the project does not yet have a static-analysis platform configured, the tester records `static_analysis: SKIPPED (platform not configured)` and the auditor produces a WARNING flagging the absence. Skipping is allowed only as a project-level deferral with explicit acknowledgment in the Migration Context; default expectation is a configured platform.
 
 ---
 

@@ -137,7 +137,7 @@ The pinned springdoc version lives in `wopr.yml` (`openapi.pinned_generator_vers
 2. Full test suite passes. Zero new failures.
 3. Line coverage >= **TODO: project floor (start at 80)**. Branch coverage >= **TODO: project floor (start at 70)**. Measured by JaCoCo at `target/site/jacoco/index.html`.
 4. If the REQ touched the API surface, the frontend handoff contract has a line item with a JSON Pointer into `openapi.json`.
-5. Static-analysis Quality Gate (SonarCloud or equivalent) is `Passed` for the latest scan covering this REQ's commits.
+5. Static-analysis Quality Gate (SonarCloud, SonarQube, or equivalent) is `Passed` for the latest scan covering this REQ's commits.
 
 ---
 
