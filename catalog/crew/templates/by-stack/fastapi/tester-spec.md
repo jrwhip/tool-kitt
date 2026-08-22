@@ -64,7 +64,7 @@ Never declare shape-only copies in test files.
 - One fixture per test, rolled back after.
 
 ### HTTP fixtures
-- `httpx.AsyncClient(app=app, base_url="http://testserver")` for in-process testing without a network listener.
+- `httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")` for in-process testing without a network listener. httpx 0.28 removed the old `app` keyword argument on `AsyncClient` itself; route the ASGI app through `ASGITransport` explicitly or construction raises `TypeError`.
 
 ### Coverage exclusions
 - `tests/` (the tests themselves)
@@ -78,7 +78,7 @@ The exclusion list lives in `pyproject.toml` under `[tool.coverage.run] omit = [
 ## Anti-Patterns (auditor surfaces these as BLOCKERs)
 
 - Sync test functions for async code paths. Async routes need `@pytest.mark.asyncio` (or `asyncio_mode = "auto"` in `pytest.ini`/`pyproject.toml`).
-- `requests.get(...)` against the running app. Use `httpx.AsyncClient(app=...)`.
+- `requests.get(...)` against the running app. Use `httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")`.
 - Tests that hit a real external service. Mock at the HTTP boundary (`respx`) or use a fake.
 - Tests that depend on system time. Use `freezegun` or inject a clock.
 - `assert x == y` without a helpful message when the failure mode is non-obvious.
