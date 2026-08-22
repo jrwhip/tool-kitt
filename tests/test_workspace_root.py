@@ -410,6 +410,13 @@ class TestGoldenFixtureResolutionIsUnchanged:
     the case the old ``wopr.yml``-at-the-root rule handled. Resolution
     must terminate on the fixture directory itself without walking, so
     the new walk-up costs these projects nothing and changes nothing.
+
+    ``golden-req-2`` now also carries a ``LEARNINGS.md`` (the corpus that
+    forces the crew's evaluator path to run during a golden eval), which
+    makes it the two-marker case. Two markers must be exactly as boring
+    as one: :data:`MARKER_FILENAMES` order is presentation-only and
+    nearest-match-wins already terminates at the fixture directory, so
+    the searched tuple must not change shape.
     """
 
     @pytest.mark.parametrize("name", ["golden-req", "golden-req-2"])
@@ -445,6 +452,20 @@ class TestGoldenFixtureResolutionIsUnchanged:
         assert appended == f"Appended entry to {replica / 'LEARNINGS.md'}"
         assert "Golden" in found
         assert not (home / "LEARNINGS.md").exists()
+
+    def test_the_golden_req_2_corpus_marker_does_not_change_resolution(self):
+        """Adding LEARNINGS.md beside wopr.yml resolves the same way."""
+        fixture = REPO_ROOT / "evals" / "golden-req-2" / "fixture"
+        assert (fixture / "wopr.yml").is_file(), "fixture precondition"
+        assert (fixture / "LEARNINGS.md").is_file(), "fixture precondition"
+
+        result = find_workspace_root(fixture)
+
+        assert result.root == fixture
+        assert result.searched == (fixture,)
+        # A path inside the fixture still resolves up to the fixture root,
+        # so the crew's search and append address the seeded corpus.
+        assert find_workspace_root(fixture / "app").root == fixture
 
     def test_a_single_package_workspace_resolves_identically_to_a_golden_fixture(
         self, tmp_path: Path

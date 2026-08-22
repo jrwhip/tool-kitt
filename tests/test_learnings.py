@@ -703,3 +703,65 @@ class TestCurateLearnings:
         assert "Archived" in result
         text = (workspace / "LEARNINGS.md").read_text(encoding="utf-8")
         assert f"LRN-{forty_five_days_ago}-a" not in text
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+GOLDEN_REQ_2_FIXTURE = REPO_ROOT / "evals" / "golden-req-2" / "fixture"
+
+#: The orchestrator skill dispatches ``crew-evaluator`` only when the
+#: prefilter returns MORE than this many candidates, and skips the
+#: evaluator entirely otherwise. Restated here because the number is the
+#: whole point of the tests below, not because the skill is imported.
+EVALUATOR_DISPATCH_THRESHOLD = 5
+
+
+class TestGoldenFixtureCorpusExercisesTheEvaluator:
+    """The golden fixture has to cross the evaluator dispatch threshold.
+
+    Both golden fixtures shipped with no ``LEARNINGS.md`` at all, so
+    every golden run retrieved zero candidates, took the skill's
+    under-threshold bypass, and never dispatched ``crew-evaluator``. The
+    CRAG path the crew depends on was therefore not covered by the one
+    eval that exists to cover the crew, which is how a contradiction
+    between the skill and the evaluator agent shipped unnoticed.
+
+    These tests pin the property that closes the hole: the checked-in
+    corpus must retrieve more than the threshold for the golden REQ's
+    stack, so a future golden run cannot silently fall back to the
+    bypass. The entries are ``seed: true``, so the retrieval count does
+    not decay as the fixture's dates age past the 180-day cutoff.
+
+    Neither test writes to the checked-in fixture. The search runs
+    against a tmp copy, and the second test proves the original is
+    byte-identical afterwards.
+    """
+
+    def test_the_checked_in_corpus_clears_the_threshold(self):
+        corpus = GOLDEN_REQ_2_FIXTURE / "LEARNINGS.md"
+        assert corpus.is_file(), "the golden-req-2 fixture must carry a corpus"
+
+        entries = _parse_entries(corpus.read_text(encoding="utf-8"), corpus)
+
+        assert len(entries) > EVALUATOR_DISPATCH_THRESHOLD
+        assert all(entry.seed for entry in entries), "seeds bypass the age cutoff"
+        assert all("fastapi" in entry.stack for entry in entries)
+
+    async def test_search_on_a_copy_returns_more_than_five_candidates(
+        self, tmp_path: Path, isolated_env
+    ):
+        """The retrieval the orchestrator actually runs, on a tmp copy."""
+        corpus = GOLDEN_REQ_2_FIXTURE / "LEARNINGS.md"
+        before = corpus.read_bytes()
+        replica = tmp_path / "golden-req-2"
+        replica.mkdir()
+        for name in ("wopr.yml", "LEARNINGS.md"):
+            (replica / name).write_bytes((GOLDEN_REQ_2_FIXTURE / name).read_bytes())
+
+        found = await learnings_search(
+            req_id="REQ-GOLD-2",
+            stack_tags=["fastapi", "python"],
+            target_workspace_path=str(replica),
+        )
+
+        assert found.count("## LRN-") > EVALUATOR_DISPATCH_THRESHOLD
+        assert corpus.read_bytes() == before, "the checked-in fixture was written to"

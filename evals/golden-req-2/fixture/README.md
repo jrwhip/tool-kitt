@@ -18,6 +18,29 @@ not a showcase of what the crew can build.
 4. Discard the scratch copy. Do not push its changes back into this
    directory.
 
+## The corpus forces the evaluator path
+
+`LEARNINGS.md` at the fixture root is part of the fixture, not leftover
+state. It carries eight seed-marked entries tagged `fastapi`, which is
+more than the five-candidate threshold at which `wopr-run-crew` stops
+bypassing the grader. Every run against this fixture therefore includes
+exactly one `crew-evaluator` dispatch in the retrieval pre-step, before
+Step 1, and the run's cost and token counts include it.
+
+That is deliberate. With an empty corpus the retrieval returned nothing,
+the skill took its under-threshold bypass, and the CRAG path the crew
+depends on was never exercised by the eval that exists to exercise the
+crew. Compare golden runs only against other runs made with this corpus
+present; a run recorded before it was added has one fewer agent
+dispatch and is not comparable.
+
+The entries mix deliberately: some speak directly to the REQ-GOLD-2
+engine (validation status codes, conflict error codes, typed OpenAPI
+responses), some are adjacent (test isolation, branch coverage), and
+some are in-stack but off-topic (Postgres, Alembic, on a fixture with
+no database). A grader that returns everything as HIGH, or nothing, is
+visibly wrong.
+
 ## Rules
 
 - This fixture directory itself must never be modified by a crew run. If a
@@ -28,3 +51,8 @@ not a showcase of what the crew can build.
   `uv run pytest` recreates what it needs in the scratch copy.
 - `uv.lock` is kept so dependency versions are pinned identically across
   every scratch run; do not delete it when copying.
+- `LEARNINGS.md` is copied like everything else and is expected to grow
+  during a run: the auditor appends to the scratch copy's corpus at the
+  end of the gate. Those appended entries stay in the scratch copy. The
+  checked-in corpus is a fixed input, so a later run retrieves the same
+  eight candidates the previous one did.
