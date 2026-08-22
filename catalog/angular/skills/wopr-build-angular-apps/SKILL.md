@@ -1,6 +1,6 @@
 ---
 name: wopr-build-angular-apps
-description: Build professional Angular applications following the platform's architecture. Signals, RxJS, standalone components, OnPush change detection. Covers the patterns Angular expects, not the React-flavored patterns from training data.
+description: "Build professional Angular applications following the platform architecture with signals, RxJS, standalone components, and OnPush change detection. Use when architecting an Angular application, reviewing Angular architecture, or migrating React-flavored patterns to idiomatic Angular."
 ---
 
 <essential_principles>

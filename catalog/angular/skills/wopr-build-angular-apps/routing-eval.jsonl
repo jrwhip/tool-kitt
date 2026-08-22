@@ -1,13 +1,7 @@
-// No positive cue phrase in this skill's frontmatter description, so it
-// yields zero trigger phrases and cannot match under Layer A. It also
-// overlaps heavily with wopr-angular-developer, which has the same
-// problem. Positive cases are parked as comments until the two
-// descriptions are made cue-bearing AND mutually distinguishable.
-// See P2B-OBSERVATIONS.md.
-// {"intent": "build this feature the way angular expects, not the react way", "expected_skill": "wopr-build-angular-apps"}
-// {"intent": "our components all default to the checkdefault strategy, move them to onpush", "expected_skill": "wopr-build-angular-apps"}
-// {"intent": "should this be a signal or an rxjs subject in an angular app", "expected_skill": "wopr-build-angular-apps"}
-// {"intent": "review the architecture of this angular application against platform conventions", "expected_skill": "wopr-build-angular-apps"}
+{"intent": "we are architecting an Angular application from scratch this sprint", "expected_skill": "wopr-build-angular-apps"}
+{"intent": "spend an hour reviewing Angular architecture against what the platform expects", "expected_skill": "wopr-build-angular-apps"}
+{"intent": "this codebase needs migrating React-flavored patterns to idiomatic Angular", "expected_skill": "wopr-build-angular-apps"}
+{"intent": "help architecting an Angular application with OnPush as the default", "expected_skill": "wopr-build-angular-apps"}
 {"intent": "build the docker image and push it to ecr", "expected_skill": null}
 {"intent": "our svelte store needs a derived value", "expected_skill": null}
 {"intent": "why is the next.js bundle four megabytes", "expected_skill": null}

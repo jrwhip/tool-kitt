@@ -1,6 +1,6 @@
 ---
 name: wopr-create-agent-instructions
-description: Scaffold a project's agent-instructions files (AGENTS.md plus per-CLI pointers for Claude Code, Gemini CLI, and GitHub Copilot) from the detected stack so a fresh AI session in this project has working context. Preview-then-confirm; never writes without operator approval. Companion to `/wopr-create-yml`; run this AFTER `wopr.yml` exists.
+description: Scaffold a project's agent-instructions files (AGENTS.md plus per-CLI pointers for Claude Code, Gemini CLI, and GitHub Copilot) from the detected stack so a fresh AI session in this project has working context. Preview-then-confirm; never writes without operator approval. Companion to `/wopr-create-yml`; run this AFTER `wopr.yml` exists. Use when scaffolding AGENTS.md, writing per-CLI pointer files, or generating agent instructions from the detected stack.
 ---
 
 <objective>

@@ -1,6 +1,6 @@
 ---
 name: wopr-angular-developer
-description: Generates Angular code and provides architectural guidance. Trigger when creating projects, components, or services, or for best practices on reactivity (signals, linkedSignal, resource), forms, dependency injection, routing, SSR, accessibility (ARIA), animations, styling (component styles, Tailwind CSS), testing, or CLI tooling.
+description: "Generates Angular code and answers framework questions on reactivity (signals, linkedSignal, resource), forms, dependency injection, routing, SSR, accessibility, animations, styling, testing, and CLI tooling. Use when generating Angular components, generating Angular services, or asking for Angular best practices."
 license: MIT
 metadata:
   author: Copyright 2026 Google LLC

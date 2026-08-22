@@ -1,6 +1,6 @@
 ---
 name: wopr-init-project
-description: One-shot umbrella skill that takes a project from "no WOPR setup" to "AI-ready" in a single operator session. Detects the stack, recommends and surfaces missing packs/MCPs, writes wopr.yml, writes stack-pre-filled spec stubs, writes AGENTS.md plus per-CLI pointer files (CLAUDE.md, GEMINI.md, .github/copilot-instructions.md), and creates an empty LEARNINGS.md. Every write step previews the file content for operator confirmation before landing. Companion to `/wopr-doctor` (read-only) and the individual `/wopr-create-*` skills.
+description: One-shot umbrella skill that takes a project from "no WOPR setup" to "AI-ready" in a single operator session. Detects the stack, recommends and surfaces missing packs/MCPs, writes wopr.yml, writes stack-pre-filled spec stubs, writes AGENTS.md plus per-CLI pointer files (CLAUDE.md, GEMINI.md, .github/copilot-instructions.md), and creates an empty LEARNINGS.md. Every write step previews the file content for operator confirmation before landing. Companion to `/wopr-doctor` (read-only) and the individual `/wopr-create-*` skills. Use when taking a project from zero to AI-ready, running the whole WOPR onboarding, or setting up wopr end to end.
 ---
 
 <objective>

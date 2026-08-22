@@ -1,13 +1,7 @@
-// This description says "Trigger when creating projects, components, or
-// services, ..." but the harness only recognizes "triggers on" and
-// "trigger:" as cue phrases, not "trigger when". Result: zero trigger
-// phrases, no Layer A participation. Positive cases are parked as
-// comments until the description uses a recognized cue.
-// See P2B-OBSERVATIONS.md.
-// {"intent": "generate a standalone component that uses linkedSignal for the filter state", "expected_skill": "wopr-angular-developer"}
-// {"intent": "what's the current best practice for dependency injection in angular", "expected_skill": "wopr-angular-developer"}
-// {"intent": "wire up a resource() for this http call instead of the old subscribe pattern", "expected_skill": "wopr-angular-developer"}
-// {"intent": "add aria attributes and a route guard to this angular feature", "expected_skill": "wopr-angular-developer"}
+{"intent": "start generating Angular components for the settings page with linkedSignal state", "expected_skill": "wopr-angular-developer"}
+{"intent": "I am asking for Angular best practices on dependency injection here", "expected_skill": "wopr-angular-developer"}
+{"intent": "spend the afternoon generating Angular services that wrap the new http resource calls", "expected_skill": "wopr-angular-developer"}
+{"intent": "before the review I am asking for Angular best practices on SSR and hydration", "expected_skill": "wopr-angular-developer"}
 {"intent": "what angle should I cut this trim at", "expected_skill": null}
 {"intent": "compute the angular velocity of the wheel", "expected_skill": null}
 {"intent": "our react app needs a new context provider", "expected_skill": null}

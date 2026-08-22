@@ -1,6 +1,6 @@
 ---
 name: wopr-create-yml
-description: Scaffold a `wopr.yml` at a specified path inside the workspace, with detected fields pre-filled and TODO comments next to anything that needs operator review. Previews the YAML for operator confirmation before any file lands on disk. Companion to `/wopr-doctor`; the doctor surfaces missing wopr.yml placements, this skill creates them.
+description: Scaffold a `wopr.yml` at a specified path inside the workspace, with detected fields pre-filled and TODO comments next to anything that needs operator review. Previews the YAML for operator confirmation before any file lands on disk. Companion to `/wopr-doctor`; the doctor surfaces missing wopr.yml placements, this skill creates them. Use when scaffolding a wopr.yml, creating a wopr config file, or previewing workspace config.
 ---
 
 <objective>

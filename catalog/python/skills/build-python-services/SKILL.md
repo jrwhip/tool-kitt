@@ -1,6 +1,6 @@
 ---
 name: build-python-services
-description: Build professional Python services and CLI tools. FastAPI, AI integrations (Bedrock, Vertex, Pinecone), modern packaging, pytest. Covers the patterns Python expects, not the outdated patterns from training data.
+description: Build professional Python services and CLI tools with FastAPI, AI integrations (Bedrock, Vertex, Pinecone), and pytest. Use when building a FastAPI service, writing a Python CLI tool, modernizing Python packaging, or wiring Bedrock into a Python service.
 ---
 
 <essential_principles>
