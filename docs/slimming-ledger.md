@@ -123,10 +123,23 @@ path only; blocker-fix, frontend-handoff, jira-source, and
 above-threshold CRAG paths were compressed, not removed, and are
 exercised at demo rehearsal (jira, multi-REQ) or need a second fixture.
 
+## P2f: agent-spec slimming (eval-gated, landed)
+
+| Artifact | Verdict | Evidence | Phase | Date |
+| --- | --- | --- | --- | --- |
+| Crew agent specs (4 files) | SLIMMED 695 to 218 lines (auditor 291->64, scout 188->59, coder 109->50, tester 107->45) | Golden-REQ-2: 2 baseline + 2 post-slim runs + REQ-1 smoke, all finally UNBLOCKED, 12/12 criteria, core-dispatch tokens at or below baseline; quality improved where baseline audit lessons became spec rules (immutability re-fetch, ground-truth independence). Full data: `evals/golden-req-2/results/slimming-comparison.md` | P2f | 2026-08-21 |
+| `wopr-crew.md` (agent-mode orchestrator) | CUT (215 lines) | Duplicate of the skill prescribing the pre-rewrite procedure; Copilot (its purpose) deferred; single orchestration source. Manifest + tests updated | P2f | 2026-08-21 |
+| `wopr-crew-evaluator.md` | KEPT unchanged | Plan decision: threshold-gated circuit breaker; not exercised by empty-corpus evals | P2f | 2026-08-21 |
+| Six uncued skill descriptions | SLIMMED (cue clauses added, Angular pair made disjoint) | Routing 219/219 incl. activated parked fixtures; caught an unquoted-colon YAML defect in the process | P2f | 2026-08-21 |
+
+Caveat on record: both post-slim REQ-2 runs required a blocker-fix cycle for orchestrator close-out errors (tracking-table shape variance); remediation-inclusive tokens exceeded baseline. Blocker class pre-existed in the old spec; the slimmed spec enforces it harder by design.
+
 ## Pending
 
 Not yet cut. Each of these is gated on evidence that does not exist yet,
 and none should land before its gate is in place.
+
+- **Tracking template dual status tables.** Requirements Baseline and Gap Analysis both record REQ status and diverge when only one is updated (caused both post-slim blockers). Single-source the status or make the gap table generated. From post-2 auditor's proposed learning.
 - **References pruning.** Roughly 50k catalog lines targeted at well
   under 10k. Gate: per-skill `routing-eval.jsonl` fixtures including
   negatives, scored by `check_routing_evals`.
