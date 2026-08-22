@@ -15,7 +15,7 @@ Two kinds of templates live here:
 | `implementation-tracking.template.md` | Per-REQ status (pending, in-progress, implemented, out-of-scope) | all four agents | coder (status transitions), tester (coverage state), scout (drift corrections), auditor (read-only) |
 | `frontend-handoff-contract.template.md` | Every new or changed API surface item with REQ IDs and UI action items | coder, auditor, frontend team | coder (updates on every API change); auditor (BLOCKS merge if out of sync) |
 
-For migration projects, an additional template lives in the `legacy-migration` pack: `extracted-requirements.template.md`. The scout populates it in `deep_analysis` mode by reading the legacy codebase. Non-migration projects do not need this template; they populate the implementation-tracking document's Requirements Baseline directly from their own requirements source (feature backlog, written spec, ticket system).
+For migration projects, an additional template (`extracted-requirements.template.md`) ships with the `legacy-migration` pack, which is not part of this distribution. The scout populates it in `deep_analysis` mode by reading the legacy codebase. Non-migration projects do not need this template; they populate the implementation-tracking document's Requirements Baseline directly from their own requirements source (feature backlog, written spec, ticket system).
 
 ## Project config (`wopr.yml`)
 
@@ -34,15 +34,14 @@ The default path is to let the WOPR setup tooling drop these templates for you. 
 
 **Recommended (one-shot):**
 
-Run `/wopr-init-project` against the target project. The skill detects the stack, writes `wopr.yml`, writes stack-pre-filled spec stubs, and drops `implementation-tracking.template.md`, `frontend-handoff-contract.template.md`, and (for migration projects) `extracted-requirements.template.md` at the paths declared by `wopr.yml`. It refuses to overwrite existing files unless you opt in.
+Run `/wopr-init-project` against the target project. The skill detects the stack, writes `wopr.yml`, writes stack-pre-filled spec stubs, and drops `implementation-tracking.template.md` and `frontend-handoff-contract.template.md` at the paths declared by `wopr.yml`. It refuses to overwrite existing files unless you opt in.
 
 **Targeted (one template at a time):**
 
 - `mcp__wopr__write_tracking_doc_stub` drops `implementation-tracking.template.md` at the operator-declared `legacy-migration.tracking_doc` path (default `implementation-tracking.md`).
 - `mcp__wopr__write_handoff_contract_stub` drops `frontend-handoff-contract.template.md` at `legacy-migration.handoff_contract` (default `frontend-handoff-contract.md`). Only meaningful for backend-producer projects.
-- `mcp__wopr__write_extracted_requirements_stub` drops `extracted-requirements.template.md` at `legacy-migration.extracted_requirements`. Only fires when `wopr.yml` declares `legacy-migration.legacy_source_root` (i.e., the project is a migration target); returns a `Skipped:` line otherwise.
 
-All three stub writers refuse to overwrite an existing file by default; pass `overwrite=True` to force.
+Both stub writers refuse to overwrite an existing file by default; pass `overwrite=True` to force.
 
 **Read-only access to the raw template content** is available via `mcp__wopr__get_pack_template(pack=..., name=...)` and `mcp__wopr__list_pack_templates(pack=...)`. Agents inside the crew must use these tools instead of running `find` against the workspace; the MCP server already knows the install root.
 
@@ -52,7 +51,7 @@ All three stub writers refuse to overwrite an existing file by default; pass `ov
 2. Walk through every `[STACK: ...]` marker and replace it with your stack's specifics. Delete sections that do not apply. Add sections for concerns the skeleton doesn't cover.
 3. Point your `wopr.yml` at the filled-in document (`/wopr-init-project` handles this for the default paths).
 
-**Manual fallback:** if for any reason you need to hand-copy, the templates live in `catalog/crew/templates/` (or `catalog/legacy-migration/templates/` for `extracted-requirements.template.md`). Treat this as the exception, not the default; it is what the stub-writer tools exist to eliminate.
+**Manual fallback:** if for any reason you need to hand-copy, the templates live in `catalog/crew/templates/`. Treat this as the exception, not the default; it is what the stub-writer tools exist to eliminate.
 
 ## Stack-agnostic vs stack-specific content
 

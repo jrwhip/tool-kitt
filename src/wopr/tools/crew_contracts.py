@@ -1,6 +1,6 @@
 """Crew-contract validators for the WOPR four-role crew.
 
-The crew pack's reliability bottleneck identified in [colleague]'s
+The crew pack's reliability bottleneck identified in a colleague's
 7-REQ Spring Boot rewrite retrospective was that scout's discovery work
 was never reliably handed off to the downstream coder / tester / auditor
 agents. Each downstream agent independently re-grepped the codebase at

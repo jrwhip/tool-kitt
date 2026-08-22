@@ -10,16 +10,16 @@
 
 # ============================================================================
 # Example A: Spring Boot backend project (legacy migration)
-# Lives at:  <project-root>/wopr.yml  (e.g. /path/to/[client-project-b]-api-poc/wopr.yml)
+# Lives at:  <project-root>/wopr.yml  (e.g. /path/to/demo-api-poc/wopr.yml)
 # ============================================================================
 
 project:
-  slug: [client-project-b]-api
-  name: [client-project-b] API
-  target_source_root: src/main/java/com/redacted/client/app
+  slug: demo-api
+  name: Demo API
+  target_source_root: src/main/java/com/example/app
   test_root: src/test/java
   build_file: pom.xml
-  base_package: com.redacted.client.app
+  base_package: com.example.app
 
 specs:
   coder_spec: CODER_SPEC.md
@@ -75,8 +75,8 @@ legacy-migration:
 # ============================================================================
 #
 # project:
-#   slug: [client-project-b]-admin
-#   name: [client-project-b] Admin (Frontend)
+#   slug: demo-admin
+#   name: Demo Admin (Frontend)
 #   target_source_root: src/app
 #   test_root: src/app
 #   build_file: project.json
@@ -88,7 +88,7 @@ legacy-migration:
 #   audit_report: AUDIT_REPORT.md
 #
 # openapi:
-#   spec_url: ../../libs/[client-project-b]-admin/api/src/lib/generated/openapi.json
+#   spec_url: ../../libs/demo-admin/api/src/lib/generated/openapi.json
 #   pinned_generator_version: openapi-generator-cli 7.21.0
 #
 # legacy-migration:

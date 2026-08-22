@@ -8,10 +8,11 @@ Four things have to hold, and each one has a class below:
 2. **Shape.** The manifests have to match the documented plugin and
    marketplace schemas, because a shape error surfaces to the user as
    a silently missing plugin rather than an error.
-3. **No drift.** The emitted tree is the catalog, byte for byte, minus
-   an explicit exclusion list. A test that only checked "some files
-   were written" would not notice a converter quietly rewriting
-   content or a pack silently dropping out.
+3. **No drift.** The emitted tree is the catalog, minus an explicit
+   exclusion list and modulo exactly one declared transformation (the
+   MCP tool-name rewrite). A test that only checked "some files were
+   written" would not notice a converter quietly rewriting content or a
+   pack silently dropping out.
 4. **A working server bundle.** The bundle is the runtime projection
    of the package: dependencies pinned to what the server imports,
    no dev-time files, and a shim that actually runs.
@@ -32,8 +33,11 @@ from wopr.build_plugins import (
     EXCLUDED_FILE_NAMES,
     MARKER_NAME,
     MARKETPLACE_NAME,
+    MCP_SERVER_KEY,
+    REWRITTEN_SUFFIXES,
     SERVER_DEPENDENCIES,
     SERVER_ENTRY_POINT,
+    SOURCE_TOOL_PREFIX,
     BuildResult,
     PluginCollisionError,
     PluginPlan,
@@ -45,11 +49,27 @@ from wopr.build_plugins import (
     format_build_report,
     plan_plugins,
     plugin_name_for_pack,
+    rewrite_tool_names,
+    runtime_tool_prefix,
+    server_plugin_name,
     to_semver,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CATALOG_ROOT = REPO_ROOT / "catalog"
+
+
+def _expected_bytes(source: Path) -> bytes:
+    """What ``source`` must look like once emitted.
+
+    Everything is copied verbatim except markdown, which carries the
+    declared MCP tool-name rewrite. Encoding the expectation once, here,
+    keeps the drift tests honest without letting them ignore content.
+    """
+    if source.suffix.lower() not in REWRITTEN_SUFFIXES:
+        return source.read_bytes()
+    text = rewrite_tool_names(source.read_text(encoding="utf-8"))
+    return text.encode("utf-8")
 
 
 @pytest.fixture(scope="module")
@@ -261,7 +281,8 @@ class TestPluginManifests:
 
 
 class TestCatalogDrift:
-    """The emitted tree IS the catalog, minus a declared exclusion list."""
+    """The emitted tree IS the catalog, minus a declared exclusion list
+    and modulo the declared tool-name rewrite."""
 
     def _expected_pairs(self, out_dir: Path) -> list[tuple[Path, Path]]:
         pairs: list[tuple[Path, Path]] = []
@@ -289,7 +310,9 @@ class TestCatalogDrift:
                     pairs.append((source, plugin_dir / rel))
         return pairs
 
-    def test_every_catalog_file_is_emitted_byte_identical(self, out_dir: Path):
+    def test_every_catalog_file_is_emitted_with_only_the_declared_rewrite(
+        self, out_dir: Path
+    ):
         pairs = self._expected_pairs(out_dir)
         assert len(pairs) > 200, "catalog scan found suspiciously little"
         missing = [str(dest) for _src, dest in pairs if not dest.is_file()]
@@ -297,9 +320,24 @@ class TestCatalogDrift:
         differing = [
             str(dest)
             for src, dest in pairs
-            if dest.read_bytes() != src.read_bytes()
+            if dest.read_bytes() != _expected_bytes(src)
         ]
         assert not differing, f"content drift: {differing[:5]}"
+
+    def test_non_markdown_is_emitted_byte_identical(self, out_dir: Path):
+        """The rewrite must not reach scripts, YAML or data fixtures."""
+        pairs = [
+            (src, dest)
+            for src, dest in self._expected_pairs(out_dir)
+            if src.suffix.lower() not in REWRITTEN_SUFFIXES
+        ]
+        assert pairs, "no non-markdown catalog files found; test is vacuous"
+        differing = [
+            str(dest)
+            for src, dest in pairs
+            if dest.read_bytes() != src.read_bytes()
+        ]
+        assert not differing, f"non-markdown drift: {differing[:5]}"
 
     def test_no_emitted_component_file_is_unaccounted_for(self, out_dir: Path):
         """Nothing appears in a plugin that did not come from the catalog."""
@@ -353,6 +391,118 @@ class TestCatalogDrift:
         for skills_dir in out_dir.glob("*/skills"):
             for skill_dir in skills_dir.iterdir():
                 assert (skill_dir / "SKILL.md").is_file(), skill_dir
+
+
+class TestToolNameRewrite:
+    """The catalog spells tools ``mcp__wopr__x``; the runtime does not.
+
+    A plugin-provided MCP server is namespaced
+    ``mcp__plugin_<plugin>_<server-key>__<tool>``. An agent ``tools:``
+    grant that does not match the runtime name grants nothing, silently:
+    the tool is never offered and the agent reports success having
+    written nothing. That is how the crew auditor's ``append_learnings``
+    grant died, taking the CRAG write path with it. These tests pin the
+    generator as the single place that knows the runtime name.
+    """
+
+    def test_prefix_is_derived_from_the_plugin_and_the_server_key(self):
+        assert server_plugin_name() == "wopr-core"
+        assert runtime_tool_prefix() == "mcp__plugin_wopr-core_wopr__"
+        assert runtime_tool_prefix("wopr-elsewhere") == (
+            "mcp__plugin_wopr-elsewhere_wopr__"
+        )
+        assert runtime_tool_prefix("p", "srv") == "mcp__plugin_p_srv__"
+
+    def test_prefix_agrees_with_the_emitted_mcp_config(self, out_dir: Path):
+        """The generator must not learn the server key in two places."""
+        config = _read_json(out_dir / "wopr-core" / ".mcp.json")
+        (server_key,) = config["mcpServers"].keys()
+        assert server_key == MCP_SERVER_KEY
+        assert runtime_tool_prefix() == f"mcp__plugin_wopr-core_{server_key}__"
+
+    def test_rewrites_a_frontmatter_tools_list(self):
+        source = (
+            "---\nname: crew-auditor\ntools:\n  - Read\n"
+            "  - mcp__wopr__append_learnings\n---\n"
+        )
+        assert rewrite_tool_names(source) == (
+            "---\nname: crew-auditor\ntools:\n  - Read\n"
+            "  - mcp__plugin_wopr-core_wopr__append_learnings\n---\n"
+        )
+
+    def test_rewrites_prose_including_backticked_and_bare_mentions(self):
+        source = (
+            "Call `mcp__wopr__detect_stack`, then mcp__wopr__write_wopr_yml.\n"
+        )
+        assert rewrite_tool_names(source) == (
+            "Call `mcp__plugin_wopr-core_wopr__detect_stack`, then "
+            "mcp__plugin_wopr-core_wopr__write_wopr_yml.\n"
+        )
+
+    def test_leaves_other_servers_alone(self):
+        source = (
+            '"matcher": "mcp__memory__.*"\n'
+            "mcp__context7__resolve-library-id\n"
+            "mcp__plugin_atlassian_atlassian__getJiraIssue\n"
+            "mcp__ag-mcp__*\n"
+        )
+        assert rewrite_tool_names(source) == source
+
+    def test_a_bare_prefix_mention_is_not_rewritten(self):
+        """Prose about the naming scheme is not a tool reference."""
+        source = "tools are named `mcp__wopr__` plus the tool name\n"
+        assert rewrite_tool_names(source) == source
+
+    def test_is_idempotent(self):
+        once = rewrite_tool_names("`mcp__wopr__seed_learnings`")
+        assert rewrite_tool_names(once) == once
+
+    def test_no_source_form_survives_anywhere_in_the_emitted_tree(
+        self, out_dir: Path
+    ):
+        """The end-to-end assertion: nothing ships the dead name.
+
+        The bundled server SOURCE is exempt: ``build_plugins.py`` and
+        ``converters.py`` discuss the source form in comments, and
+        rewriting Python would be the generator editing itself.
+        """
+        server_src = out_dir / "wopr-core" / "server" / "src"
+        offenders = [
+            f"{path.relative_to(out_dir)}"
+            for path in sorted(out_dir.rglob("*.md"))
+            if server_src not in path.parents
+            and SOURCE_TOOL_PREFIX in path.read_text(encoding="utf-8")
+        ]
+        assert not offenders, offenders
+
+    def test_the_rewrite_actually_fired_on_the_real_catalog(self, out_dir: Path):
+        """Guards the test above from passing because nothing matched."""
+        prefix = runtime_tool_prefix()
+        hits = [
+            path.relative_to(out_dir)
+            for path in sorted(out_dir.rglob("*.md"))
+            if prefix in path.read_text(encoding="utf-8")
+        ]
+        assert len(hits) >= 5, hits
+
+    def test_the_auditors_learnings_grant_is_live(self, out_dir: Path):
+        """The specific grant whose silence killed the CRAG write path."""
+        auditor = out_dir / "wopr-crew" / "agents" / "wopr-crew-auditor.md"
+        text = auditor.read_text(encoding="utf-8")
+        frontmatter = text.split("---")[1]
+        assert (
+            f"  - {runtime_tool_prefix()}append_learnings" in frontmatter
+        ), frontmatter
+
+    def test_non_core_plugins_get_the_core_plugins_prefix(self, out_dir: Path):
+        """`wopr` is the marketplace's only server; every plugin calls it."""
+        crew = out_dir / "wopr-crew"
+        assert not (crew / ".mcp.json").exists()
+        text = (crew / "agents" / "wopr-crew-auditor.md").read_text(
+            encoding="utf-8"
+        )
+        assert "mcp__plugin_wopr-core_wopr__" in text
+        assert "mcp__plugin_wopr-crew_wopr__" not in text
 
 
 class TestCollisionDetection:
@@ -494,7 +644,10 @@ class TestServerBundle:
                     continue
                 dest = resources.joinpath(*parts, *source.relative_to(source_dir).parts)
                 assert dest.is_file(), dest
-                assert dest.read_bytes() == source.read_bytes(), dest
+                # Markdown here reaches a model through
+                # ``get_pack_template``, so it carries the same rewrite
+                # as the component tree.
+                assert dest.read_bytes() == _expected_bytes(source), dest
 
 
 @pytest.fixture(scope="module")

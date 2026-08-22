@@ -1,4 +1,4 @@
-"""Optional semantic-search layer for CRAG ([TICKET-ID]).
+"""Optional semantic-search layer for CRAG (DEMO-123).
 
 Lives beside :mod:`learnings` so the text/markdown side of CRAG stays
 focused on parsing entries and resolving paths, while the vector side

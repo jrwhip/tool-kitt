@@ -13,11 +13,11 @@ in two layouts:
 
 The path arithmetic to walk from ``__file__`` up to the repo root and
 then into either ``catalog/`` or ``resources/`` was duplicated across
-``doctor._candidate_recommendation_paths``,
-``learnings._candidate_seed_paths``, and
-``wopr_yml._select_stack_template_dir``. The [TICKET-ID] audit flagged
-the duplication as a fragility risk: if the module layout ever
-changes, all three modules need parallel surgery.
+``learnings._candidate_seed_paths``, ``wopr_yml._select_stack_template_dir``,
+and (at the time) a third copy in ``tools/doctor.py``, since cut along
+with the rest of that module. The DEMO-123 audit flagged the
+duplication as a fragility risk: if the module layout ever changes,
+every copy needs parallel surgery.
 
 3. The ``resources/`` directory of a Claude Code plugin install, at
    ``$WOPR_PLUGIN_ROOT/server/resources/``. ``wopr build-plugins``

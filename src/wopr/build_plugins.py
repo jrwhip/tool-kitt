@@ -43,6 +43,9 @@ What is deliberately NOT emitted:
 * Tests, evals, lint/type config, and the optional ``embeddings``
   extra in the server bundle. The bundle is the runtime projection of
   the package, not a copy of the repo.
+
+One thing IS rewritten on the way out: MCP tool names. See
+:data:`SOURCE_TOOL_PREFIX` and :func:`rewrite_tool_names`.
 """
 
 from __future__ import annotations
@@ -81,6 +84,10 @@ PLUGIN_MANIFEST_NAME = "plugin.json"
 MARKETPLACE_MANIFEST_NAME = "marketplace.json"
 MCP_CONFIG_NAME = ".mcp.json"
 MCP_SERVER_KEY = "wopr"
+"""The key this generator writes under ``mcpServers`` in ``.mcp.json``.
+
+Half of the runtime tool namespace. :func:`runtime_tool_prefix` is the
+other half's only consumer, so the two cannot drift."""
 
 CORE_PACK = "_core"
 """The pack that carries the server, the shim, and ``.mcp.json``."""
@@ -113,6 +120,72 @@ EXCLUDED_DIR_NAMES = frozenset({"__pycache__", "node_modules"})
 """Directories never copied. Dot-prefixed names (``.git``, ``.venv``,
 ``.mypy_cache``) are excluded by the leading-dot rule instead, which
 covers every future cache directory without a maintenance list."""
+
+# ---------------------------------------------------------------------------
+# Constants: MCP tool naming
+# ---------------------------------------------------------------------------
+#
+# POLICY (decided 2026-08-22, after a live plugin session found every
+# agent tool grant dead on arrival):
+#
+#   The catalog source names WOPR's MCP tools install-agnostically, as
+#   ``mcp__wopr__<tool>``. The generator owns the runtime name.
+#
+# Why the source form cannot also be the runtime form. Claude Code
+# namespaces an MCP server by how it was reached. A server registered
+# by hand in ``~/.claude.json`` under the key ``wopr`` presents its
+# tools as ``mcp__wopr__<tool>``. The SAME server, shipped inside a
+# plugin, presents them as ``mcp__plugin_<plugin>_<server-key>__<tool>``
+# — here ``mcp__plugin_wopr-core_wopr__<tool>``, verified against a live
+# session's tool list and against the sibling Atlassian plugin's
+# ``mcp__plugin_atlassian_atlassian__*``. So there is no single string
+# that is correct in both worlds, and the catalog has to pick one.
+#
+# It picks the short one, for three reasons:
+#
+# 1. The plugin name is a distribution decision (``PLUGIN_NAME_OVERRIDES``
+#    maps ``_core`` -> ``wopr-core`` today and could map it elsewhere
+#    tomorrow). Baking a distribution decision into 58 prose references
+#    across 7 catalog files means a rename becomes a catalog-wide sed.
+# 2. The catalog is also read directly out of the repo by developers and
+#    by the wheel install, where the plugin prefix would be a lie.
+# 3. One rewrite site is auditable. 58 hand-written long names are not:
+#    a typo in an agent's ``tools:`` frontmatter is silent — the grant
+#    simply does not match, the tool is not offered, and the agent
+#    reports success having written nothing. That is exactly how the
+#    CRAG write path died.
+#
+# Enforcement lives in ``tests/test_prose_contract.py``: every
+# ``mcp__wopr__<tool>`` token in the catalog must name a tool
+# ``create_app()`` actually registers, and the runtime form must never
+# appear in source.
+#
+# The rewrite applies to EVERY plugin's markdown, not just
+# ``wopr-core``'s. ``wopr`` is the only MCP server in the marketplace;
+# a skill in ``wopr-crew`` calling ``append_learnings`` is calling the
+# server that ``wopr-core`` carries, so it needs ``wopr-core``'s prefix.
+
+SOURCE_TOOL_PREFIX = f"mcp__{MCP_SERVER_KEY}__"
+"""How the catalog spells a WOPR MCP tool. Install-agnostic."""
+
+_SOURCE_TOOL_RE = re.compile(
+    re.escape(SOURCE_TOOL_PREFIX) + r"(?P<tool>[a-z][a-z0-9_]*)"
+)
+"""Matches a whole tool reference, never a bare prefix mention.
+
+Requiring a trailing tool name keeps prose that discusses the naming
+scheme itself (``the mcp__wopr__ prefix``) out of the rewrite, and
+makes the substitution idempotent: the runtime form it produces does
+not contain :data:`SOURCE_TOOL_PREFIX` as a substring."""
+
+REWRITTEN_SUFFIXES = frozenset({".md"})
+"""File types the rewrite touches.
+
+Markdown only: it is the whole model-facing surface (agent frontmatter,
+skill bodies, command bodies, template prose). Scripts and YAML hook
+manifests are executed or parsed by machines that do not resolve tool
+names, and rewriting them would be scope the policy above does not
+justify."""
 
 # ---------------------------------------------------------------------------
 # Constants: the server bundle
@@ -234,6 +307,42 @@ def to_semver(version: str) -> str:
 def plugin_name_for_pack(pack: str) -> str:
     """Return the plugin name for a catalog pack directory name."""
     return PLUGIN_NAME_OVERRIDES.get(pack, f"wopr-{pack}")
+
+
+def server_plugin_name() -> str:
+    """The plugin that carries ``.mcp.json``, and therefore the server."""
+    return plugin_name_for_pack(CORE_PACK)
+
+
+def runtime_tool_prefix(
+    plugin_name: str | None = None, server_key: str = MCP_SERVER_KEY
+) -> str:
+    """Build the tool prefix Claude Code exposes for a plugin's MCP server.
+
+    Claude Code composes it from the plugin that declares the server and
+    the key that server sits under in ``.mcp.json``:
+    ``mcp__plugin_<plugin>_<server-key>__``. Both inputs default to the
+    values this generator emits, so the prefix cannot drift from
+    :func:`render_mcp_config` without a test noticing.
+    """
+    return f"mcp__plugin_{plugin_name or server_plugin_name()}_{server_key}__"
+
+
+def rewrite_tool_names(text: str, prefix: str | None = None) -> str:
+    """Rewrite catalog tool references into their runtime form.
+
+    ``mcp__wopr__append_learnings`` becomes
+    ``mcp__plugin_wopr-core_wopr__append_learnings``. Frontmatter
+    ``tools:`` entries and prose are the same substitution: both are
+    plain text as far as this function is concerned, and a grant that
+    does not match the runtime name grants nothing.
+
+    Tokens for other MCP servers are left alone, so hook-matcher
+    examples (``mcp__memory__.*``) and the crew's Atlassian references
+    (``mcp__plugin_atlassian_atlassian__getJiraIssue``) survive intact.
+    """
+    runtime = prefix if prefix is not None else runtime_tool_prefix()
+    return _SOURCE_TOOL_RE.sub(lambda m: runtime + m.group("tool"), text)
 
 
 def _is_excluded(rel_path: Path) -> bool:
@@ -639,8 +748,21 @@ def _copy_file(source: Path, dest: Path) -> None:
     shutil.copy2(source, dest)
 
 
+def _emit_file(source: Path, dest: Path, prefix: str) -> None:
+    """Copy one catalog file, rewriting tool names in markdown.
+
+    Everything else is a byte-for-byte copy, so ``copy2``'s mode
+    preservation still covers the executable scripts packs ship.
+    """
+    if source.suffix.lower() not in REWRITTEN_SUFFIXES:
+        _copy_file(source, dest)
+        return
+    text = source.read_text(encoding="utf-8")
+    _write_text(dest, rewrite_tool_names(text, prefix))
+
+
 def _write_server_bundle(
-    core_dir: Path, repo_root: Path, catalog_root: Path, version: str
+    core_dir: Path, repo_root: Path, catalog_root: Path, version: str, prefix: str
 ) -> int:
     """Copy the server into ``wopr-core/server/``. Returns the file count.
 
@@ -652,7 +774,10 @@ def _write_server_bundle(
     * ``server/resources/`` - the catalog subtrees the surviving tools
       read at run time, plus ``catalog.yaml``. Same relative layout as
       the wheel's ``wopr/resources/``, so a plugin install and a pip
-      install resolve identically.
+      install resolve identically. Markdown here gets the same tool-name
+      rewrite as the component tree: ``get_pack_template`` hands this
+      content straight to a model, so a source-form tool name in a
+      template is as dead as one in a skill body.
     * ``server/pyproject.toml`` - runtime dependencies and the
       ``wopr-serve`` entry point.
     """
@@ -670,7 +795,7 @@ def _write_server_bundle(
         subtree = catalog_root.joinpath(*parts)
         for source in _walk_files(subtree):
             rel = source.relative_to(subtree)
-            _copy_file(source, resources_dir.joinpath(*parts, *rel.parts))
+            _emit_file(source, resources_dir.joinpath(*parts, *rel.parts), prefix)
             count += 1
 
     catalog_yaml = repo_root / "catalog.yaml"
@@ -733,10 +858,14 @@ def build_plugins(out_dir: Path, repo_root: Path) -> BuildResult:
 
     _prepare_output_dir(out_dir)
 
+    # One prefix for the whole tree: `wopr` is the marketplace's only
+    # MCP server, and `wopr-core` is the only plugin that declares it.
+    prefix = runtime_tool_prefix(core_plan.name)
+
     file_count = 0
     for plan in plans:
         for emitted in plan.files:
-            _copy_file(emitted.source, out_dir / emitted.dest)
+            _emit_file(emitted.source, out_dir / emitted.dest, prefix)
             file_count += 1
         _write_text(
             out_dir / plan.name / PLUGIN_MANIFEST_DIR / PLUGIN_MANIFEST_NAME,
@@ -750,7 +879,9 @@ def build_plugins(out_dir: Path, repo_root: Path) -> BuildResult:
         core_dir / BOOTSTRAP_SCRIPT_REL, render_bootstrap_script(), executable=True
     )
     file_count += 2
-    file_count += _write_server_bundle(core_dir, repo_root, catalog_root, version)
+    file_count += _write_server_bundle(
+        core_dir, repo_root, catalog_root, version, prefix
+    )
 
     _write_text(
         out_dir / PLUGIN_MANIFEST_DIR / MARKETPLACE_MANIFEST_NAME,

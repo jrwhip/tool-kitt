@@ -23,7 +23,6 @@ import pytest
 from wopr import catalog
 from wopr.config import ENV_WOPR_HOME, ServerConfig
 from wopr.context import ServerContext
-from wopr.tools import _version_check
 
 _REAL_HOME = Path.home().resolve()
 
@@ -87,19 +86,6 @@ def _wopr_home_never_points_at_the_real_home(
         return home
 
     _rebind_everywhere(monkeypatch, "get_global_home", real, _guarded)
-
-
-@pytest.fixture(autouse=True)
-def _no_network_version_check(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Keep the version-drift check offline and instant for the whole suite.
-
-    ``_version_check.get_latest_tag`` shells out to ``git ls-remote`` over
-    the network. Autouse so every test gets a fast, hermetic "unknown"
-    result by default; a test that specifically wants to exercise drift
-    behavior overrides this with its own
-    ``monkeypatch.setattr(_version_check, "get_latest_tag", ...)``.
-    """
-    monkeypatch.setattr(_version_check, "get_latest_tag", lambda *a, **kw: None)
 
 
 @pytest.fixture

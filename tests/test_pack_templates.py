@@ -1,4 +1,4 @@
-"""Tests for the pack-template read tools ([TICKET-ID]).
+"""Tests for the pack-template read tools (DEMO-123).
 
 Covers `get_pack_template` and `list_pack_templates`. The tools resolve
 paths server-side via `resolve_data_path`, so the tests exercise the

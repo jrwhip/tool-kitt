@@ -608,8 +608,7 @@ def _detect_external_signals(workspace: Path, targets: list[StackProfile]) -> li
             signals.add("ag-grid")
 
     # Atlassian: any markdown under tickets/ referencing a JIRA-style ticket ID,
-    # e.g. ABC26-1234 (redacted -- the original comment named real client
-    # ticket-prefix examples; the regex below is generic and unaffected).
+    # e.g. DEMO26-1234. The regex is generic and matches any 2-5 letter prefix.
     tickets_dir = workspace / "tickets"
     if tickets_dir.is_dir():
         for md_path in tickets_dir.rglob("*.md"):

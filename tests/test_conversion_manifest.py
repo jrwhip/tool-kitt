@@ -108,7 +108,7 @@ class TestManifestMatchesCatalog:
     def test_crew_agents_are_tier1(self):
         """The five role agents must convert
         across all CLIs so Copilot operators get parity with Claude /
-        Gemini for the four-role crew ([TICKET-ID]). Listed in
+        Gemini for the four-role crew (DEMO-123). Listed in
         tier1 because their tool surface (Read / Write / Glob / Grep
         / Bash / Task) maps cleanly to Copilot via the existing
         ``to_copilot_agent`` tool_map (Task -> custom-agent).

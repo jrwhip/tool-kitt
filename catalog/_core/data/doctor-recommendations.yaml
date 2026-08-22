@@ -1,8 +1,8 @@
 # WOPR Doctor recommendation table
 #
-# Edited by hand. Re-read on every `recommend_wopr_setup` call; no restart
-# needed for data edits. Loader prefers this source path over the bundled
-# install copy, so changes show up immediately in dev.
+# Edited by hand. `/wopr-doctor` and `/wopr-init-project` read this file
+# directly with the file-read tool (there is no recommendation tool and
+# no code loader for this file); no restart needed for data edits.
 #
 # Sections:
 #   framework_to_pack:  detected framework -> list of WOPR packs to install

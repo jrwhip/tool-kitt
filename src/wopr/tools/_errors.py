@@ -8,7 +8,7 @@ WOPR tools return string status messages. The convention is:
   followed by an operator-facing reason.
 
 Two writer modules (``wopr_yml`` and ``claude_md``) defined identical
-copies of this prefix as ``_PROPOSER_ERROR_PREFIX``. The [TICKET-ID]
+copies of this prefix as ``_PROPOSER_ERROR_PREFIX``. The DEMO-123
 audit flagged that duplication and the broader pattern of inline
 ``"Error: ..."`` strings across the tools tree.
 

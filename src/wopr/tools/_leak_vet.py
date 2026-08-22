@@ -7,7 +7,7 @@ an internal IP, or a secret-shaped string is both a leak risk (this file gets
 committed) and a *bad lesson* — it won't generalize to the next project or
 developer who retrieves it.
 
-Modeled on the identity-leak guard in [colleague]'s ``harvest.py``
+Modeled on the identity-leak guard in a colleague's ``harvest.py``
 (webteam-ai-scaffolding), adapted for a write-time gate rather than a
 promote-up gate: this runs on every ``append_learnings`` call, not just at
 some future promotion step, because the corpus is committable from the

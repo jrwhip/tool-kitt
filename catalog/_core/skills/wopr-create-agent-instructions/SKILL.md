@@ -31,7 +31,7 @@ Do NOT run during a crew run; this is out-of-band setup.
 
 3. **Call `mcp__wopr__detect_stack`** with the resolved absolute workspace path.
 
-4. **Call `mcp__wopr__propose_agent_instructions`** with the detection JSON and the target path. The tool returns a JSON object with four keys: `agents_md` (the canonical full content), `claude_md`, `gemini_md`, and `copilot_instructions_md` (the three pointer files). Parse the JSON.
+4. **Draft the four files yourself.** There is no proposal tool; compose the content directly from the detection JSON and, when present, the target's `wopr.yml` and specs. `AGENTS.md` follows the outline in `<objective>` above (project identity, build/test/lint commands, the `wopr.yml`-and-specs pointer, framework patterns, key directories). `CLAUDE.md` and `GEMINI.md` are each a one-line `@AGENTS.md` import. `copilot-instructions.md` is a short self-contained reference (not an `@`-import) pointing at `AGENTS.md`.
 
 5. **Show the operator each proposed file verbatim** inside its own fenced markdown block. State explicitly where each file will land:
    - `AGENTS.md` -> `<target_dir>/AGENTS.md`
@@ -41,7 +41,7 @@ Do NOT run during a crew run; this is out-of-band setup.
 
 6. **Ask the operator to confirm.** Default answer is no. Common confirmations: "yes", "write them", "ship it". Ambiguous = re-ask. The operator may also opt out of specific variants ("skip the Copilot one"); record which to skip.
 
-7. **On confirm: call `mcp__wopr__write_agent_instructions`** with the absolute target directory, the absolute workspace path, and the content for each requested variant. Pass an empty string for any variant the operator opted out of. The tool refuses to overwrite by default; surface any `Skipped (exists, overwrite=False)` lines and ask whether to retry with `overwrite=True`.
+7. **On confirm: write each requested file yourself** at its documented destination. There is no writer tool for this; check each destination path first, and if a file already exists there, do not overwrite it silently. Report `Skipped (exists)` for that file and ask the operator whether to proceed with an explicit overwrite. Skip any variant the operator opted out of.
 
 8. **On non-confirm: do nothing.** Report no files written.
 
@@ -89,8 +89,9 @@ Example skill turn after a successful propose for an Nx-monorepo Angular app at 
 
 <role_boundaries>
 You MAY:
-- Call `mcp__wopr__detect_stack`, `mcp__wopr__propose_agent_instructions`, and `mcp__wopr__write_agent_instructions`.
+- Call `mcp__wopr__detect_stack`.
 - Read project files for context.
+- Draft the four files' content directly and write them with the Write tool at their documented destinations, after checking for and refusing to silently overwrite existing files.
 - Echo the proposed files verbatim.
 
 You MAY NOT:

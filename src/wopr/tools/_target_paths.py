@@ -10,7 +10,7 @@ target_path)`` and need to:
    target's basename.
 
 Both modules previously carried identical copies of these helpers,
-which is the duplication finding the [TICKET-ID] audit flagged. Pulled
+which is the duplication finding the DEMO-123 audit flagged. Pulled
 into this private shared module so future edits land in one place.
 
 Private import name (leading underscore) because this is not part of

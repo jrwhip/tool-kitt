@@ -23,7 +23,7 @@ Do NOT run this skill as part of a crew run. It is an out-of-band setup tool, no
 
 3. **Call `mcp__wopr__detect_stack`** with the resolved absolute path as `workspace_path`. The tool requires this argument; it does not infer a workspace from environment state. The result's top-level `workspace_path` field echoes the directory it scanned. If the result is an `error`, surface it cleanly and stop.
 
-4. **Call `mcp__wopr__recommend_wopr_setup`** with the detection JSON string from step 3. The tool returns a JSON-encoded recommendation covering missing `wopr.yml` paths, missing WOPR packs, missing external MCPs (cross-referenced against the MCP registrations in all three CLI configs: `~/.claude.json`, `~/.gemini/settings.json`, and `~/.copilot/mcp-config.json`), and copy-paste install commands.
+4. **Build the recommendation by hand.** There is no recommendation tool; `detect_stack` only detects. Read `catalog/_core/data/doctor-recommendations.yaml` (the framework-to-pack, signal-to-MCP, and language-to-plugin mapping tables) and cross-reference it against: the stack detected in step 3, the packs installed per `.ai-cli/wopr.lock.yaml`, and the MCP registrations in all three CLI configs (`~/.claude.json`, `~/.gemini/settings.json`, and `~/.copilot/mcp-config.json`). From this, derive missing `wopr.yml` paths, missing WOPR packs, missing external MCPs, and copy-paste install commands.
 
 5. **Print a structured report** to the operator. Format the report sections in this order:
    - **Workspace path**: the scanned directory (same line you already showed in step 2).
@@ -54,7 +54,7 @@ Example output shape:
 ```
 # WOPR Doctor
 
-**Workspace:** `/Users/.../Projects/[client-org]/[client-project-cac]/example-monorepo-frontend`
+**Workspace:** `/Users/dev/Projects/example-org/example-monorepo/example-monorepo-frontend`
 
 ## Stack detected
 
@@ -102,7 +102,8 @@ Adjust section content based on what is and is not present. Skip sections that h
 This skill is read-only.
 
 You MAY:
-- Call `mcp__wopr__detect_stack` and `mcp__wopr__recommend_wopr_setup`.
+- Call `mcp__wopr__detect_stack`.
+- Read `catalog/_core/data/doctor-recommendations.yaml`, `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to build recommendations by hand.
 - Read project files to add operator-facing color to the report when a recommendation is non-obvious.
 
 You MAY NOT:

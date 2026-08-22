@@ -1,4 +1,4 @@
-"""Tests for ``tools._gitignore.ensure_sidecar_gitignored`` ([TICKET-ID]).
+"""Tests for ``tools._gitignore.ensure_sidecar_gitignored`` (DEMO-123).
 
 The helper guarantees that ``<workspace>/.gitignore`` lists
 ``LEARNINGS.embeddings.npz`` so the machine-specific embeddings

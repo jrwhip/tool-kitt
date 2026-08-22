@@ -292,7 +292,7 @@ All optional.
 
 ## Provenance
 
-`prompt-log-hook.py` was adapted from a project-specific version authored by [colleague] for the `webteam-[client-project-b]-api` migration POV. The original hardcoded the log file location and included action-verb preferences biased toward that project's agent names. This version is parameterized and stack-agnostic. Original source: `research/seeds/client-project-b-api/scripts/prompt-log-hook.py` in this repo.
+`prompt-log-hook.py` was adapted from a project-specific version authored by a colleague for the `webteam-demo-api` migration POV. The original hardcoded the log file location and included action-verb preferences biased toward that project's agent names. This version is parameterized and stack-agnostic. Original source: `research/seeds/demo-api/scripts/prompt-log-hook.py` in this repo.
 
 `git-branch-guard.sh` was adapted from `webteam-ai-scaffolding/ai/scripts/sh/git-branch-guard.sh`. The scaffolding version hardcoded the `feature/*` pattern; this version reads it from `BRANCH_GUARD_PATTERN`.
 

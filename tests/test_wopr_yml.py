@@ -29,7 +29,7 @@ def _write_spring_boot(workspace: Path) -> None:
     (workspace / "pom.xml").write_text(
         """
 <project>
-  <groupId>com.redacted.client</groupId>
+  <groupId>com.example.app</groupId>
   <artifactId>cases</artifactId>
   <version>1.0.0</version>
   <properties>
@@ -120,7 +120,7 @@ class TestProposeWoprYml:
         assert parsed["project"]["slug"] == "ws"
         assert parsed["project"]["build_file"] == "pom.xml"
         # base_package derived from pom.xml groupId+artifactId.
-        assert parsed["project"]["base_package"].startswith("com.redacted.client")
+        assert parsed["project"]["base_package"].startswith("com.example.app")
         # target_source_root reflects the derived package.
         assert parsed["project"]["target_source_root"].startswith("src/main/java/")
         assert parsed["project"]["test_root"] == "src/test/java"
@@ -183,7 +183,7 @@ class TestProposeWoprYml:
     <artifactId>spring-boot-starter-parent</artifactId>
     <version>3.2.0</version>
   </parent>
-  <groupId>com.redacted.client</groupId>
+  <groupId>com.example.app</groupId>
   <artifactId>cases</artifactId>
   <version>1.0.0</version>
   <dependencies>
@@ -199,7 +199,7 @@ class TestProposeWoprYml:
         detection = detect_stack(str(workspace))
         proposed = propose_wopr_yml(detection, ".")
         parsed = yaml.safe_load(proposed)
-        assert parsed["project"]["base_package"].startswith("com.redacted.client")
+        assert parsed["project"]["base_package"].startswith("com.example.app")
         assert "spring_boot_starter_parent" not in parsed["project"]["base_package"]
 
     def test_pom_with_dependency_management_before_project_coords(self, workspace: Path):
@@ -227,7 +227,7 @@ class TestProposeWoprYml:
       </dependency>
     </dependencies>
   </dependencyManagement>
-  <groupId>com.redacted.client</groupId>
+  <groupId>com.example.app</groupId>
   <artifactId>cases</artifactId>
   <version>1.0.0</version>
 </project>
@@ -238,7 +238,7 @@ class TestProposeWoprYml:
         proposed = propose_wopr_yml(detection, ".")
         parsed = yaml.safe_load(proposed)
         # Project's own groupId wins, not the parent's and not junit-bom's.
-        assert parsed["project"]["base_package"].startswith("com.redacted.client")
+        assert parsed["project"]["base_package"].startswith("com.example.app")
         assert "junit" not in parsed["project"]["base_package"]
         assert "spring_boot_starter_parent" not in parsed["project"]["base_package"]
 
@@ -250,7 +250,7 @@ class TestProposeWoprYml:
             """<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.redacted.client</groupId>
+  <groupId>com.example.app</groupId>
   <artifactId>namespaced</artifactId>
   <version>1.0.0</version>
   <dependencies>
@@ -266,7 +266,7 @@ class TestProposeWoprYml:
         detection = detect_stack(str(workspace))
         proposed = propose_wopr_yml(detection, ".")
         parsed = yaml.safe_load(proposed)
-        assert parsed["project"]["base_package"].startswith("com.redacted.client")
+        assert parsed["project"]["base_package"].startswith("com.example.app")
 
     def test_base_package_falls_back_to_java_source_package(self, workspace: Path):
         """Step 3 of the base-package strategy: when pom.xml exists but
@@ -446,7 +446,7 @@ class TestProposeWoprYml:
         (workspace / "pom.xml").write_text(
             """
 <project>
-  <groupId>com.redacted.client</groupId>
+  <groupId>com.example.app</groupId>
   <artifactId>example-program-api</artifactId>
   <version>1.0.0</version>
   <dependencies>
@@ -778,7 +778,7 @@ class TestWriteWoprYml:
             raise OSError("simulated rename failure")
 
         # os.replace lives in the shared _atomic_write helper since
-        # [TICKET-ID] extracted the atomic-write pattern. Patch it there.
+        # DEMO-123 extracted the atomic-write pattern. Patch it there.
         monkeypatch.setattr(_atomic_write.os, "replace", _raise)
 
         result = write_wopr_yml(
@@ -926,14 +926,14 @@ class TestWriteSpecStubs:
         # Angular-specific content shipped, not the generic template.
         assert "Vitest" in coder or "vitest" in coder
         assert "Vitest" in tester or "vitest" in tester
-        # [TICKET-ID] regression guard. The Angular coder-spec used to
+        # DEMO-123 regression guard. The Angular coder-spec used to
         # claim `pnpm nx run-many --target=lint --all` performed
         # type-checking. It does not. The default `@nx/eslint:lint`
         # executor runs ESLint, not tsc. The row was dropped because
         # the existing build rows already cover type-checking
         # (`pnpm nx build <app>` invokes tsc via @angular/build).
         assert "Type-check only" not in coder, (
-            "Angular coder-spec must not carry the [TICKET-ID] type-check "
+            "Angular coder-spec must not carry the DEMO-123 type-check "
             "row. The 'Nx's lint includes tsc' claim was factually wrong."
         )
         assert "Nx's lint includes tsc" not in coder
@@ -1024,7 +1024,7 @@ class TestWriteSpecStubs:
 
 
 class TestStubWriters:
-    """The three [TICKET-ID] stub writers that drop pack-shipped
+    """The two DEMO-123 stub writers that drop pack-shipped
     templates into a project at init time so role agents never have
     to filesystem-search for them. Each writer reads the project's
     ``wopr.yml`` to honor an operator-declared destination path and
@@ -1049,8 +1049,8 @@ class TestStubWriters:
 
     def test_tracking_doc_stub_honors_yml_declared_path(self, workspace: Path):
         """Operator-declared ``tracking_doc`` lands at the declared
-        path. [client-project-cac] uses ``CURRENT_REQUIREMENTS.md`` as its tracking
-        doc filename; pin that this works."""
+        path. One migration project used ``CURRENT_REQUIREMENTS.md`` as its
+        tracking doc filename; pin that this works."""
         (workspace / "wopr.yml").write_text(
             "project:\n  slug: example\n"
             "legacy-migration:\n"

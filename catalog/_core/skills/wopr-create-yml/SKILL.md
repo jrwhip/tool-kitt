@@ -18,7 +18,7 @@ Do NOT run this skill during a crew run. The crew expects `wopr.yml` to exist be
 <procedure>
 1. **Resolve the workspace and target from the OPERATOR's current context.** The skill is running in Claude Code; the operator's current working directory is the only legitimate source for the workspace. Do NOT rely on any WOPR install state, env var, or pinned workspace. The operator passes a target path relative to that workspace (e.g. `apps/example-app` for an Nx app, `.` for a single-app workspace root). When the operator does not pass a target, ask; do not infer.
 
-2. **Print the resolved workspace and target BEFORE doing anything.** Print one line: `Scanning <absolute workspace path> for target <target_path>.` If the resolution is wrong (the operator wanted a [client-project-cac] project but you resolved to an unrelated path), stop and ask. The propose-then-confirm loop is worthless if the underlying workspace is wrong. This step is non-negotiable.
+2. **Print the resolved workspace and target BEFORE doing anything.** Print one line: `Scanning <absolute workspace path> for target <target_path>.` If the resolution is wrong (the operator wanted a specific sibling project but you resolved to an unrelated path), stop and ask. The propose-then-confirm loop is worthless if the underlying workspace is wrong. This step is non-negotiable.
 
 3. **Call `mcp__wopr__detect_stack`** with the resolved absolute path as `workspace_path`. The tool requires this argument; it does not infer a workspace from environment state. If the result contains an `error`, surface it and stop.
 

@@ -32,7 +32,7 @@ def _make_entry(
     entry_date: str = "2026-05-01",
     letter: str = "a",
     title: str = "Sample lesson",
-    project: str = "[client-project-b]-api-poc-v2",
+    project: str = "demo-api-poc-v2",
     stack: list[str] | None = None,
     req: list[str] | None = None,
     seed: bool = False,
@@ -83,7 +83,7 @@ class TestEntryParsing:
         e = entries[0]
         assert e.id == "LRN-2026-05-01-a"
         assert e.entry_date == date(2026, 5, 1)
-        assert e.project == "[client-project-b]-api-poc-v2"
+        assert e.project == "demo-api-poc-v2"
         assert e.stack == ["spring-boot"]
         assert e.req_ids == []
         assert "Generator drift bypassed lockstep" in e.raw

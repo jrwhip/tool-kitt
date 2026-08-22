@@ -1,4 +1,4 @@
-"""Tests for the optional semantic-search layer ([TICKET-ID]).
+"""Tests for the optional semantic-search layer (DEMO-123).
 
 Two flavors of tests in this module:
 
@@ -719,7 +719,7 @@ class TestDoctorSidecarWarnings:
 # Uses the actual fastembed model rather than the fake embedder. Tests
 # that the semantic path surfaces a Spring Boot Pokemon-catch entry
 # when the REQ is FastAPI-tagged and asks about exception handling.
-# This is the headline acceptance test from the [TICKET-ID] ticket:
+# This is the headline acceptance test from the DEMO-123 ticket:
 # the deterministic filter alone returns nothing (no python/fastapi
 # tag on the entry), but the semantic match catches the conceptual
 # overlap.

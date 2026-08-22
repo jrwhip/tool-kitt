@@ -206,7 +206,7 @@ def resolve_packs(
 
 
 # ``interactive_pack_selection`` previously lived here. It moved to
-# :mod:`cli_setup` ([TICKET-ID] AC23) so the catalog stays pure logic
+# :mod:`cli_setup` (DEMO-123 AC23) so the catalog stays pure logic
 # with no ``input()`` or stdout-prompt dependency. ``resolve_packs``
 # now reaches the prompt via the ``interactive_selector`` callback;
 # the CLI passes the implementation when interactive mode is wanted.

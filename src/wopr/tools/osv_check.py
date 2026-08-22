@@ -30,7 +30,7 @@ annoyance:
   response must never block or error the caller -- it degrades to
   "not checked," never "assume malicious" or "crash." The only thing
   ``MAL-*`` advisories should ever do is warn.
-* **Network access is opt-in.** Unlike ``_version_check`` (also
+* **Network access is opt-in.** Unlike some network-touching helpers (historically
   read-only, also best-effort), this hits a *third-party* service with
   package names taken from the operator's own MCP config. Doctor tools
   elsewhere in WOPR do local filesystem reads by default; reaching out

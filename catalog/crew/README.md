@@ -17,7 +17,7 @@ wopr add crew
 With migration support:
 
 ```sh
-wopr add crew legacy-migration
+claude plugin install wopr-crew@wopr-marketplace
 ```
 
 Profiles that compose this pack are listed in `catalog.yaml` (`legacy-migration-team`, `everything`, etc.).
@@ -64,9 +64,9 @@ The crew's principles, full step-by-step orchestration, intake routing (crew run
 
 How to invoke per CLI:
 
-* **Claude Code**: `/wopr-run-crew FOC26-XXXX` (the Skill tool handles the slash-prefix), or natural language ("run the wopr-run-crew skill against FOC26-XXXX").
+* **Claude Code**: `/wopr-run-crew DEMO-123` (the Skill tool handles the slash-prefix), or natural language ("run the wopr-run-crew skill against DEMO-123").
 * **Gemini CLI**: same as Claude (slash-prefix or natural language); the skill is symlinked to `~/.gemini/skills/`.
-* **Copilot CLI**: `copilot --agent wopr-crew --prompt "FOC26-XXXX"`, or invoke the agent inside a session via `@wopr-crew FOC26-XXXX`, or natural language ("use the wopr-crew agent against FOC26-XXXX"). The agent dispatches the four role subagents (`@wopr-crew-scout`, `coder`, `tester`, `auditor`) via Copilot's documented `agent` tool (subagent dispatch).
+* **Copilot CLI**: `copilot --agent wopr-crew --prompt "DEMO-123"`, or invoke the agent inside a session via `@wopr-crew DEMO-123`, or natural language ("use the wopr-crew agent against DEMO-123"). The agent dispatches the four role subagents (`@wopr-crew-scout`, `coder`, `tester`, `auditor`) via Copilot's documented `agent` tool (subagent dispatch).
 
 ## Perpetual learning: the CRAG read path
 
@@ -107,7 +107,7 @@ Agents are reasoning instruments: they synthesize novel code, design test scenar
 
 > If the step requires interpreting natural-language context or making a judgment call, dispatch an agent. Otherwise, write a script (or call an existing MCP tool).
 
-Cost matters here. An Opus agent invocation spends tens of thousands of tokens. A Python script that reads a CSV and returns an exit code spends none. [colleague]'s 7-REQ Spring Boot retrospective ([retrospective_summary_2026-05-18.md](https://github.com/[client-org]/webteam-[client-project-b]-ai-scaffolding/blob/feature/tbd-email-domain-api/ai/prompts/retrospective_summary_2026-05-18.md#6-what-to-script-vs-what-to-agent) section 6) estimated ~100-350k tokens wasted across his project on tasks an agent did not need to think about. Examples flagged in that retrospective:
+Cost matters here. An Opus agent invocation spends tens of thousands of tokens. A Python script that reads a CSV and returns an exit code spends none. A colleague's 7-REQ Spring Boot retrospective (`retrospective_summary_2026-05-18.md`, section 6, "what to script vs. what to agent") estimated ~100-350k tokens wasted across his project on tasks an agent did not need to think about. Examples flagged in that retrospective:
 
 | Should NOT be an agent | Should be |
 |---|---|
@@ -128,7 +128,7 @@ This pack already follows the heuristic in several places:
 
 When proposing a new crew step in a skill, apply the heuristic before reaching for the Task tool. Skill authors creating subagents are pointed at this section from `wopr-create-subagents/SKILL.md`.
 
-Existing scripts ship in `catalog/crew/scripts/` and `catalog/legacy-migration/scripts/`. Both directories carry their own README inventories.
+Existing scripts ship in `catalog/crew/scripts/`, which carries its own README inventory.
 
 ## Requirements source: local or Jira
 
@@ -139,7 +139,7 @@ The orchestrator pulls the active REQ body from one of two sources, declared in 
 
 The Atlassian cloud_id is **not** stored in `wopr.yml`. It is machine-level state (the same Atlassian site for every project on a given operator's machine) and the MCP exposes it via `getAccessibleAtlassianResources`. The orchestrator resolves it at jira-mode pre-flight: zero sites → abort with fix-paths advice; one site → use it; multiple sites → abort because the default flow does not yet disambiguate. Single-site operators (the common case) have zero machine-level config to manage; multi-site operators file a follow-up so we add per-project site selection.
 
-`wopr.yml`'s `requirements.jira` block carries only an optional `project_key` (REQ-ID prefix sanity check; e.g., `FOC26`). Both `cloud_id` and any other Jira fields are intentionally absent from the schema.
+`wopr.yml`'s `requirements.jira` block carries only an optional `project_key` (REQ-ID prefix sanity check; e.g., `DEMO`). Both `cloud_id` and any other Jira fields are intentionally absent from the schema.
 
 The orchestrator re-fetches the REQ body fresh on every agent dispatch (scout, coder, tester, auditor). Operator edits made mid-crew are picked up by the next agent.
 
@@ -156,25 +156,25 @@ The crew does not run without `wopr.yml`. If it is missing, every agent stops an
 
 ## Pre-flight (run once per project)
 
-The recommended path is `/wopr-init-project` (one operator command) followed by the optional hooks. The skill detects the stack, writes `wopr.yml`, writes the stack-pre-filled coder and tester specs, drops `implementation-tracking.template.md` and `frontend-handoff-contract.template.md` (and `extracted-requirements.template.md` on migration projects), writes `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` / `.github/copilot-instructions.md`, and seeds `LEARNINGS.md` with curated foundational lessons for the detected stack.
+The recommended path is `/wopr-init-project` (one operator command) followed by the optional hooks. The skill detects the stack, writes `wopr.yml`, writes the stack-pre-filled coder and tester specs, drops `implementation-tracking.template.md` and `frontend-handoff-contract.template.md`, writes `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` / `.github/copilot-instructions.md`, and seeds `LEARNINGS.md` with curated foundational lessons for the detected stack.
 
 If you prefer the manual path:
 
 1. Drop `wopr.yml` at the project root, populated from `templates/wopr.example.yml`.
-2. Call `mcp__wopr__write_tracking_doc_stub` and (for backend-producer projects) `mcp__wopr__write_handoff_contract_stub` to land the tracking and handoff templates at the paths declared in `wopr.yml`. Migration projects also call `mcp__wopr__write_extracted_requirements_stub`. These tools resolve the install root server-side; hand-copying from `catalog/crew/templates/` is the fallback, not the default.
+2. Call `mcp__wopr__write_tracking_doc_stub` and (for backend-producer projects) `mcp__wopr__write_handoff_contract_stub` to land the tracking and handoff templates at the paths declared in `wopr.yml`. These tools resolve the install root server-side; hand-copying from `catalog/crew/templates/` is the fallback, not the default.
 3. Walk every `[STACK: ...]` marker and replace it with your stack's specifics. Delete sections that do not apply. Add sections for concerns the skeleton doesn't cover.
 
 Optional but recommended: register the WOPR bootstrap hooks. `/wopr-configure-prompt-log` adds a Stop hook for the per-turn audit log; `/wopr-configure-git-guard` adds a PreToolUse hook that keeps agents off `main` and `develop`.
 
-For migration projects, also install the `legacy-migration` pack and populate the migration-specific `wopr.yml` fields. See `catalog/legacy-migration/README.md`.
+For migration projects, the `legacy-migration` pack (not shipped in this distribution) composes on top and populates the migration-specific `wopr.yml` fields.
 
 **Important:** the crew role agents (`scout`, `coder`, `tester`, `auditor`, orchestrator) are forbidden from running `find` against the workspace or `/` to locate pack-shipped templates. The stub-writer tools above (and `mcp__wopr__get_pack_template` for direct read access) exist to make brute-force filesystem search unnecessary. Operator-driven `/wopr-init-project` is the canonical entry point.
 
 ## Status
 
-**Pre-release.** The four-role crew shape and the agent set have been validated on one completed migration POC. The pack is dogfooded across multiple WOPR-adjacent projects ([client-project-cac], [client-system], [client-project-b]) before a `1.0` cut.
+**Pre-release.** The four-role crew shape and the agent set have been validated on one completed migration POC. The pack is dogfooded across multiple WOPR-adjacent projects (example-crm, example-billing-system, demo-api) before a `1.0` cut.
 
-Grounding material from the original extraction lives at `research/seeds/client-project-b-api/` in this repo. Out of `catalog/` so it does not ship.
+Grounding material from the original extraction lives at `research/seeds/demo-api/` in this repo. Out of `catalog/` so it does not ship.
 
 ## Relationship to other packs
 

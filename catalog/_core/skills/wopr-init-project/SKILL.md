@@ -34,7 +34,7 @@ Do NOT run during a crew run. This is setup, not runtime.
 
 3. **Call `mcp__wopr__detect_stack`** with the resolved absolute workspace path.
 
-4. **Call `mcp__wopr__recommend_wopr_setup`** with the detection JSON. Get the list of missing packs and missing MCPs.
+4. **Build the recommendation by hand**, the same way `/wopr-doctor` step 4 does: read `catalog/_core/data/doctor-recommendations.yaml` and cross-reference it against the detection JSON, `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to get the list of missing packs and missing MCPs. There is no recommendation tool.
 
 5. **Show the operator a one-block initialization plan** before any write happens. Render:
    - Resolved target path.
@@ -56,17 +56,15 @@ Do NOT run during a crew run. This is setup, not runtime.
 
    d. `mcp__wopr__write_handoff_contract_stub` with the absolute target dir. Drops the crew pack's `frontend-handoff-contract.template.md` at the operator-declared `legacy-migration.handoff_contract` path (or the default `frontend-handoff-contract.md`). Only meaningful for backend-producer projects; pure-frontend targets receive the contract from their backend side, so the operator may delete the file on those projects. Refuses to overwrite by default.
 
-   e. `mcp__wopr__write_extracted_requirements_stub` with the absolute target dir. ONLY fires when wopr.yml declares `legacy-migration.legacy_source_root` (i.e., the project is a migration target). The tool returns `Skipped:` for non-migration projects; surface that line and continue without treating it as an error.
+   e. **Draft and write the agent-instructions files yourself**, the same way `/wopr-create-agent-instructions` does: there is no proposal or writer tool for these. Compose `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and `copilot-instructions.md` directly from the detection JSON and the `wopr.yml`/specs just written, then write each with the Write tool at its documented destination (the Copilot file lands at workspace root, not target dir). Check each destination first; do not silently overwrite an existing file. These files tie the previous writes together by pointing the AI at `wopr.yml` and the specs.
 
-   f. `mcp__wopr__propose_agent_instructions` -> `mcp__wopr__write_agent_instructions`. The proposer returns a JSON payload with four keys (`agents_md`, `claude_md`, `gemini_md`, `copilot_instructions_md`); parse it and pass all four to the writer along with the absolute target dir AND the absolute workspace path (the Copilot file lands at workspace root, not target dir). These files tie the previous writes together by pointing the AI at `wopr.yml` and the specs.
-
-   g. Call `mcp__wopr__seed_learnings` with the absolute target path and the detected stack tags (`angular`, `spring-boot`, `fastapi`; pass each that applies). The tool appends curated foundational lessons for the stack to `<target>/LEARNINGS.md` (creating the file if needed) AND registers the workspace in `~/.wopr/workspaces.txt` so cross-workspace reads can aggregate it. Seed entries are marked `seed: true` and bypass the recency cutoff in the CRAG prefilter, so they remain retrievable forever. This is what makes the RAG retrieval path produce useful output on day one of a new project; without seeded entries, the corpus would be empty until the first auditor distillation. Unknown stacks (e.g. Rust, Go) are skipped with no error. If `seed_learnings` returns an error (e.g. no seed files for the detected stack), surface it and continue without seeding rather than abort the whole init.
+   f. Call `mcp__wopr__seed_learnings` with the absolute target path and the detected stack tags (`angular`, `spring-boot`, `fastapi`; pass each that applies). The tool appends curated foundational lessons for the stack to `<target>/LEARNINGS.md` (creating the file if needed) AND registers the workspace in `~/.wopr/workspaces.txt` so cross-workspace reads can aggregate it. Seed entries are marked `seed: true` and bypass the recency cutoff in the CRAG prefilter, so they remain retrievable forever. This is what makes the RAG retrieval path produce useful output on day one of a new project; without seeded entries, the corpus would be empty until the first auditor distillation. Unknown stacks (e.g. Rust, Go) are skipped with no error. If `seed_learnings` returns an error (e.g. no seed files for the detected stack), surface it and continue without seeding rather than abort the whole init.
 
    If any write returns an `Error:` string, surface it, stop the sequence, and tell the operator which step failed. Do not silently continue.
 
 8. **On non-confirm: do nothing.** Report no files written.
 
-9. **After all writes succeed, re-run `mcp__wopr__detect_stack` + `mcp__wopr__recommend_wopr_setup`** and print a final report so the operator can see what (if anything) is still pending. This is the same shape as `/wopr-doctor`'s closing report.
+9. **After all writes succeed, re-run `mcp__wopr__detect_stack` and rebuild the recommendation by hand** (step 4's method) and print a final report so the operator can see what (if anything) is still pending. This is the same shape as `/wopr-doctor`'s closing report.
 
 10. **Print the operator-action followups** that the skill itself cannot run (those would change ~/.claude.json or install global packages):
     - The exact `wopr --init --packs <list>` invocation to install missing WOPR packs.
@@ -85,17 +83,18 @@ Use plain markdown sections. Render proposed file contents inside fenced code bl
 
 <role_boundaries>
 You MAY:
-- Call `mcp__wopr__detect_stack`, `mcp__wopr__recommend_wopr_setup`.
+- Call `mcp__wopr__detect_stack`.
+- Read `catalog/_core/data/doctor-recommendations.yaml`, `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to build recommendations by hand.
 - Call `mcp__wopr__propose_wopr_yml`, `mcp__wopr__write_wopr_yml`.
 - Call `mcp__wopr__write_spec_stubs`.
-- Call `mcp__wopr__write_tracking_doc_stub`, `mcp__wopr__write_handoff_contract_stub`, and `mcp__wopr__write_extracted_requirements_stub` to drop the pack-shipped templates so role agents never have to filesystem-search for them at run time.
-- Call `mcp__wopr__propose_agent_instructions`, `mcp__wopr__write_agent_instructions`.
+- Call `mcp__wopr__write_tracking_doc_stub` and `mcp__wopr__write_handoff_contract_stub` to drop the pack-shipped templates so role agents never have to filesystem-search for them at run time.
+- Draft the agent-instructions files' content directly and write them with the Write tool at their documented destinations, after checking for and refusing to silently overwrite existing files.
 - Call `mcp__wopr__seed_learnings` to seed the project's `LEARNINGS.md` with curated starter lessons for the detected stack.
 - Read existing project files for context.
 
 You MAY NOT:
 - Skip the operator confirmation step. The full plan must be shown and approved before any write.
-- Silently overwrite ANY existing file. If a file is present, surface the error from the tool and ask the operator whether to pass `overwrite=True`.
+- Silently overwrite ANY existing file. If a file is present, surface the error from the tool (or, for the agent-instructions files you write directly, your own existence check) and ask the operator whether to proceed with an explicit overwrite.
 - Install WOPR packs (`wopr --init --packs ...`) or external MCPs on the operator's behalf. Those commands change `~/.claude.json` and must remain operator-driven.
 - Create parent directories beyond `<target>/specs/`. The target itself must already exist.
 - Modify proposed file contents between propose and write. The operator confirms specific strings; those exact strings are what land.

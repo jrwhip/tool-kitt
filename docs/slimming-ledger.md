@@ -146,6 +146,17 @@ Caveat on record: both post-slim REQ-2 runs required a blocker-fix cycle for orc
 | `hooks/README.md`, `_skill_usage.py`, `wopr-run-crew/SKILL.md`, `wopr-create-hooks/SKILL.md`, `crew/README.md`, `crew/scripts/README.md` | SLIMMED | Updated every `catalog/meta-authoring/hooks` or `.../scripts` path reference, and the "WOPR meta-authoring pack" wording in `configure_git_guard.py` / `configure_prompt_log.py` docstrings and error strings, to point at `_core` / `wopr-core`. `tests/test_hook_manifest.py`'s three `REPO_ROOT`-relative catalog paths updated the same way. | P3 | 2026-08-21 |
 | `src/wopr/build_plugins.py`, `src/wopr/conversion_manifest.py` | KEPT unchanged | The generator's `AUXILIARY_DIRS` allowlist (`hooks`, `scripts`, `templates`, `data`) already copies whatever a pack directory has under those names; it does not special-case `meta-authoring` or `_core`, so `wopr-core` picking up `hooks/` and `scripts/` needed no generator change. `conversion_manifest.py` classifies commands by name, not by owning pack, so the four moved commands' tier-3 entries needed no change either. | P3 | 2026-08-21 |
 
+## P5: prose contract enforced (the documents now have a test)
+
+| Artifact | Verdict | Evidence or rationale | Phase | Date |
+| --- | --- | --- | --- | --- |
+| `tests/test_prose_contract.py` | ADDED | Every mcp__ token, subagent_type, and backticked repo path in catalog markdown must resolve against the real registry; runtime WOPR prefix banned from source; third-party prefixes allowlisted with reasons. Caught 8 stale paths and guards the phantom-tool class permanently | P5 | 2026-08-22 |
+| MCP prefix rewrite in build_plugins | ADDED | Source stays mcp__wopr__*; the generator derives and emits the runtime plugin prefix. Fixes the dead auditor append_learnings grant that silently killed the CRAG write path in live plugin sessions | P5 | 2026-08-22 |
+| `_version_check.py` + its tests | CUT | Orphaned since doctor.py's P1 cut; nothing called it. Flagged independently by two agents | P5 | 2026-08-22 |
+| Scrub placeholders (~40) | CUT (neutralized) | All bracket markers replaced with neutral examples repo-wide; the wopr.example.yml YAML parse failure proved them live defects. New test parses every catalog yml example | P5 | 2026-08-22 |
+| Skill-auditor required-tags rule | SLIMMED (amended) | Fixed-template check replaced with objective-equivalent + XML-only-top-level + tag-family consistency; vendored skills exempt. 7-of-19 "failures" were a stale rule, not defects; one real violation fixed (wopr-whats-next) | P5 | 2026-08-22 |
+| `docs/skill-usage-telemetry.md`, `docs/perpetual-learning.md` | ADDED | Written fresh describing current behavior (not ported: the quarry versions describe deleted behavior). Referenced by shipped hooks and commands | P5 | 2026-08-22 |
+
 ## Pending
 
 Not yet cut. Each of these is gated on evidence that does not exist yet,

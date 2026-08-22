@@ -37,7 +37,7 @@ Common tasks that look like agent work but should be a script (or a one-liner th
 
 An Opus subagent invocation costs tens of thousands of tokens. A Python script that reads a CSV and returns an exit code costs zero. Reserve subagent dispatch for the reasoning tasks where that cost is justified (synthesis, design, audit-against-spec, judgment calls).
 
-See `catalog/crew/README.md` "Scripts vs agents" for the heuristic in context and `catalog/crew/scripts/README.md` / `catalog/legacy-migration/scripts/README.md` for examples of where the pack does this in practice.
+See `catalog/crew/README.md` "Scripts vs agents" for the heuristic in context and `catalog/crew/scripts/README.md` for examples of where the pack does this in practice.
 </when_NOT_to_make_a_subagent>
 
 <quick_start>

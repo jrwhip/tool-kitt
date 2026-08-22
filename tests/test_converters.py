@@ -105,7 +105,7 @@ class TestToCopilotAgent:
     def test_task_tool_maps_to_agent(self):
         """Claude's `Task` tool (subagent dispatch) becomes Copilot's
         canonical `agent` tool (`custom-agent` is the accepted alias).
-        Pinned for [TICKET-ID] because the crew orchestrator relies on
+        Pinned for DEMO-123 because the crew orchestrator relies on
         this mapping to dispatch the four role subagents on Copilot the
         same way it does on Claude.
         """

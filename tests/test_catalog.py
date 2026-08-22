@@ -3,8 +3,26 @@
 from pathlib import Path
 from typing import Any
 
+import pytest
+import yaml
+
 from wopr import __version__
 from wopr.catalog import read_lock_file, resolve_packs, write_lock_file
+
+CATALOG_ROOT = Path(__file__).resolve().parents[1] / "catalog"
+
+
+def _catalog_yaml_files() -> list[Path]:
+    return sorted(
+        {
+            *CATALOG_ROOT.rglob("*.yml"),
+            *CATALOG_ROOT.rglob("*.yaml"),
+        }
+    )
+
+
+def _rel_id(path: Path) -> str:
+    return str(path.relative_to(CATALOG_ROOT))
 
 
 class TestLockFile:
@@ -81,3 +99,26 @@ class TestResolvePacks:
     def test_no_input_returns_core_only(self):
         result = resolve_packs()
         assert result == ["_core"]
+
+
+class TestCatalogYamlExamplesParse:
+    """Every YAML file shipped under ``catalog/`` must parse.
+
+    `catalog/crew/templates/wopr.example.yml` previously had a broken
+    example: a bracketed scrub placeholder directly against a bare
+    scalar (``slug: [placeholder]-api``) parses as a flow sequence
+    followed by a trailing scalar, which YAML rejects outright. Nothing
+    caught it because nothing loaded the example files. This guards the
+    whole catalog, not just that one file, against the same mistake.
+    """
+
+    def test_discovery_is_not_empty(self):
+        assert _catalog_yaml_files(), "no *.yml / *.yaml files found under catalog/"
+
+    @pytest.mark.parametrize("yaml_path", _catalog_yaml_files(), ids=_rel_id)
+    def test_yaml_file_parses(self, yaml_path: Path):
+        text = yaml_path.read_text(encoding="utf-8")
+        try:
+            yaml.safe_load(text)
+        except yaml.YAMLError as e:
+            pytest.fail(f"{_rel_id(yaml_path)} failed to parse: {e}")
