@@ -1,5 +1,7 @@
 # The harness shrinks as the models grow: measured
 
+Evidence document. The presentation's thesis is larger than this file: what is possible with AI now, and a wake-up call that the developer's job is supervision (context engineering, defined goals, solid plans, executable gates), not writing code. This file carries the measured facts for three of its beats: a harness can lose to naked Claude, done right the AI's code is genuinely good, and tools have a shelf life that only eval-gated maintenance extends.
+
 Presentation source data. Every number in this document is reproducible from this repository (`evals/golden-req/`) or cited to a published Anthropic source. No number is estimated.
 
 ## The thesis in three sentences
