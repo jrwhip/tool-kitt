@@ -84,10 +84,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("wopr")
 
-# Pinned embedding model. Stored as metadata in every sidecar; on read,
-# a mismatch between the sidecar's recorded model and this constant
-# forces a rebuild. Upgrade procedure: change this constant; the next
-# learnings_search call regenerates affected sidecars.
+# Pinned local embedding model. The sidecar records the ACTIVE
+# provider's qualified name (``local:<this constant>`` via
+# ``_embedding_providers.LOCAL_PROVIDER_NAME``); on read, a mismatch
+# between the recorded name and the active provider forces a rebuild.
+# Upgrade procedure: change this constant; the next learnings_search
+# call regenerates affected sidecars.
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
 # Sidecar filename, always at the same directory level as the paired
@@ -97,9 +99,15 @@ EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 EMBEDDINGS_SIDECAR_FILENAME = "LEARNINGS.embeddings.npz"
 
 # Format version stamped into every sidecar. Bump when the on-disk
-# shape changes (new array, renamed key, etc.); a sidecar with a
-# format_version older than this constant triggers a full rebuild.
-EMBEDDINGS_SIDECAR_FORMAT_VERSION = 1
+# shape changes (new array, renamed key, etc.); a sidecar whose
+# format_version differs from this constant triggers a full rebuild
+# in ``_learnings_sidecar.load_or_rebuild_sidecar``.
+#
+# v2 (Phase 1): meta gains ``dimensions`` (pins the vector column
+# count) and ``model_name`` becomes provider-qualified
+# (``local:BAAI/bge-small-en-v1.5``, ``bedrock:amazon.titan-embed-
+# text-v2:0``; see ``_embedding_providers``).
+EMBEDDINGS_SIDECAR_FORMAT_VERSION = 2
 
 
 # -----------------------------------------------------------------------------
@@ -123,6 +131,10 @@ class SidecarPayload:
     wopr_version: str
     created_at: str
     format_version: int
+    #: Vector column count the sidecar was built with. ``0`` on
+    #: pre-v2 sidecars whose meta never recorded it; the format-version
+    #: rebuild trigger retires those on first load.
+    dimensions: int = 0
 
 
 # -----------------------------------------------------------------------------
@@ -203,6 +215,19 @@ def load_sidecar(path: Path) -> SidecarPayload | None:
             len(ids),
         )
         return None
+    dimensions = int(meta.get("dimensions", 0))
+    if dimensions and len(ids) and vectors.shape[1] != dimensions:
+        # The meta block promises one column count and the matrix
+        # carries another: a truncated write or a hand edit. Treat as
+        # malformed rather than letting a downstream matmul explode.
+        logger.warning(
+            "Sidecar at %s declares %d dimensions but its matrix has %d "
+            "columns; will rebuild.",
+            path,
+            dimensions,
+            vectors.shape[1],
+        )
+        return None
     return SidecarPayload(
         ids=ids,
         vectors=vectors,
@@ -211,6 +236,7 @@ def load_sidecar(path: Path) -> SidecarPayload | None:
         wopr_version=str(meta.get("wopr_version", "")),
         created_at=str(meta.get("created_at", "")),
         format_version=int(meta.get("format_version", 0)),
+        dimensions=dimensions,
     )
 
 
@@ -221,13 +247,18 @@ def save_sidecar(
     *,
     model_name: str,
     sidecar_corpus_hash: str,
+    dimensions: int | None = None,
 ) -> None:
     """Persist ``(ids, vectors, meta)`` to ``path`` atomically.
 
-    ``model_name`` is the pinned model the vectors were produced with;
-    callers MUST pass :data:`EMBEDDING_MODEL` (it is a parameter only
-    to make tests trivially able to inject a different value when
-    exercising the model-mismatch path).
+    ``model_name`` is the provider-qualified name of the engine the
+    vectors were produced with; callers MUST pass the active provider's
+    ``name`` (it is a parameter only to make tests trivially able to
+    inject a different value when exercising the mismatch path).
+
+    ``dimensions`` pins the vector column count in the metadata; when
+    ``None`` it is derived from ``vectors.shape[1]``, which is always
+    correct for a matrix that was just embedded.
 
     ``sidecar_corpus_hash`` is the hash of the entry-ID set the
     vectors cover, produced by :func:`corpus_hash`. Stored in the
@@ -246,6 +277,11 @@ def save_sidecar(
         "wopr_version": __version__,
         "created_at": datetime.now(tz=timezone.utc).isoformat(),
         "format_version": EMBEDDINGS_SIDECAR_FORMAT_VERSION,
+        "dimensions": (
+            dimensions
+            if dimensions is not None
+            else (int(vectors.shape[1]) if vectors.ndim == 2 else 0)
+        ),
     }
     meta_bytes = json.dumps(meta).encode("utf-8")
 

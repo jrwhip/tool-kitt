@@ -33,6 +33,7 @@ Do NOT run this skill as part of a crew run. It is an out-of-band setup tool, no
    - **CRAG status per project (warnings)**: for each existing wopr.yml, render the `warnings` list separately from blockers. The two common warnings are:
      - **CRAG corpus is empty**: `LEARNINGS.md` is missing or has no parseable `## LRN-` entries. The crew runs; the RAG just returns nothing on the first gate until the auditor distills the first entry. Suggest `mcp__wopr__seed_learnings` with the detected stack tags to bootstrap.
      - **Workspace not registered**: the project's absolute path is absent from `~/.wopr/workspaces.txt`. Outside-workspace sessions and sibling-workspace aggregation cannot see this project's lessons. The first call to `seed_learnings`, `append_learnings`, or `learnings_search` from inside the workspace registers it automatically.
+     - **Embeddings status**: call `mcp__wopr__learnings_path` with the project's absolute path and report its `embeddings:` block — the active provider (`local` / `bedrock` / `none`, resolved from the `WOPR_EMBEDDING_PROVIDER` env var, then `wopr.yml` `learnings.embeddings.provider`, then the `local` default), whether the provider is available, and the sidecar state (missing, or present with entry count and dimensions). An unavailable provider or a `none` opt-out means `learnings_search` runs deterministic-prefilter-only; say so explicitly so the operator knows the semantic half is off and why.
      Warnings do NOT flip `ready` to False. Render them so the operator sees the gap and can choose to address it.
    - **WOPR packs**: installed (from `wopr.lock.yaml`) and recommended additions for the detected stack.
    - **External MCPs**: detected signals matched against the MCP registrations across all three CLI configs (`~/.claude.json`, `~/.gemini/settings.json`, `~/.copilot/mcp-config.json`). For each missing MCP, include the install command and documentation URL.
@@ -104,6 +105,7 @@ This skill is read-only.
 
 You MAY:
 - Call `mcp__wopr__detect_stack`.
+- Call `mcp__wopr__learnings_path` (read-only diagnostic) for the embeddings-status warning line.
 - Read `../../data/doctor-recommendations.yaml` (relative to this skill's base directory), `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to build recommendations by hand.
 - Read project files to add operator-facing color to the report when a recommendation is non-obvious.
 

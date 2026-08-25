@@ -26,6 +26,9 @@ import pytest
 numpy = pytest.importorskip("numpy")
 
 from wopr.tools import _embeddings, learnings  # noqa: E402 - import after skip
+from wopr.tools._embedding_providers import (  # noqa: E402 - import after skip
+    LOCAL_PROVIDER_NAME,
+)
 from wopr.tools._embeddings import (  # noqa: E402 - import after skip
     EMBEDDING_MODEL,
     EMBEDDINGS_AVAILABLE,
@@ -376,7 +379,10 @@ class TestBuildSidecar:
         payload = learnings._build_sidecar(learnings_path)
         assert payload is not None
         assert payload.ids == ["LRN-2026-05-13-a", "LRN-2026-05-13-b"]
-        assert payload.model_name == EMBEDDING_MODEL
+        # The sidecar records the provider-qualified name, not the bare
+        # model string (format v2).
+        assert payload.model_name == LOCAL_PROVIDER_NAME
+        assert payload.dimensions == _FakeTextEmbedding.EMBED_DIM
         # Sidecar landed on disk at the paired location.
         sidecar_path = tmp_path / EMBEDDINGS_SIDECAR_FILENAME
         assert sidecar_path.is_file()
@@ -467,6 +473,52 @@ class TestLoadOrRebuildSidecar:
         assert payload.ids == ["LRN-2026-05-13-a", "LRN-2026-05-13-b"]
         assert any("stale" in r.message for r in caplog.records)
 
+    def test_rebuilds_on_format_version_mismatch(
+        self, tmp_path: Path, fake_embedder, caplog: pytest.LogCaptureFixture
+    ):
+        """A sidecar stamped with an older format_version must trigger
+        a full rebuild. Before Phase 1 the version was read back but
+        never compared, so bumping the constant did nothing; this test
+        pins the comparison."""
+        import io as _io
+        import json as _json
+
+        learnings_path = tmp_path / "LEARNINGS.md"
+        learnings_path.write_text(_make_entry_markdown(letter="a"), encoding="utf-8")
+
+        # Hand-craft a v1 sidecar: correct provider name, correct
+        # corpus hash, correct dimensions — ONLY the format version is
+        # stale, so the rebuild can be attributed to it alone.
+        meta_bytes = _json.dumps({
+            "model_name": LOCAL_PROVIDER_NAME,
+            "corpus_hash": corpus_hash(["LRN-2026-05-13-a"]),
+            "wopr_version": "test",
+            "created_at": "test",
+            "format_version": 1,
+            "dimensions": _FakeTextEmbedding.EMBED_DIM,
+        }).encode("utf-8")
+        vec = numpy.zeros((1, _FakeTextEmbedding.EMBED_DIM), dtype=numpy.float32)
+        vec[0, 0] = 1.0
+        buf = _io.BytesIO()
+        numpy.savez_compressed(
+            buf,
+            ids=numpy.array(["LRN-2026-05-13-a"], dtype=numpy.str_),
+            vectors=vec,
+            meta=numpy.frombuffer(meta_bytes, dtype=numpy.uint8),
+        )
+        sidecar_path = tmp_path / EMBEDDINGS_SIDECAR_FILENAME
+        sidecar_path.write_bytes(buf.getvalue())
+
+        with caplog.at_level("INFO", logger="wopr"):
+            payload = learnings._load_or_rebuild_sidecar(learnings_path)
+        assert payload is not None
+        assert payload.format_version == EMBEDDINGS_SIDECAR_FORMAT_VERSION
+        assert any("format_version" in r.message for r in caplog.records)
+        # The rebuilt sidecar on disk carries the current version too.
+        refreshed = load_sidecar(sidecar_path)
+        assert refreshed is not None
+        assert refreshed.format_version == EMBEDDINGS_SIDECAR_FORMAT_VERSION
+
     def test_rebuilds_on_model_mismatch(
         self, tmp_path: Path, fake_embedder, monkeypatch,
         caplog: pytest.LogCaptureFixture,
@@ -485,7 +537,7 @@ class TestLoadOrRebuildSidecar:
         with caplog.at_level("INFO", logger="wopr"):
             payload = learnings._load_or_rebuild_sidecar(learnings_path)
         assert payload is not None
-        assert payload.model_name == EMBEDDING_MODEL
+        assert payload.model_name == LOCAL_PROVIDER_NAME
         assert any("Rebuilding" in r.message for r in caplog.records)
 
 
@@ -619,97 +671,61 @@ class TestAppendLearningsUpdatesSidecar:
 
 
 # -----------------------------------------------------------------------------
-# Doctor: embeddings status + per-workspace sidecar warnings
+# learnings_path embeddings diagnostics
+# -----------------------------------------------------------------------------
+#
+# Replaces the retired ``wopr.tools.doctor`` status/warning helpers:
+# embeddings observability now lives in the ``learnings_path`` MCP tool
+# (the wopr-doctor skill calls it and relays the ``embeddings:`` block).
 # -----------------------------------------------------------------------------
 
 
-class TestDoctorEmbeddingsStatus:
-    def test_status_reports_extra_installed(self, fake_embedder):
-        from wopr.tools.doctor import _get_embeddings_status
+class TestLearningsPathEmbeddingsStatus:
+    async def test_reports_provider_and_missing_sidecar(
+        self, learnings_workspace: Path, fake_embedder
+    ):
+        (learnings_workspace / "LEARNINGS.md").write_text(
+            _make_entry_markdown(), encoding="utf-8"
+        )
+        result = await learnings.learnings_path(str(learnings_workspace))
+        assert "embeddings:" in result
+        assert f"provider: {LOCAL_PROVIDER_NAME}" in result
+        assert "provider_available: True" in result
+        assert str(learnings_workspace / EMBEDDINGS_SIDECAR_FILENAME) in result
+        assert "[missing]" in result
 
-        status = _get_embeddings_status()
-        assert status["extra_installed"] is True
-        assert status["pinned_model"] == EMBEDDING_MODEL
-        assert status["sidecar_filename"] == EMBEDDINGS_SIDECAR_FILENAME
+    async def test_reports_sidecar_contents_after_build(
+        self, learnings_workspace: Path, fake_embedder
+    ):
+        (learnings_workspace / "LEARNINGS.md").write_text(
+            _make_entry_markdown(letter="a") + "\n" + _make_entry_markdown(letter="b"),
+            encoding="utf-8",
+        )
+        learnings._build_sidecar(learnings_workspace / "LEARNINGS.md")
+        result = await learnings.learnings_path(str(learnings_workspace))
+        assert "[present, 2 entries" in result
+        assert f"{_FakeTextEmbedding.EMBED_DIM} dims" in result
+        assert LOCAL_PROVIDER_NAME in result
 
-    def test_status_reports_not_installed(self, monkeypatch):
-        from wopr.tools.doctor import _get_embeddings_status
-
+    async def test_reports_extra_not_installed(
+        self, learnings_workspace: Path, monkeypatch
+    ):
         monkeypatch.setattr(_embeddings, "EMBEDDINGS_AVAILABLE", False)
-        status = _get_embeddings_status()
-        assert status["extra_installed"] is False
-        # Model name and filename are still reported so operators see
-        # what the pin WOULD be if they installed the extra.
-        assert status["pinned_model"] == EMBEDDING_MODEL
+        result = await learnings.learnings_path(str(learnings_workspace))
+        # The provider pin is still reported so operators see what
+        # WOULD run if they installed the extra; availability says why
+        # the semantic path is off.
+        assert f"provider: {LOCAL_PROVIDER_NAME}" in result
+        assert "provider_available: False" in result
+        assert "embeddings extra not installed" in result
 
-
-class TestDoctorSidecarWarnings:
-    def test_no_warnings_when_extra_unavailable(
-        self, tmp_path: Path, monkeypatch
+    async def test_reports_provider_none(
+        self, learnings_workspace: Path, fake_embedder, monkeypatch
     ):
-        from wopr.tools.doctor import _check_embeddings_sidecar
-
-        monkeypatch.setattr(_embeddings, "EMBEDDINGS_AVAILABLE", False)
-        learnings_text = _make_entry_markdown()
-        assert _check_embeddings_sidecar(tmp_path, learnings_text) == []
-
-    def test_no_warnings_when_sidecar_absent(
-        self, tmp_path: Path, fake_embedder
-    ):
-        from wopr.tools.doctor import _check_embeddings_sidecar
-
-        # Sidecar doesn't exist (normal first-run state). No warning.
-        learnings_text = _make_entry_markdown()
-        assert _check_embeddings_sidecar(tmp_path, learnings_text) == []
-
-    def test_emits_model_mismatch_warning(
-        self, tmp_path: Path, fake_embedder
-    ):
-        from wopr.tools.doctor import (
-            WARNING_EMBEDDINGS_SIDECAR_MODEL_MISMATCH,
-            _check_embeddings_sidecar,
-        )
-
-        # Create a sidecar with the wrong model name.
-        sidecar_path = tmp_path / EMBEDDINGS_SIDECAR_FILENAME
-        save_sidecar(
-            sidecar_path,
-            ["LRN-2026-05-13-a"],
-            numpy.array([[1.0, 0.0]], dtype=numpy.float32),
-            model_name="some-old-model",
-            sidecar_corpus_hash=corpus_hash(["LRN-2026-05-13-a"]),
-        )
-        learnings_text = _make_entry_markdown(letter="a")
-        warnings_list = _check_embeddings_sidecar(tmp_path, learnings_text)
-        assert any(
-            WARNING_EMBEDDINGS_SIDECAR_MODEL_MISMATCH in w for w in warnings_list
-        )
-
-    def test_emits_stale_hash_warning(
-        self, tmp_path: Path, fake_embedder
-    ):
-        from wopr.tools.doctor import (
-            WARNING_EMBEDDINGS_SIDECAR_STALE,
-            _check_embeddings_sidecar,
-        )
-
-        # Sidecar records hash for one entry set.
-        sidecar_path = tmp_path / EMBEDDINGS_SIDECAR_FILENAME
-        save_sidecar(
-            sidecar_path,
-            ["LRN-2026-05-13-a"],
-            numpy.array([[1.0, 0.0]], dtype=numpy.float32),
-            model_name=EMBEDDING_MODEL,
-            sidecar_corpus_hash=corpus_hash(["LRN-2026-05-13-a"]),
-        )
-        # But LEARNINGS.md actually has two different entries (b and c).
-        learnings_text = (
-            _make_entry_markdown(letter="b") + "\n" + _make_entry_markdown(letter="c")
-        )
-        warnings_list = _check_embeddings_sidecar(tmp_path, learnings_text)
-        assert any(
-            WARNING_EMBEDDINGS_SIDECAR_STALE in w for w in warnings_list
-        )
+        monkeypatch.setenv("WOPR_EMBEDDING_PROVIDER", "none")
+        result = await learnings.learnings_path(str(learnings_workspace))
+        assert "provider: none" in result
+        assert "disabled by configuration" in result
 
 
 # -----------------------------------------------------------------------------

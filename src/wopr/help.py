@@ -172,7 +172,7 @@ def _help_tools(workspace: Path | None = None) -> str:
         "                          validated; malformed entries are rejected.",
         "  learnings_path          Resolve the corpus path for a workspace.",
         "  seed_learnings          Copy stack-tagged seed entries into a new",
-        "                          corpus (angular, fastapi, spring-boot).",
+        "                          corpus (angular, fastapi).",
         "  curate_learnings        Deduplicate and compact an existing corpus.",
         "",
         "CREW SUBSTRATE (7)",
@@ -298,7 +298,7 @@ def _help_learnings(workspace: Path | None = None) -> str:
         "SEEDS",
         "",
         "  seed_learnings copies stack-tagged starter entries from",
-        "  catalog/crew/data/learnings-seed/ (angular, fastapi, spring-boot)",
+        "  catalog/crew/data/learnings-seed/ (angular, fastapi)",
         "  into a new workspace corpus.",
     ]
     return "\n".join(lines)

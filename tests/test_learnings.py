@@ -494,28 +494,42 @@ class TestSeedLearnings:
         target = workspace / "LEARNINGS.md"
         assert target.is_file()
         content = target.read_text(encoding="utf-8")
-        # All five Angular seeds landed.
-        assert content.count("## LRN-2024-01-01-") == 5
+        # The curated Angular seed set landed. Phase 1 pruned the seeds
+        # down to entries carrying post-cutoff facts the model cannot
+        # know (docs/perpetual-learning.md); coder/tester-spec
+        # restatements were deleted, so no 2024-dated entries remain.
+        assert "## LRN-2026-08-21-c:" in content
+        assert "## LRN-2024-" not in content
         # Seed marker preserved so the prefilter recognizes them.
         assert "seed: true" in content
+
+    def test_spring_boot_is_no_longer_a_seed_stack(self, isolated_env):
+        """Phase 1 removed the spring-boot seeds: a stack with no
+        shipped pack does not get seeds. Seeding it alone now behaves
+        like any unknown stack."""
+        workspace, _ = isolated_env
+        _mark_in_workspace(workspace)
+        result = learnings.seed_learnings(str(workspace), ["spring-boot"])
+        assert result.startswith("Error")
+        assert "no seed files" in result.lower()
 
     def test_seeds_multiple_stacks(self, isolated_env):
         workspace, _ = isolated_env
         _mark_in_workspace(workspace)
         result = learnings.seed_learnings(
-            str(workspace), ["angular", "spring-boot"]
+            str(workspace), ["angular", "fastapi"]
         )
         assert result.startswith("Seeded ")
         content = (workspace / "LEARNINGS.md").read_text(encoding="utf-8")
-        # Angular seeds (LRN-2024-01-01-*) land in full.
-        assert content.count("## LRN-2024-01-01-") == 5
-        # Spring Boot seeds: the original 2024-01-02-* batch plus any
-        # later-dated entries the seed file has grown. Assert both
-        # cohorts are present without hardcoding the total, so adding
-        # more seeds is not a test-breaking change.
-        assert content.count("## LRN-2024-01-02-") == 5
+        # Every curated entry from BOTH stacks landed. This also guards
+        # entry-ID uniqueness across seed files: seed_learnings dedupes
+        # by entry ID across all selected files, so two stacks sharing
+        # an ID would silently drop one entry here.
+        assert "## LRN-2026-08-21-c:" in content  # angular
+        assert "## LRN-2026-08-21-a:" in content  # fastapi (postgres 18)
+        assert "## LRN-2026-08-21-b:" in content  # fastapi (httpx 0.28)
         # At least one entry from each requested stack landed.
-        assert "spring-boot" in content
+        assert "fastapi" in content
         assert "angular" in content
 
     def test_idempotent_when_seeds_already_present(self, isolated_env):

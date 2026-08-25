@@ -98,6 +98,13 @@ COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
             "Claude Code's own transcript shape; neither the wiring nor "
             "the parser transfers to another CLI"
         ),
+        "wopr-configure-token-usage-hook": (
+            "Claude Code-specific: registers a Stop hook in "
+            ".claude/settings.json, and the hook it registers joins "
+            "Claude Code's per-turn usage objects to its tool_use/"
+            "tool_result transcript blocks; neither the wiring nor the "
+            "parser transfers to another CLI"
+        ),
     },
 }
 

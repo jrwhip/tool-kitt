@@ -485,6 +485,7 @@ class TestCatalogHookManifests:
         for fname, cli, hook in [
             ("wopr-configure-capture-skill-hook.md", "claude", "capture-skill-trigger"),
             ("wopr-configure-skill-usage-hook.md", "claude", "skill-usage"),
+            ("wopr-configure-token-usage-hook.md", "claude", "token-usage"),
         ]:
             text = (commands / fname).read_text(encoding="utf-8")
             assert "configure_hook.py" in text, fname

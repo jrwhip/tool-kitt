@@ -28,6 +28,7 @@ project:        # required, pack-agnostic
 specs:          # required, pack-agnostic
 openapi:        # required if any consuming pack uses OpenAPI
 requirements:   # optional, pack-agnostic; defaults to source: local when absent
+learnings:      # optional, pack-agnostic; semantic-search (CRAG) configuration
 legacy-migration:   # required only when the legacy-migration pack is in use
 # future packs add their own sections without disturbing existing ones
 ```
@@ -77,6 +78,14 @@ Pack-agnostic. Tells the orchestrator where the active REQ body comes from at cr
 | `local.path` | optional | string | Directory of `<REQ-ID>.md` files, relative to this `wopr.yml`. Defaults to `requirements` when `source: local` and the field is omitted. Read only when `source: local`. |
 | `jira.project_key` | optional | string | Optional sanity check against the configured Jira project. Read only when `source: jira`. |
 | `jira.cloud_id` | not read | string | If present under `jira`, it is silently ignored. The Atlassian site is resolved at runtime via the Atlassian MCP's `getAccessibleAtlassianResources` call, not stored here; it is machine-level state, not project-level. **(not read by current tooling)** |
+
+## Section: `learnings`
+
+Pack-agnostic, optional. Configures the semantic half of the LEARNINGS retrieval path (`learnings_search`). Read by the MCP server's embedding-provider resolution (`src/wopr/tools/_embedding_providers.py`) from the `wopr.yml` in the workspace root that owns the `LEARNINGS.md` corpus. Absent section means the default: `embeddings.provider: local`.
+
+| Field | Required | Type | Notes |
+|---|---|---|---|
+| `embeddings.provider` | optional | string | Which engine produces entry/query embeddings for semantic search. One of `local` (default; the bundled fastembed + BAAI/bge-small-en-v1.5 model, ~130MB downloaded lazily to `~/.cache/fastembed/` on first use), `bedrock` (Amazon Titan Text Embeddings V2 via AWS Bedrock; requires `pip install 'wopr[bedrock]'` plus AWS credentials and a region — without them, search degrades to the deterministic prefilter, no crash, no AWS call), or `none` (opt-out: semantic search off, the deterministic prefilter is the whole retrieval path). The env var `WOPR_EMBEDDING_PROVIDER` overrides this field on any machine where it is set. Switching providers transparently rebuilds the `.npz` sidecars from the markdown corpus on next search. An unrecognized value is logged and treated as unset. |
 
 ## Section: `legacy-migration`
 

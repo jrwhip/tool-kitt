@@ -41,8 +41,9 @@ from ..catalog import get_global_home
 from ..context import ToolContext
 from . import _curator, _embeddings
 from ._data_paths import candidate_data_paths
-from ._embeddings import (
-    EMBEDDING_MODEL,
+from ._embedding_providers import (
+    EmbeddingProvider,
+    get_active_provider,
 )
 from ._gitignore import ensure_sidecar_gitignored
 from ._leak_vet import find_leak_indicators, format_leak_report
@@ -599,16 +600,27 @@ async def learnings_search(
     # KeyboardInterrupt, SystemExit, and MemoryError propagate so an
     # OOM on a huge vstack does not get logged at WARNING and quietly
     # discarded.
+    #
+    # The provider is resolved ONCE per search, from the resolved
+    # workspace root's configuration (env override first), so every
+    # sidecar consulted in this call uses the same engine. ``none`` or
+    # an unavailable provider (bedrock without credentials, local
+    # extra missing) skips the semantic path entirely: deterministic
+    # results, no network call, no crash.
     sem_hits: list[LearningEntry] = []
     if _embeddings.EMBEDDINGS_AVAILABLE and req_summary.strip() and entries:
-        try:
-            sem_hits = _semantic_top_n(entries, req_summary, limit // 2 or 1)
-        except (OSError, ValueError, RuntimeError, ImportError) as e:
-            logger.warning(
-                "Semantic search failed (%s); falling back to deterministic only.",
-                e,
-            )
-            sem_hits = []
+        provider = get_active_provider(root)
+        if provider is not None and provider.available():
+            try:
+                sem_hits = _semantic_top_n(
+                    entries, req_summary, limit // 2 or 1, provider
+                )
+            except (OSError, ValueError, RuntimeError, ImportError) as e:
+                logger.warning(
+                    "Semantic search failed (%s); falling back to deterministic only.",
+                    e,
+                )
+                sem_hits = []
 
     # Union, dedupe by entry ID, preserve order with deterministic first
     # (the cheap+reproducible floor wins ties; semantic candidates
@@ -630,12 +642,15 @@ def _semantic_top_n(
     entries: list[LearningEntry],
     req_summary: str,
     limit: int,
+    provider: EmbeddingProvider,
 ) -> list[LearningEntry]:
     """Rank ``entries`` by cosine similarity to ``req_summary``; top-N.
 
     Loads each entry's vector from its paired sidecar (one sidecar per
-    distinct ``entry.source_path``). Builds a single matrix in entry
-    order, encodes ``req_summary``, and ranks by cosine similarity.
+    distinct ``entry.source_path``), embedding with ``provider`` — the
+    single engine the caller resolved for this whole search. Builds a
+    single matrix in entry order, encodes ``req_summary``, and ranks by
+    cosine similarity.
 
     Returns ``[]`` when:
     - embeddings extra is not installed,
@@ -670,10 +685,12 @@ def _semantic_top_n(
     aggregated_entries: list[LearningEntry] = []
     matrices: list[Any] = []
     for source_path, source_entries in by_source.items():
-        sidecar = _load_or_rebuild_sidecar(source_path, entries=source_entries)
+        sidecar = _load_or_rebuild_sidecar(
+            source_path, entries=source_entries, provider=provider
+        )
         if sidecar is None:
             continue
-        if sidecar.model_name != EMBEDDING_MODEL:
+        if sidecar.model_name != provider.name:
             # _load_or_rebuild_sidecar should have rebuilt on mismatch;
             # if we still see the wrong model, the rebuild failed.
             # Skip rather than mix incompatible vectors.
@@ -682,7 +699,7 @@ def _semantic_top_n(
                 "semantic ranking for that source.",
                 source_path,
                 sidecar.model_name,
-                EMBEDDING_MODEL,
+                provider.name,
             )
             continue
         id_to_row = {id_: i for i, id_ in enumerate(sidecar.ids)}
@@ -705,8 +722,8 @@ def _semantic_top_n(
     if not aggregated_entries:
         return []
 
-    # Embed the query. embed_texts returns a (1, dim) matrix.
-    query_matrix = _embeddings.embed_texts([req_summary])
+    # Embed the query. provider.embed returns a (1, dim) matrix.
+    query_matrix = provider.embed([req_summary])
     if query_matrix is None or len(query_matrix) == 0:
         return []
 
@@ -754,6 +771,11 @@ async def learnings_path(
     difference is exactly what an operator debugging a missing entry
     needs to see. When no root resolves, every searched directory is
     listed.
+
+    Also reports the semantic layer's state: the active embedding
+    provider (env override / ``wopr.yml`` / default), whether it is
+    available, and the write path's sidecar (presence, entry count,
+    dimensions). See :func:`_embeddings_status_lines`.
     """
     explicit_target = bool(target_workspace_path and str(target_workspace_path).strip())
     try:
@@ -839,10 +861,73 @@ async def learnings_path(
             lines.append(f"  - {p}  [empty]")
         else:
             lines.append(f"  - {p}  [populated, {size} bytes]")
+
+    lines.extend(_embeddings_status_lines(root, write_path))
     return "\n".join(lines)
 
 
-_KNOWN_SEED_STACKS = {"angular", "spring-boot", "fastapi"}
+def _embeddings_status_lines(root: Path | None, write_path: Path | None) -> list[str]:
+    """Embeddings half of the ``learnings_path`` diagnostic.
+
+    Reports the resolved provider (same resolution ``learnings_search``
+    uses: env override, then the workspace root's ``wopr.yml``, then
+    the ``local`` default), whether it is currently available, and the
+    state of the write path's paired sidecar. Together these answer
+    "why did my search return deterministic-only results" without the
+    operator spelunking logs.
+    """
+    lines = ["embeddings:"]
+    provider = get_active_provider(root)
+    if provider is None:
+        lines.append("  provider: none (semantic search disabled by configuration)")
+        return lines
+    lines.append(f"  provider: {provider.name}")
+    if provider.available():
+        lines.append("  provider_available: True")
+    elif not _embeddings.EMBEDDINGS_AVAILABLE:
+        lines.append(
+            "  provider_available: False (embeddings extra not installed; "
+            "deterministic prefilter only)"
+        )
+    else:
+        lines.append(
+            "  provider_available: False (provider not ready — see the WOPR "
+            "log; deterministic prefilter only)"
+        )
+    if write_path is None:
+        lines.append("  sidecar: (no resolved corpus)")
+        return lines
+    sidecar_path = _embeddings.resolve_sidecar_path(write_path)
+    if not sidecar_path.is_file():
+        lines.append(f"  sidecar: {sidecar_path}  [missing]")
+        return lines
+    if not _embeddings.EMBEDDINGS_AVAILABLE:
+        # load_sidecar needs numpy; without the extra we can only
+        # report presence, not contents.
+        lines.append(
+            f"  sidecar: {sidecar_path}  "
+            "[present; install the embeddings extra to inspect]"
+        )
+        return lines
+    sidecar = _embeddings.load_sidecar(sidecar_path)
+    if sidecar is None:
+        lines.append(
+            f"  sidecar: {sidecar_path}  [unreadable; will rebuild on next search]"
+        )
+        return lines
+    lines.append(
+        f"  sidecar: {sidecar_path}  "
+        f"[present, {len(sidecar.ids)} entries, {sidecar.dimensions} dims, "
+        f"model {sidecar.model_name}]"
+    )
+    return lines
+
+
+# Stacks with a curated seed file in ``catalog/crew/data/learnings-seed/``.
+# Deliberately only stacks a shipped pack serves; a stack without a
+# shipped pack gets no seeds (Phase 1 dropped spring-boot's on exactly
+# that ground).
+_KNOWN_SEED_STACKS = {"angular", "fastapi"}
 
 
 def _candidate_seed_paths(stack: str) -> list[Path]:
@@ -883,10 +968,10 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
             root of a multi-package repo). Required; this tool does
             NOT infer the workspace.
         stack_tags: List of stack identifiers to seed. Known values:
-            ``angular``, ``spring-boot``, ``fastapi``. Unknown tags
-            are silently skipped (the seeded set is conservative;
-            stacks without a curated file produce no seeds rather
-            than a generic stub).
+            ``angular``, ``fastapi``. Unknown tags are silently
+            skipped (the seeded set is conservative; stacks without
+            a curated file produce no seeds rather than a generic
+            stub).
 
     Returns:
         Status string. Begins with ``Seeded`` on success listing the

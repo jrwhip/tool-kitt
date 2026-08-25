@@ -39,6 +39,17 @@ openapi:
   spec_url: /v3/api-docs
   pinned_generator_version: springdoc-openapi 2.7.0
 
+# Optional. Semantic-search (CRAG) configuration for learnings_search.
+# Omit the whole section to accept the default (provider: local).
+# learnings:
+#   embeddings:
+#     # local (default) | bedrock | none.
+#     #   local   - bundled fastembed model; works offline after first download.
+#     #   bedrock - Amazon Titan Text Embeddings V2; needs wopr[bedrock] + AWS creds.
+#     #   none    - opt out of semantic search; deterministic prefilter only.
+#     # The WOPR_EMBEDDING_PROVIDER env var overrides this field.
+#     provider: local
+
 legacy-migration:
   # Absolute path. Legacy backend codebase the scout reads in deep_analysis mode.
   legacy_source_root: /path/to/legacy/api/repo

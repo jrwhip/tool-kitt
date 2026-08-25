@@ -609,18 +609,36 @@ class TestServerBundle:
             assert f'"{dep}"' in text
         assert f'{SERVER_ENTRY_POINT} = "wopr.cli:serve"' in text
         assert to_semver(__version__) in text
-        # The dev and embeddings extras are dev-time weight; a plugin
-        # install must not resolve pytest or onnxruntime.
+        # The embeddings deps ship deliberately (Phase 1): the local
+        # semantic-search provider is the default and must work out of
+        # the box.
+        assert "fastembed" in text
+        assert "numpy" in text
+        # The dev extra is dev-time weight; a plugin install must not
+        # resolve pytest or mypy. The bedrock extra is opt-in; boto3
+        # must not ship either.
         assert "pytest" not in text
-        assert "fastembed" not in text
         assert "mypy" not in text
+        assert "boto3" not in text
 
     def test_bundled_dependencies_match_the_source_project(self):
-        """The bundle's deps are a hand-maintained copy; catch the drift."""
+        """The bundle's deps are a hand-maintained copy; catch the drift.
+
+        The bundle ships the base runtime dependencies PLUS the
+        ``embeddings`` extra's pins (Phase 1 decision: the local
+        semantic-search provider works out of the box), so the
+        lockstep shape is base + embeddings, exactly and in order.
+        """
         text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-        block = re.search(r"^dependencies = \[(.*?)^\]", text, re.S | re.M)
-        assert block, "could not find the dependencies block in pyproject.toml"
-        declared = re.findall(r'"([^"]+)"', block.group(1))
+        base_block = re.search(r"^dependencies = \[(.*?)^\]", text, re.S | re.M)
+        assert base_block, "could not find the dependencies block in pyproject.toml"
+        embeddings_block = re.search(r"^embeddings = \[(.*?)^\]", text, re.S | re.M)
+        assert embeddings_block, (
+            "could not find the embeddings extra block in pyproject.toml"
+        )
+        declared = re.findall(r'"([^"]+)"', base_block.group(1)) + re.findall(
+            r'"([^"]+)"', embeddings_block.group(1)
+        )
         assert list(SERVER_DEPENDENCIES) == declared
 
     def test_runtime_resources_are_bundled(self, out_dir: Path):
