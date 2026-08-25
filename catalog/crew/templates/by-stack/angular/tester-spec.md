@@ -142,3 +142,14 @@ When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend th
 - A new isolation rule discovered after a flaky test was diagnosed.
 - A naming convention for a new test category (parameterized cases, property-based tests).
 - A coverage-tool exclusion pattern other test authors will need.
+
+---
+
+## Visual Regression (only when `wopr.yml` declares `specs.design_spec`)
+
+The `crew-designer` role owns these tests; the tester never writes or edits `@visual` tests, and the designer never writes anything else. Listed here because they live in the same e2e tree and the auditor runs them at the gate.
+
+- Mechanism: Playwright screenshot assertions (`await expect(page).toHaveScreenshot(...)`), one per appearance acceptance criterion, tagged `@visual`.
+- Command: `specs.visual_check` from `wopr.yml` (canonically `npx playwright test --grep @visual`).
+- Baselines: committed to the repo at Playwright's default `__screenshots__/` layout. **Only the operator commits or updates a baseline.** The designer generates candidates and lists them; a machine-approved baseline grades the screenshot against itself.
+- Coverage rule: a REQ whose acceptance criteria include appearance with no corresponding `@visual` test is a BLOCKER at audit (auditor checklist item 11).

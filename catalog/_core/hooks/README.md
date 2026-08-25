@@ -21,6 +21,7 @@ Porting a Claude hook to another CLI is not a config change: the event name, con
 | [`git-branch-guard.sh`](#git-branch-guardsh) | Claude | PreToolUse | Block `git commit` and `git push` when the current branch does not match an allowed pattern |
 | [`capture-skill-trigger-hook.py`](#capture-skill-trigger-hookpy) | Claude | Stop | Nudge the agent to consider running `wopr-capture-skill` once a session crosses a tool-call threshold |
 | [`skill-usage-hook.py`](#skill-usage-hookpy) | Claude | Stop | Count native `Skill` tool invocations into WOPR's usage sidecar (names and counts only) |
+| [`token-usage-hook.py`](#token-usage-hookpy) | Claude | Stop | Recompute the session's per-tool token attribution into `~/.wopr/token-usage.json` (names, counts, token figures only) |
 
 Each ships a parameterized standalone configure command that idempotently registers the hook:
 
@@ -28,8 +29,9 @@ Each ships a parameterized standalone configure command that idempotently regist
 - `/wopr-configure-git-guard` (markdown source: `commands/wopr-configure-git-guard.md`, registration script: `scripts/configure_git_guard.py`) → `.claude/settings.json`
 - `/wopr-configure-capture-skill-hook` (markdown source: `commands/wopr-configure-capture-skill-hook.md`) → `.claude/settings.json`
 - `/wopr-configure-skill-usage-hook` (markdown source: `commands/wopr-configure-skill-usage-hook.md`) → `.claude/settings.json`
+- `/wopr-configure-token-usage-hook` (markdown source: `commands/wopr-configure-token-usage-hook.md`) → `.claude/settings.json`
 
-The capture-skill and skill-usage commands shell out to the **one** generic registration script, `scripts/configure_hook.py`, which reads the declarative manifest described below. `configure_prompt_log.py` and `configure_git_guard.py` remain bespoke because they do more than register a hook (rewriting `permissions` entries, seeding `PROMPT_LOG.md`); their wiring is still declared in a `HOOK.yaml` so the entry shape has a single definition.
+The capture-skill, skill-usage, and token-usage commands shell out to the **one** generic registration script, `scripts/configure_hook.py`, which reads the declarative manifest described below. `configure_prompt_log.py` and `configure_git_guard.py` remain bespoke because they do more than register a hook (rewriting `permissions` entries, seeding `PROMPT_LOG.md`); their wiring is still declared in a `HOOK.yaml` so the entry shape has a single definition.
 
 ## Declarative hook manifests (`*.HOOK.yaml`)
 
@@ -289,6 +291,18 @@ All optional.
 #### Reading the data
 
 `wopr skill-usage report` from a terminal, or the `skill_usage_report` MCP tool in a session. `wopr skill-usage pin <name>` (or the `pin_skill` tool) marks a deliberately-rare skill so it is never labelled stale.
+
+### `token-usage-hook.py`
+
+**Claude Code, `Stop` event.** On every turn boundary it re-reads the session transcript and recomputes the whole session's per-tool token attribution into `~/.wopr/token-usage.json` (override with `TOKEN_USAGE_SIDECAR`). Overwrite-on-Stop, so repeated Stop events and resumed sessions never double-count.
+
+What the numbers mean (the handler's docstring is the authority): per-turn `usage` totals are exact; per-tool figures are an attribution — `calls` and `result_chars` are exact, `gen_output_tokens` splits a turn's output across the tools it called, `result_tokens_est` estimates injected context at chars/4. Turns without tool calls land in the `(assistant text)` bucket so per-tool numbers reconcile against the session total.
+
+It stores tool names, counts, and token figures only — never prompt text, tool inputs, file paths, or result bodies. Silent no-op on unparseable payloads, missing transcripts, or unwritable sidecars; safe to register globally.
+
+#### Reading the data
+
+`python3 hooks/token-usage-report.py` (the companion reader in this directory) renders the sidecar per session and per tool.
 
 ## Provenance
 

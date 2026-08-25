@@ -54,6 +54,8 @@ Pack-agnostic. The authoritative documents the agents read on every invocation. 
 | `coder_spec` | yes | string | Path relative to project root. Coding standards document. |
 | `tester_spec` | yes | string | Path relative to project root. Testing standards document. |
 | `audit_report` | yes | string | Path relative to project root. Where the auditor writes the audit report. |
+| `design_spec` | optional | string | Path relative to project root. The project's visual/design spec document. **Presence of this field is what dispatches the `crew-designer` role**; omit it and no crew run pays any appearance cost. Maintained by the designer, approved by the operator. |
+| `visual_check` | optional | string | The command that runs the visual-regression suite (e.g. `npx playwright test --grep @visual`). Required when `design_spec` is set; the auditor runs it at the gate and a failing comparison is a BLOCKER. Baselines are committed to the repo and only ever approved by the operator. |
 | `spec_writes` | optional | boolean | Default **`false`**. Governs whether crew agents may amend the spec sections they own (coder: pattern rules; tester: coverage shapes; auditor: audit rules). `false`: agents *propose* rules in their reports and the operator decides what lands. `true`: the owning agent amends its spec directly as patterns emerge. Read by the crew orchestrator at run start and passed to every crew agent; not parsed by `stack_detect.py`. Certain invariant sections are never amendable regardless of this flag (see the coder-spec template). |
 
 ## Section: `openapi`

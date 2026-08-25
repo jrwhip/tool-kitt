@@ -197,11 +197,12 @@ If the target code does not handle time zones in any meaningful way, delete this
 
 ### Coverage gate (contract with the coder and auditor)
 
-The coverage gate is a five-condition contract owned and stated by the crew orchestrator (`wopr-run-crew`); the coder spec's section 22 carries its stack-specific commands and floors. The tester spec's job is to make conditions 3 (coverage thresholds) and 5 (static-analysis Quality Gate; see section 7 of this spec) verifiable and recorded. On every tester-agent run, the tester:
+The coverage gate is a five-condition contract owned and stated by the crew orchestrator (`wopr-run-crew`); the coder spec's section 22 carries its stack-specific commands and floors. The tester spec's job is to make conditions 3 (traceability: the criterion→test map, with line/branch coverage recorded as diagnostics) and 5 (static-analysis Quality Gate; see section 7 of this spec) verifiable and recorded. On every tester-agent run, the tester:
 
 1. Runs the full coverage command after writing tests and confirms line and branch coverage meet or exceed the floors above.
 2. Records the measured coverage in the implementation-tracking document's `coverage_status` field on the log entry for the current REQ, in the canonical format defined in section 7: `line XX% / branch YY% / static_analysis: PASS|FAIL (reason) / gate: PASS|FAIL (reason)`. There is exactly one format; the auditor parses it.
-3. Does not mark a REQ's tests complete until the measured coverage meets the floor. If coverage is short, the tester either adds tests to close the gap or flags the gap in the tracking document with a concrete description (e.g., "REQ-X-2 missing: 404 path, 406 business-rule-reject path").
+3. Records the criterion→test map on the same log entry: every acceptance criterion names the test(s) exercising it; an untestable criterion gets an explicit reason, never silence. Coverage floors are a working target and honesty check, not the pass metric — traceability is.
+4. Does not mark a REQ's tests complete while a criterion has zero tests or measured coverage is silently short of the recorded value. If coverage is short, the tester either adds tests to close the gap or flags the gap in the tracking document with a concrete description (e.g., "REQ-X-2 missing: 404 path, 406 business-rule-reject path").
 
 The auditor cross-checks the tracking document's `coverage_status` against a fresh coverage report. Drift between the two is a BLOCKER finding. A tester marking coverage as PASS when a fresh report shows FAIL is a BLOCKER finding.
 

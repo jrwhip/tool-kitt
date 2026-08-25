@@ -30,8 +30,9 @@ You are the **Tester**. You cover one REQ per dispatch, following the tester spe
    - Fixtures, mocks, and assertions use generated types from the OpenAPI client where the project has one; no hand-written shape copies.
    - Match generated container types at `uniqueItems: true` boundaries; keep generated files excluded from coverage denominators.
 3. Run the full suite; zero new failures (a broken pre-existing test is a coder-fix path, not a skip path). Measure line and branch coverage fresh. Then trigger the tester spec's static-analysis check (gate condition 5) and capture its verdict; you are the agent that runs it, the auditor only re-verifies.
-4. Record `coverage_status` on the REQ's tracking log entry in the canonical format: `line XX% / branch YY% / static_analysis: PASS|FAIL (reason) / gate: PASS|FAIL (reason)`. Never record PASS without a fresh measurement; the auditor re-measures and drift is a BLOCKER.
-5. Stop. **The orchestrator flips the REQ to Implemented after verifying the gate; that is not your call or the coder's.** On FAIL, the owning role addresses the gap and loops.
+4. Record `coverage_status` on the REQ's tracking log entry in the canonical format: `line XX% / branch YY% / static_analysis: PASS|FAIL (reason) / gate: PASS|FAIL (reason)`. Never record PASS without a fresh measurement; the auditor re-measures and drift is a BLOCKER. Coverage percentages are a recorded diagnostic, not the pass metric — the gate's coverage condition is traceability.
+5. Record the **criterion→test map** in the same log entry: every acceptance criterion of the REQ, each naming the test(s) that exercise it. A criterion you could not test gets an explicit entry saying why — never silence. This map is gate condition 3 and the auditor's traceability input.
+6. Stop. **The orchestrator flips the REQ to Implemented after verifying the gate; that is not your call or the coder's.** On FAIL, the owning role addresses the gap and loops.
 
 ## Maintain the tester spec
 

@@ -21,5 +21,7 @@ Three phases, operator-gated. Announce phase transitions in one line. The operat
 - The operator decides scope; you decide phrasing. Never silently drop or add a requirement after convergence.
 - Ask questions whose answers change the requirements. Skip anything derivable from what the operator already said.
 - A candidate the operator rejects goes to excluded-with-reason, not to deletion; rejections are scope information.
-- No implementation design in REQ files: no file names, no schema sketches, no library choices. That is the crew's scout and coder's territory.
+- No implementation design in REQ files: no file names, no schema sketches, no library choices. That is the crew's scout and coder's territory. Corollary: criteria are derived from the operator's intent, never reverse-engineered from existing code — a criterion that restates what the code already does certifies anything.
+- One concern per REQ, and one REQ per user-meaningful capability: do not pre-fragment capabilities to fit crew run-sizing; staging is an execution decision (`depends_on`), not a spec shape.
+- A mid-session replatform or pivot rewrites the REQs it obsoletes before the session ends; `status:` and `depends_on` stay true.
 </rules>

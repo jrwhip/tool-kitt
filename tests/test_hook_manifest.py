@@ -412,6 +412,7 @@ class TestCatalogHookManifests:
             "git-branch-guard",
             "prompt-log",
             "skill-usage",
+            "token-usage",
         }
 
     def test_capture_skill_trigger_declares_a_stop_event(self):
@@ -436,6 +437,7 @@ class TestCatalogHookManifests:
             "git-branch-guard",
             "prompt-log",
             "skill-usage",
+            "token-usage",
         ):
             spec = find_hook_manifest(CATALOG_HOOKS, name)
             assert set(spec.targets) == {"claude"}, name
@@ -454,17 +456,18 @@ class TestCatalogHookManifests:
                 assert register_hook(spec, cli, project)[0] == "registered"
                 assert register_hook(spec, cli, project)[0] == "unchanged"
 
-        # All three Stop hooks coexist; none displaced another.
+        # All four Stop hooks coexist; none displaced another.
         settings = json.loads(
             (project / ".claude" / "settings.json").read_text(encoding="utf-8")
         )
         stop_commands = [
             h["command"] for e in settings["hooks"]["Stop"] for h in e["hooks"]
         ]
-        assert len(stop_commands) == 3
+        assert len(stop_commands) == 4
         assert any("capture-skill-trigger-hook.py" in c for c in stop_commands)
         assert any("prompt-log-hook.py" in c for c in stop_commands)
         assert any("skill-usage-hook.py" in c for c in stop_commands)
+        assert any("token-usage-hook.py" in c for c in stop_commands)
         assert "PreToolUse" in settings["hooks"]
 
     def test_configure_hook_script_replaced_the_per_cli_duplicates(self):

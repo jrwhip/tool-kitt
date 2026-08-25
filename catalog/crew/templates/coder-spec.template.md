@@ -374,7 +374,19 @@ List the anti-patterns, deprecated APIs, and training-data pitfalls the coder mu
 
 ## 19. Code Comments
 
+> **Non-amendable invariant.** This section may not be amended by any agent, regardless of `spec_writes`. Only the operator changes it.
+
 **Universal rule:** comments explain WHY, not WHAT. Business rules that aren't obvious from the code deserve comments. Boilerplate does not.
+
+**Prohibited in product source — process narrative.** A comment that records how the code came to be, rather than a constraint the next reader needs, is a defect:
+
+- No crew-run or operator rulings ("operator ruling", "binding ruling #N", "crew-run ruling").
+- No learnings ids (`LRN-YYYY-MM-DD-x`) or references to learnings entries.
+- No gate or audit history ("gate-failure fix", "addressed BLOCKER", "re-audited").
+- No dates or session identifiers.
+- No "do not reintroduce X" essays; a regression is prevented by a test, not a comment.
+
+That history belongs in git, the tracking document, and the audit report. The comment's audience is the next person changing the line, who was not in the session. The auditor greps for these shapes and files each hit as a BLOCKER (checklist: process-narrative comments).
 
 **This stack:** [STACK: anything stack-specific about doc comments, e.g. Javadoc conventions, rustdoc format, JSDoc tags]
 
@@ -403,11 +415,13 @@ Anything the above sections did not cover. Examples: file upload handling, webso
 
 ## 22. Coverage Gate
 
+> **Non-amendable invariant.** This section may not be amended by any agent, regardless of `spec_writes`. Only the operator changes it. The `[STACK: ...]` command and floor values are filled once at instantiation; changing a floor is an operator decision.
+
 **Universal rule:** a REQ does not advance from `🔄 In Progress` to `✅ Implemented` until the coverage gate passes. The gate is owned and stated by the crew orchestrator (`wopr-run-crew`); this section supplies the stack-specific commands and floors for its five conditions and does not redefine ownership. **The orchestrator — never the coder — flips the status to `✅`**, and only when all five conditions are met:
 
 1. **Build passes.** `[STACK: build command]` exits 0.
 2. **Tests pass.** `[STACK: full test command]` exits 0. Zero new failures.
-3. **Coverage thresholds met** per the tester spec: line coverage ≥ `[STACK: floor, e.g. 80%]`, branch coverage ≥ `[STACK: floor, e.g. 70%]`. See `[STACK: tester-spec path]` section 6.
+3. **Traceability.** Every acceptance criterion of the REQ maps to at least one named test in the tester's criterion→test map; a zero-test criterion fails the gate. Line coverage ≥ `[STACK: floor, e.g. 80%]` and branch coverage ≥ `[STACK: floor, e.g. 70%]` are measured and **recorded as diagnostics** (see `[STACK: tester-spec path]` section 6); the map, not the percentage, is what passes.
 4. **Handoff contract current.** If the REQ changed the API surface (new endpoint, removed endpoint, changed status code, changed request or response shape, changed header), `[STACK: handoff contract path]` has a line item covering the change with a JSON Pointer into the published spec.
 5. **Static-analysis quality gate passes.** The project's configured static-analysis tool (e.g. SonarCloud, SonarQube, ruff, ESLint, or equivalent) reports the configured Quality Gate as `Passed` for the latest scan covering this REQ's commits. Critical, blocker, and major issues introduced by this REQ count as failures even when the project's overall gate would otherwise pass.
 
@@ -434,3 +448,16 @@ Pointer list of files the coder agent should always be aware of:
 - [STACK: e.g. `SecurityConfig.java` - security wiring]
 - [STACK: e.g. `TimeZoneConstants.java` - timezone constants]
 - [STACK: add any file where a pattern change would ripple through the rest of the codebase]
+
+---
+
+## 23. Module Size and Complexity Ceilings
+
+> **Audited invariant.** The auditor enforces these ceilings mechanically (checklist: maintainability). Raising a ceiling is an operator decision, recorded here with a reason; agents may not amend this section regardless of `spec_writes`.
+
+**Universal rule:** a file the reviewer cannot hold in their head is a defect regardless of whether it works. When a REQ pushes a file past a ceiling, the fix is decomposition in the same change, not an exemption.
+
+- Production source file: ≤ `[STACK: ceiling, e.g. 400 lines]`.
+- Function/method: ≤ `[STACK: ceiling, e.g. 60 lines]`.
+- Cyclomatic complexity per function: ≤ `[STACK: ceiling, e.g. 10, measured by the static-analysis tool in section 22 condition 5]`.
+- Exemptions: generated files (already excluded), and files listed here by the operator with a reason: `[STACK: none yet]`.

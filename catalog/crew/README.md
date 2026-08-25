@@ -24,7 +24,8 @@ catalog/crew/
 │   ├── wopr-crew-coder.md                   implements one REQ at a time
 │   ├── wopr-crew-tester.md                  generates tests for implemented REQs
 │   ├── wopr-crew-auditor.md                 final-gate auditor, writes audit report and distills lessons
-│   └── wopr-crew-evaluator.md               read-only CRAG relevance grader for the perpetual learning corpus
+│   ├── wopr-crew-evaluator.md               read-only CRAG relevance grader for the perpetual learning corpus
+│   └── wopr-crew-designer.md                conditional design/UX role; visual spec + @visual regression tests
 ├── skills/
 │   └── wopr-run-crew/
 │       └── SKILL.md                             orchestrates the four agents end to end, including the CRAG pre-step
@@ -48,6 +49,8 @@ The crew decomposes work into four roles. Each role is a separate agent with a s
 2. **Coder.** Implements one REQ at a time against the coder spec. Updates tracking-doc status. Maintains the coder spec when `spec_writes` is ON. Does not write tests.
 3. **Tester.** Generates tests for the just-implemented REQ against the tester spec. Maintains the tester spec when `spec_writes` is ON. Records coverage status. Does not modify production code.
 4. **Auditor.** Reads everything (specs, tracking doc, handoff contract, audit report history) and decides UNBLOCKED or BLOCKED. Runs once per gate (a gate is not iterative; the merge decision is downstream of the audit report). Writes the audit report.
+
+A fifth, **conditionally dispatched** role exists for projects that declare `specs.design_spec` in `wopr.yml`: the **Designer** (`wopr-crew-designer.md`) maintains the visual spec, derives per-REQ appearance acceptance criteria, and writes the `@visual` regression tests the auditor runs at the gate. Baseline approval is operator-only. Backend-only projects never dispatch it.
 
 The crew's principles, full step-by-step orchestration, intake routing (crew run, blocker fix, frontend handoff, unattended), and verification checklist live in two parallel forms:
 

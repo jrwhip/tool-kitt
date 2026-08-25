@@ -29,6 +29,11 @@ specs:
   # it owns as patterns emerge; false means agents propose rules in their
   # reports and the operator lands them.
   spec_writes: false
+  # Optional pair; set both or neither. Presence of design_spec dispatches the
+  # crew-designer role; visual_check is the visual-regression command the
+  # auditor runs at the gate. Omit for backend-only projects.
+  # design_spec: DESIGN_SPEC.md
+  # visual_check: npx playwright test --grep @visual
 
 openapi:
   spec_url: /v3/api-docs

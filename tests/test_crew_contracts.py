@@ -475,6 +475,40 @@ class TestBasenameDrift:
         assert "tests/test_queue.py" in drift[0]
         assert result["ok"] is True  # advisory, the operator decides
 
+    def test_reproduces_the_arcade_req_arc_1_prefix_drift(
+        self, tmp_path: Path
+    ) -> None:
+        """Defect (b) from live use: the Arcade build's REQ-ARC-1 contract.
+
+        Frontmatter declared ``backend/tests/services/test_auth.py``;
+        body line 110 told the tester the unit tests live in
+        ``tests/services/test_auth.py`` — same basename, missing the
+        ``backend/`` prefix. Two agents following the two halves would
+        write to two different trees. Regression pin per remediation
+        plan 3.2.
+        """
+        path = _write_contract(
+            tmp_path / "crew-contracts",
+            frontmatter_lines=_frontmatter(
+                files_touched=[
+                    "backend/app/services/auth.py",
+                    "backend/tests/services/test_auth.py",
+                ]
+            ),
+            body=(
+                "## Discovery notes\n\n"
+                "Unit tests of the service live in "
+                "`tests/services/test_auth.py`; extend them for the "
+                "join_player flow.\n"
+            ),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        drift = [w for w in result["warnings"] if "path drift" in w]
+        assert len(drift) == 1
+        assert "backend/tests/services/test_auth.py" in drift[0]
+        assert "tests/services/test_auth.py" in drift[0]
+        assert result["ok"] is True  # advisory, the operator decides
+
     def test_body_agreeing_with_frontmatter_does_not_warn(
         self, tmp_path: Path
     ) -> None:
