@@ -105,8 +105,8 @@ description: Create a git commit
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git commit:*)
 ---
 
-Current status: ! `git status`
-Changes: ! `git diff HEAD`
+Current status: !`git status`
+Changes: !`git diff HEAD`
 
 Create a commit for these changes.
 ```
@@ -172,10 +172,10 @@ description: Create a git commit
 
 ## Context
 
-- Current git status: ! `git status`
-- Current git diff (staged and unstaged changes): ! `git diff HEAD`
-- Current branch: ! `git branch --show-current`
-- Recent commits: ! `git log --oneline -10`
+- Current git status: !`git status`
+- Current git diff (staged and unstaged changes): !`git diff HEAD`
+- Current branch: !`git branch --show-current`
+- Recent commits: !`git log --oneline -10`
 
 ## Your task
 

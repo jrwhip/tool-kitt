@@ -1,6 +1,6 @@
 # Tester Spec Template
 
-> **For pack users:** this is a skeleton for the testing standards document the `legacy-migration-tester` agent reads before writing any tests. Fill in every `[STACK: ...]` marker. Delete sections that do not apply. Add sections the skeleton doesn't have if your stack has unique testing concerns (property-based testing, snapshot testing, mutation testing, fuzz testing, etc.).
+> **For pack users:** this is a skeleton for the testing standards document the `crew-tester` agent reads before writing any tests. Fill in every `[STACK: ...]` marker. Delete sections that do not apply. Add sections the skeleton doesn't have if your stack has unique testing concerns (property-based testing, snapshot testing, mutation testing, fuzz testing, etc.).
 >
 > The goal is to give the tester agent a single authoritative source for what tests belong in which directory, how they are named, what they cover, and what they are forbidden to do. If you find yourself correcting the tester twice, the correction belongs here.
 
@@ -197,10 +197,10 @@ If the target code does not handle time zones in any meaningful way, delete this
 
 ### Coverage gate (contract with the coder and auditor)
 
-The coverage gate is a five-condition contract defined in the coder spec's section 22. The tester spec's job is to make conditions 3 (coverage thresholds) and 5 (static-analysis Quality Gate; see section 7 of this spec) verifiable and recorded. On every tester-agent run, the tester:
+The coverage gate is a five-condition contract owned and stated by the crew orchestrator (`wopr-run-crew`); the coder spec's section 22 carries its stack-specific commands and floors. The tester spec's job is to make conditions 3 (coverage thresholds) and 5 (static-analysis Quality Gate; see section 7 of this spec) verifiable and recorded. On every tester-agent run, the tester:
 
 1. Runs the full coverage command after writing tests and confirms line and branch coverage meet or exceed the floors above.
-2. Records the measured coverage in the implementation-tracking document's `coverage_status` field on the log entry for the current REQ. Format: `line XX% / branch YY% / gate: PASS` or `line XX% / branch YY% / gate: FAIL (reason)`.
+2. Records the measured coverage in the implementation-tracking document's `coverage_status` field on the log entry for the current REQ, in the canonical format defined in section 7: `line XX% / branch YY% / static_analysis: PASS|FAIL (reason) / gate: PASS|FAIL (reason)`. There is exactly one format; the auditor parses it.
 3. Does not mark a REQ's tests complete until the measured coverage meets the floor. If coverage is short, the tester either adds tests to close the gap or flags the gap in the tracking document with a concrete description (e.g., "REQ-X-2 missing: 404 path, 406 business-rule-reject path").
 
 The auditor cross-checks the tracking document's `coverage_status` against a fresh coverage report. Drift between the two is a BLOCKER finding. A tester marking coverage as PASS when a fresh report shows FAIL is a BLOCKER finding.

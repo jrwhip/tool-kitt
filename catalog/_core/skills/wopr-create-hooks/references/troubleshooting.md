@@ -22,23 +22,23 @@ Look for:
 
 **2. Check hook file location**
 
-Hooks must be in:
-- Project: `.claude/hooks.json`
-- User: `~/.claude/hooks.json`
+Hooks must be under a top-level `"hooks"` key in:
+- Project: `.claude/settings.json`
+- User: `~/.claude/settings.json`
 - Plugin: `{plugin}/hooks.json`
 
 Verify:
 ```bash
-cat .claude/hooks.json
+jq .hooks .claude/settings.json
 # or
-cat ~/.claude/hooks.json
+jq .hooks ~/.claude/settings.json
 ```
 
 **3. Validate JSON syntax**
 
 Invalid JSON is silently ignored:
 ```bash
-jq . .claude/hooks.json
+jq . .claude/settings.json
 ```
 
 If error: fix JSON syntax.
@@ -86,11 +86,11 @@ node -e "console.log(/bash/.test('Bash'))"  # false
 
 ### Solutions
 
-**Missing hook file**: Create `.claude/hooks.json` or `~/.claude/hooks.json`
+**Missing hooks config**: Add a `"hooks"` key to `.claude/settings.json` or `~/.claude/settings.json`
 
 **Invalid JSON**: Use `jq` to validate and format:
 ```bash
-jq . .claude/hooks.json > temp.json && mv temp.json .claude/hooks.json
+jq . .claude/settings.json > temp.json && mv temp.json .claude/settings.json
 ```
 
 **Wrong matcher**: Check tool names with `--debug` and update matcher

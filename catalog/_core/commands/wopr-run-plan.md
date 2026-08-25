@@ -1,25 +1,21 @@
 ---
-type: prompt
 description: Execute a PLAN.md file directly without loading planning skill context
-arguments:
-  - name: plan_path
-    description: Path to PLAN.md file (e.g., .planning/phases/07-sidebar-reorganization/07-01-PLAN.md)
-    required: true
+argument-hint: [path to PLAN.md, e.g. .planning/phases/07-sidebar-reorganization/07-01-PLAN.md]
 ---
 
-Execute the plan at {{plan_path}} using **intelligent segmentation** for optimal quality.
+Execute the plan at $1 using **intelligent segmentation** for optimal quality. The plan path `$1` is required; if it is empty, ask the user for the PLAN.md path and stop.
 
 **Process:**
 
 1. **Verify plan exists and is unexecuted:**
-   - Read {{plan_path}}
+   - Read $1
    - Check if corresponding SUMMARY.md exists in same directory
    - If SUMMARY exists: inform user plan already executed, ask if they want to re-run
    - If plan doesn't exist: error and exit
 
 2. **Parse plan and determine execution strategy:**
    - Extract `<objective>`, `<execution_context>`, `<context>`, `<tasks>`, `<verification>`, `<success_criteria>` sections
-   - Analyze checkpoint structure: `grep "type=\"checkpoint" {{plan_path}}`
+   - Analyze checkpoint structure: `grep "type=\"checkpoint" $1`
    - Determine routing strategy:
 
    **Strategy A: Fully Autonomous (no checkpoints)**
@@ -46,7 +42,7 @@ Execute the plan at {{plan_path}} using **intelligent segmentation** for optimal
    ```
    Spawn Task tool (subagent_type="general-purpose"):
 
-   Prompt: "Execute plan at {{plan_path}}
+   Prompt: "Execute plan at $1
 
    This is a fully autonomous plan (no checkpoints).
 
@@ -67,7 +63,7 @@ Execute the plan at {{plan_path}} using **intelligent segmentation** for optimal
 
      IF segment is autonomous:
        Spawn subagent:
-         "Execute tasks [X-Y] from {{plan_path}}
+         "Execute tasks [X-Y] from $1
           Read plan for context and deviation rules.
           DO NOT create SUMMARY or commit.
           Report: tasks done, files modified, deviations"

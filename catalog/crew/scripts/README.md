@@ -1,6 +1,6 @@
 # crew scripts
 
-Orchestration scripts for the crew pack. These are not agents or skills; they are deterministic infrastructure that does mechanical work the crew relies on. **Scripts cost zero tokens.** Whenever a step in `wopr-run-crew` is fully deterministic given known inputs and produces a known output shape, it belongs here rather than as an agent dispatch. See "Scripts vs agents" in `catalog/crew/README.md` for the heuristic.
+Orchestration scripts for the crew pack. These are not agents or skills; they are deterministic infrastructure that does mechanical work the crew relies on. **Scripts cost zero tokens.** Whenever a step in `wopr-run-crew` is fully deterministic given known inputs and produces a known output shape, it belongs here rather than as an agent dispatch. See "Scripts vs agents" in the crew pack README for the heuristic.
 
 ## Inventory
 
@@ -48,6 +48,7 @@ CLI-agnostic by design. Defaults target Claude Code (`claude --resume -y`, Claud
 | `RATE_LIMIT_PATTERN` | `You've hit your limit\|resets [0-9]+[ap]m` | Extended regex applied to the session output tail to detect rate-limit exits. |
 | `RESET_TIME_PATTERN` | `[0-9]+[ap]m` | Extended regex matching the reset-time token itself. Used to compute an accurate wait window. |
 | `NEEDS_INPUT_PATTERN` | see script | Extended regex matching phrases the CLI uses when it needs human direction. Rate-limit detection takes precedence. |
+| `BLOCKED_PATTERN` | `PR Readiness Verdict: *BLOCKED` | Extended regex applied to the session output tail to detect a BLOCKED audit verdict. On match the script exits `3` instead of resuming. The default matches the crew auditor's verdict line without matching `UNBLOCKED`. |
 
 ### Optional environment variables (paths)
 
@@ -71,6 +72,7 @@ CLI-agnostic by design. Defaults target Claude Code (`claude --resume -y`, Claud
 | `0` | Manual Ctrl+C during a session. Clean exit. |
 | `1` | Session ended for an unknown reason (task complete, error, or something the heuristics didn't classify). Review the output. |
 | `2` | CLI explicitly asked for human input. The script paused. Review the session output and respond manually. |
+| `3` | Audit gate BLOCKED. The session output matched `BLOCKED_PATTERN`, so the script stopped instead of resuming past the auditor's verdict. Resolve the blockers and resume manually. |
 | `64` | Usage error. `WORK_DIR` was not set or does not point at a directory. |
 
 ### Usage
@@ -104,7 +106,7 @@ Pointed at a different CLI (hypothetical example; adjust to whatever your CLI ac
 WORK_DIR=/Users/you/Projects/my-migration \
 CLI_RESUME_CMD="some-other-cli --resume" \
 RATE_LIMIT_PATTERN="rate limit hit|try again in" \
-RESET_TIME_PATTERN="[0-9]+:[0-9]+" \
+RESET_TIME_PATTERN="[0-9]+ ?[ap]m" \
 ./autorun.sh
 ```
 
@@ -113,6 +115,10 @@ RESET_TIME_PATTERN="[0-9]+:[0-9]+" \
 **Rate-limit detection:** greps the last 100 lines of session output against `RATE_LIMIT_PATTERN`. If it matches, the script extracts the reset time using `RESET_TIME_PATTERN`, computes a wait window from it (plus a 5-minute buffer), and sleeps before resuming. Defaults match Claude Code's output format (`You've hit your limit ... resets Xam|pm`).
 
 **User-input detection:** greps the last 50 lines of session output against `NEEDS_INPUT_PATTERN`. Defaults match common question phrases used by Claude Code. Rate-limit detection takes precedence; a rate-limit exit is never treated as a question.
+
+**Blocked-verdict detection:** greps the last 100 lines of session output against `BLOCKED_PATTERN` (case-sensitive) before every resume decision. On match the script exits `3` rather than piping `RESUME_MESSAGE` back in, so the loop never resumes past a gate the crew auditor closed. This check takes precedence over rate-limit and user-input handling.
+
+Note: `RESET_TIME_PATTERN` must match a token that ends in `am`/`pm` (the parser extracts the hour and an `[ap]m` suffix to compute the wait window). A pattern like `[0-9]+:[0-9]+` matches, but the parse of its result fails; keep the `[ap]m` token in any override.
 
 Both heuristics are intentionally narrow to avoid false positives. False negatives will happen. Use this script only on work where you are comfortable with the agent making progress between your checks.
 

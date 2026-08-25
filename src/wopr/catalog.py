@@ -283,10 +283,10 @@ def resolve_install_target(
 ) -> tuple[Path, Path, str]:
     """Resolve ``(shared_dir, lock_dir, label)`` for an install target.
 
-    Shared by ``wopr --init`` and ``wopr add/remove`` so the
-    workspace-vs-global split lives in one place: a global install reads
-    and writes under ``~/.wopr`` (:func:`get_global_home`), a workspace
-    install under the project's ``.ai-cli/`` directory.
+    Used by the read-only ``wopr list`` subcommand so the
+    workspace-vs-global split lives in one place: a global install is
+    read from ``~/.wopr`` (:func:`get_global_home`), a workspace
+    install from the project's ``.ai-cli/`` directory.
 
     Returns:
         ``(shared_dir, lock_dir, label)`` where ``shared_dir`` is the

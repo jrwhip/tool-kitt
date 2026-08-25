@@ -13,7 +13,7 @@ in two layouts:
 
 The path arithmetic to walk from ``__file__`` up to the repo root and
 then into either ``catalog/`` or ``resources/`` was duplicated across
-``learnings._candidate_seed_paths``, ``wopr_yml._select_stack_template_dir``,
+``learnings._candidate_seed_paths``, ``wopr_yml._select_stack_template_sources``,
 and (at the time) a third copy in ``tools/doctor.py``, since cut along
 with the rest of that module. The DEMO-123 audit flagged the
 duplication as a fragility risk: if the module layout ever changes,

@@ -2,7 +2,7 @@
 
 > **Stack:** Python 3.12+, FastAPI, SQLAlchemy 2.x async, pytest, uv or pip.
 > **This file:** stack-pre-filled starting point.
-> **For the deep version:** `catalog/crew/templates/by-stack/_generic/coder-spec.md`.
+> **For the deep version:** the generic `coder-spec.template.md` in the crew pack's templates (fetch via `get_pack_template`, `pack="crew"`, `name="coder-spec.template.md"`).
 
 ---
 
@@ -96,6 +96,8 @@ FastAPI generates the OpenAPI spec automatically from routes + Pydantic schemas.
 ---
 
 ## Coverage Gate
+
+The five-condition gate (the orchestrator owns and enforces it; the tester records `coverage_status`; the auditor independently re-verifies):
 
 1. `uv run pytest` exits 0.
 2. Zero new failures.

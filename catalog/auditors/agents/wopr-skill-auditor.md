@@ -34,7 +34,7 @@ During audits, prioritize evaluation of:
 </focus_areas>
 
 <critical_workflow>
-**MANDATORY**: Read best practices FIRST, before auditing:
+**Best-practices grounding** (repo checkout only — these paths are repo-relative and do not exist in a plugin install; when they are absent, audit against the criteria embedded in this document instead of searching the filesystem):
 
 1. Read catalog/_core/skills/wopr-create-agent-skills/SKILL.md for overview (including its Router Pattern section)
 2. Read catalog/_core/skills/wopr-create-agent-skills/references/use-xml-tags.md for required/conditional tags, intelligence rules, XML structure requirements

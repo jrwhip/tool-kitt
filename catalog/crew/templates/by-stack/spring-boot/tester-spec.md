@@ -2,7 +2,7 @@
 
 > **Stack:** Spring Boot 3.x, Java 21, JUnit 5, Mockito, Spring MockMvc, JaCoCo, Maven.
 > **This file:** stack-pre-filled starting point.
-> **For the deep version:** `catalog/crew/templates/by-stack/_generic/tester-spec.md`.
+> **For the deep version:** the generic `tester-spec.template.md` in the crew pack's templates (fetch via `get_pack_template`, `pack="crew"`, `name="tester-spec.template.md"`).
 
 ---
 
@@ -153,7 +153,7 @@ Never report `gate: PASS` without a fresh `mvn clean verify` measurement.
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (default), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
+When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
 
 - A new Testcontainers idiom (a shared base class for a specific service).
 - A coverage rule for a new test category (parameterized JUnit 5 tests).

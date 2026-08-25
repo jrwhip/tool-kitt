@@ -5,8 +5,8 @@ description: Expert guidance for creating, configuring, and using hooks. Use whe
 
 <agent_identification>
 **Before proceeding, identify which agent you are:**
-- **I am Claude Code** → Follow [CLAUDE] instructions (uses `.claude/hooks.json`)
-- **I am GitHub Copilot** → [COPILOT] Copilot CLI has a full native hook system: `.github/hooks/*.json` (project) and `~/.copilot/hooks/*.json` (user), 14+ events, with documented Claude compatibility (PascalCase event names, Claude-style matchers, tool-name mapping). Porting a Claude hook is not a config-only change; see `catalog/_core/hooks/README.md` for the verified event and schema differences
+- **I am Claude Code** → Follow [CLAUDE] instructions (uses the `"hooks"` key in `.claude/settings.json`)
+- **I am GitHub Copilot** → [COPILOT] Copilot CLI has a full native hook system: `.github/hooks/*.json` (project) and `~/.copilot/hooks/*.json` (user), 14+ events, with documented Claude compatibility (PascalCase event names, Claude-style matchers, tool-name mapping). Porting a Claude hook is not a config-only change; see `../../hooks/README.md` (relative to this skill's base directory) for the verified event and schema differences
 - **I am Gemini CLI** → Follow [GEMINI] instructions (uses `settings.json` hooks)
 
 **Event name mapping:**
@@ -35,8 +35,8 @@ Hooks are shell commands or LLM-evaluated prompts that execute in response to ag
 
 <quick_start>
 <workflow>
-1. Create hooks config file:
-   - [CLAUDE] Project: `.claude/hooks.json` | User: `~/.claude/hooks.json`
+1. Add a top-level `"hooks"` key to the settings file:
+   - [CLAUDE] Project: `.claude/settings.json` | User: `~/.claude/settings.json`
    - [GEMINI] Project: `.gemini/settings.json` | User: `~/.gemini/settings.json`
 2. Choose hook event (when it fires)
 3. Choose hook type (command or prompt)
@@ -49,7 +49,7 @@ Hooks are shell commands or LLM-evaluated prompts that execute in response to ag
 <example>
 **Log all bash commands**:
 
-`.claude/hooks.json`:
+`.claude/settings.json`:
 ```json
 {
   "hooks": {
@@ -335,14 +335,14 @@ This shows which hooks matched, command execution, and output. See [references/t
 claude --debug
 
 # Validate JSON config
-jq . .claude/hooks.json
+jq . .claude/settings.json
 ```
 </security_checklist>
 
 <success_criteria>
 A working hook configuration has:
 
-- Valid JSON in `.claude/hooks.json` (validated with `jq`)
+- Valid JSON under the `"hooks"` key in `.claude/settings.json` (validated with `jq`)
 - Appropriate hook event selected for the use case
 - Correct matcher pattern that matches target tools
 - Command or prompt that executes without errors

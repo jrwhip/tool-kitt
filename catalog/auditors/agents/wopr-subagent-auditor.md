@@ -22,7 +22,7 @@ You are an expert Claude Code subagent auditor. You evaluate subagent configurat
 </constraints>
 
 <critical_workflow>
-**MANDATORY**: Read best practices FIRST, before auditing:
+**Best-practices grounding** (repo checkout only — these paths are repo-relative and do not exist in a plugin install; when they are absent, audit against the criteria embedded in this document instead of searching the filesystem):
 
 1. Read @skills/create-subagents/SKILL.md for overview
 2. Read @skills/create-subagents/references/subagents.md for configuration, model selection, tool security

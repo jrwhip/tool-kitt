@@ -1,6 +1,6 @@
 # [PROJECT NAME] - Implementation Tracking
 
-> **For pack users:** this is a skeleton for the implementation-tracking document. The scout agent reads it to know current state. The coder agent updates it when a REQ transitions from `⏳` to `🔄` to `✅`. The tester agent updates it (if the tester spec requires) to reflect test coverage state. The auditor agent blocks merge if this document drifts from reality.
+> **For pack users:** this is a skeleton for the implementation-tracking document. The scout agent reads it to know current state. The coder agent marks a REQ `🔄 In Progress`; only the orchestrator flips it to `✅ Implemented`, after the coverage gate passes. The tester agent updates it (if the tester spec requires) to reflect test coverage state. The auditor agent blocks merge if this document drifts from reality.
 >
 > Every REQ ID from the project's requirements source appears here with a status. For legacy migrations, the requirements source is the extracted-requirements document populated by the scout in `deep_analysis` mode. For non-migration projects, the source is whatever the project uses to define REQs (feature backlog, ticket system, written spec). No REQ is silently omitted. Out-of-scope items appear with `❌` and a reason.
 
@@ -71,7 +71,7 @@ Populated at the start of every new crew session by the scout agent. The scout c
 - **Drift:** [count] REQs where implementation diverges from the spec or the requirements source.
 - **New findings:** [count] REQs the scout discovered that were not in the baseline.
 
-The gap-analysis table drives the next crew run's work selection. A `🔄 Partial` with a concrete gap becomes a tester-agent work item. A `Drift` becomes a coder-agent work item. `New findings` become scout work items to formalize into REQs before anyone writes code.
+The gap-analysis table drives the next crew run's work selection. A `🔄 In Progress` row with a concrete coverage gap becomes a tester-agent work item. A `Drift` becomes a coder-agent work item. `New findings` become scout work items to formalize into REQs before anyone writes code.
 
 ---
 
@@ -84,7 +84,7 @@ Append-only log of significant implementation events. Each entry is dated and po
 - **REQs covered:** REQ-[DOMAIN]-N[, ...]
 - **Files:** [list of new or modified production files]
 - **Tests:** [list of new or modified test files]
-- **Coverage status:** [STACK: e.g. `line 83% / branch 72% / gate: PASS`, or `line 67% / branch 50% / gate: FAIL (missing error path coverage for REQ-X-2)`]
+- **Coverage status:** [STACK: e.g. `line 83% / branch 72% / static_analysis: PASS / gate: PASS`, or `line 67% / branch 50% / static_analysis: PASS / gate: FAIL (missing error path coverage for REQ-X-2)`]
 - **Spec version at this commit:** [STACK: e.g. `openapi.json @ 4.2.1`]
 - **Notes:** [anything the next agent or reviewer needs to know, e.g. "role checks deferred until auth is live", "virus scan deferred"]
 

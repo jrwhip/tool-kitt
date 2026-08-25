@@ -2,7 +2,7 @@
 
 > **Stack:** Angular 21+, Vitest, OpenAPI client. NOT Jest. Works for a standalone Angular CLI project or an Nx monorepo; adjust the commands below to match.
 > **This file:** stack-pre-filled starting point.
-> **For the deep version:** `catalog/crew/templates/by-stack/_generic/tester-spec.md`.
+> **For the deep version:** the generic `tester-spec.template.md` in the crew pack's templates (fetch via `get_pack_template`, `pack="crew"`, `name="tester-spec.template.md"`).
 
 ---
 
@@ -114,13 +114,13 @@ Generated files (`src/api/**`, or `libs/<api-name>/src/api/**` in an Nx monorepo
 After tests pass, record on the REQ's implementation-tracking log entry:
 
 ```
-coverage_status: line XX% / branch YY% / gate: PASS
+coverage_status: line XX% / branch YY% / static_analysis: PASS / gate: PASS
 ```
 
 Or, when the gate fails:
 
 ```
-coverage_status: line XX% / branch YY% / gate: FAIL (specific reason, e.g. "REQ-CASE-3 missing 404 path")
+coverage_status: line XX% / branch YY% / static_analysis: PASS / gate: FAIL (specific reason, e.g. "REQ-CASE-3 missing 404 path")
 ```
 
 PASS means:
@@ -135,7 +135,7 @@ Never report `gate: PASS` without a fresh `ng test --coverage` (or `npx nx test 
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (default), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
+When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
 
 - A new fixture-construction idiom (builder for nested signal-based forms).
 - A coverage rule for a new test category.

@@ -52,8 +52,13 @@ Skill NAMES and COUNTS only, by shelling out to::
 No prompt text, no arguments, no file paths -- ``args`` above is read
 past, never recorded. Writing through the ``wopr`` CLI (rather than
 touching the JSON directly) keeps one implementation of the sidecar
-schema; ``wopr`` on PATH is already required by every WOPR install,
-since the MCP registrations invoke it by bare name.
+schema. Note that a plugin install does NOT put ``wopr`` on PATH: the
+plugin bundle exposes only ``wopr-serve``, and the MCP registration
+launches the server through a ``${CLAUDE_PLUGIN_ROOT}`` bootstrap
+script rather than a bare ``wopr``. When ``wopr`` cannot be found the
+hook warns and skips recording; set ``SKILL_USAGE_HOOK_WOPR_BIN`` to
+the path of a real ``wopr`` executable (e.g. from a uv or pipx
+install) to enable recording.
 
 State: a per-session checkpoint in
 ``$cwd/.claude/.skill-usage-hook-state.json`` records how far into the
@@ -88,7 +93,10 @@ Install by adding to your settings.json (or run
 Environment variables (all optional):
   SKILL_USAGE_HOOK_STATE_PATH  Override the checkpoint file location.
                                Default: $cwd/.claude/.skill-usage-hook-state.json
-  SKILL_USAGE_HOOK_WOPR_BIN    Override the wopr executable. Default: "wopr".
+  SKILL_USAGE_HOOK_WOPR_BIN    Path to the wopr executable to record
+                               through. Default: "wopr", which only
+                               resolves when wopr was installed onto
+                               PATH separately from the plugin bundle.
 """
 
 from __future__ import annotations

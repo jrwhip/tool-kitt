@@ -468,3 +468,287 @@ class TestNoForeignToolNamespaceLeaks:
             if f"mcp__{server}__" not in blob
         ]
         assert not unused, f"allowlisted servers nothing references: {unused}"
+
+
+# ===========================================================================
+# e. Install-tree resolution for shipped files
+# ===========================================================================
+
+SHIPPED_PACK_DIRS = frozenset(
+    {"commands", "agents", "skills", "hooks", "scripts", "templates", "data"}
+)
+"""Mirrors ``build_plugins.COMPONENT_DIRS + AUXILIARY_DIRS``: the pack
+subtrees the generator actually emits. Everything else under a pack
+(chiefly the pack-root README) is developer-facing and never installed."""
+
+
+def _is_shipped(path: Path) -> bool:
+    rel = path.relative_to(CATALOG_ROOT)
+    return len(rel.parts) >= 2 and rel.parts[1] in SHIPPED_PACK_DIRS
+
+
+_INSTALL_DEAD_RE = re.compile(r"^(catalog|docs)/")
+
+
+class TestShippedFilesResolveInAnInstall:
+    """A ``catalog/...`` or ``docs/...`` path in a SHIPPED file is dead.
+
+    Those trees exist only in a repo checkout. The plugin layout ships
+    pack subtrees at the plugin root and the schema/templates through
+    ``get_pack_template``; check (c) above resolves against REPO_ROOT
+    and so was blessing 28 references no install could follow. Shipped
+    prose must reference pack-relative paths, skill-base-relative
+    paths, or the MCP template tools instead.
+    """
+
+    def test_shipped_files_carry_no_repo_only_paths(self):
+        violations: list[str] = []
+        for path in CATALOG_MARKDOWN:
+            if not _is_shipped(path):
+                continue
+            for lineno, line in enumerate(_lines(path), start=1):
+                for match in _BACKTICKED_RE.finditer(line):
+                    token = match.group(1).split()[0] if match.group(1).split() else ""
+                    if not _INSTALL_DEAD_RE.match(token):
+                        continue
+                    if token in ILLUSTRATIVE_PATHS:
+                        continue
+                    if token == "docs/":
+                        # A bare directory-name mention ("keep your specs
+                        # under a `docs/` directory") describes the
+                        # OPERATOR's repo layout, not this repo's tree.
+                        continue
+                    violations.append(
+                        f"{_where(path, lineno)}: `{token}` exists only "
+                        "in a repo checkout, never in an install"
+                    )
+        assert not violations, (
+            f"{len(violations)} repo-only path(s) in shipped prose:\n"
+            + "\n".join(violations)
+        )
+
+    def test_the_shipped_split_is_not_vacuous(self):
+        shipped = [p for p in CATALOG_MARKDOWN if _is_shipped(p)]
+        dev_only = [p for p in CATALOG_MARKDOWN if not _is_shipped(p)]
+        assert len(shipped) > 40, len(shipped)
+        assert dev_only, "pack READMEs should be classified dev-only"
+
+
+# ===========================================================================
+# f. Agent bodies only name granted tools
+# ===========================================================================
+
+
+class TestAgentBodiesOnlyNameGrantedTools:
+    """An agent told to call a tool its frontmatter does not grant
+    cannot call it; the instruction fails silently inside the Task
+    session. Skills are exempt (they run in the main session with the
+    full tool surface)."""
+
+    def test_every_agent_body_tool_is_in_its_frontmatter(self):
+        violations: list[str] = []
+        scanned = 0
+        for agents_dir in sorted(CATALOG_ROOT.glob("*/agents")):
+            for agent_md in sorted(agents_dir.glob("*.md")):
+                doc = parse_claude(agent_md.read_text(encoding="utf-8"))
+                tools = doc.frontmatter.get("tools") or []
+                if isinstance(tools, str):
+                    tools = [t.strip() for t in tools.split(",")]
+                granted = {str(t).strip() for t in tools}
+                for lineno, line in enumerate(
+                    doc.body.splitlines(), start=1
+                ):
+                    for match in _TOOL_TOKEN_RE.finditer(line):
+                        scanned += 1
+                        token = f"{SOURCE_TOOL_PREFIX}{match.group('tool')}"
+                        if token not in granted:
+                            violations.append(
+                                f"{agent_md.relative_to(REPO_ROOT)}: body "
+                                f"names {token} but frontmatter tools: does "
+                                "not grant it"
+                            )
+        assert scanned >= 3, f"only {scanned} agent-body tool refs; regex off?"
+        assert not violations, (
+            f"{len(violations)} ungranted tool instruction(s):\n"
+            + "\n".join(violations)
+        )
+
+
+# ===========================================================================
+# g. Named report sections exist in the agent's own template
+# ===========================================================================
+
+_REPORT_SECTION_RE = re.compile(r"report's ([A-Z][A-Za-z -]*?) section")
+
+
+class TestNamedReportSectionsExist:
+    """0.1's failure shape: the auditor's fallback said "record it in
+    the report's Learnings section" and the report template had no such
+    section, so the only writer in the perpetual-learning system had a
+    fallback that discarded its output."""
+
+    def test_every_named_section_appears_in_the_template(self):
+        violations: list[str] = []
+        found = 0
+        for agents_dir in sorted(CATALOG_ROOT.glob("*/agents")):
+            for agent_md in sorted(agents_dir.glob("*.md")):
+                text = agent_md.read_text(encoding="utf-8")
+                for match in _REPORT_SECTION_RE.finditer(text):
+                    found += 1
+                    section = match.group(1).strip()
+                    if not re.search(
+                        rf"^### {re.escape(section)}", text, re.MULTILINE
+                    ):
+                        violations.append(
+                            f"{agent_md.relative_to(REPO_ROOT)}: names "
+                            f"\"the report's {section} section\" but its "
+                            f"template block has no `### {section}` heading"
+                        )
+        assert found >= 1, "the scan found no named report sections at all"
+        assert not violations, "\n".join(violations)
+
+
+# ===========================================================================
+# h. The schema documents every example key
+# ===========================================================================
+
+
+class TestSchemaDocumentsEveryExampleKey:
+    """``wopr.example.yml`` is what operators copy; the schema doc is
+    what agents are told is authoritative. A key in the example the
+    schema never mentions (0.4's ``spec_writes``, the ``parity`` block)
+    is a field the operator cannot look up."""
+
+    def test_every_example_key_is_documented(self):
+        import yaml
+
+        templates = CATALOG_ROOT / "crew" / "templates"
+        example = yaml.safe_load(
+            (templates / "wopr.example.yml").read_text(encoding="utf-8")
+        )
+        schema = (templates / "wopr-yml-schema.md").read_text(encoding="utf-8")
+
+        def leaf_keys(node: object) -> set[str]:
+            keys: set[str] = set()
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    keys.add(str(key))
+                    keys |= leaf_keys(value)
+            return keys
+
+        keys = leaf_keys(example)
+        assert len(keys) >= 20, sorted(keys)
+        missing = sorted(
+            key for key in keys if f"`{key}`" not in schema and f"`{key}." not in schema
+            and f".{key}`" not in schema
+        )
+        assert not missing, (
+            "keys in wopr.example.yml the schema doc never mentions: "
+            f"{missing}"
+        )
+
+
+# ===========================================================================
+# i. The coverage gate is stated once
+# ===========================================================================
+
+CANONICAL_GATE_FILE = (
+    CATALOG_ROOT / "crew" / "skills" / "wopr-run-crew" / "SKILL.md"
+)
+
+
+class TestCoverageGateStatedOnce:
+    """0.5: three owners across eight sites is how the coder came to
+    read a spec that reversed its own agent prompt. The enumerated
+    inline definition lives in the orchestrator skill; everything else
+    parameterizes or references it."""
+
+    def test_the_inline_definition_appears_only_in_the_skill(self):
+        holders = [
+            path
+            for path in CATALOG_MARKDOWN
+            if "(1) Build passes" in path.read_text(encoding="utf-8")
+        ]
+        assert holders == [CANONICAL_GATE_FILE], [
+            str(p.relative_to(REPO_ROOT)) for p in holders
+        ]
+
+    def test_no_file_reassigns_the_status_flip_to_the_coder(self):
+        violations = [
+            f"{_where(path, lineno)}: {line.strip()[:100]}"
+            for path in CATALOG_MARKDOWN
+            for lineno, line in enumerate(_lines(path), start=1)
+            if re.search(r"The coder marks a REQ as? `?✅", line)
+        ]
+        assert not violations, (
+            "the orchestrator owns the ✅ flip; these lines hand it to the "
+            "coder:\n" + "\n".join(violations)
+        )
+
+
+# ===========================================================================
+# j. coverage_status has exactly one format
+# ===========================================================================
+
+_COVERAGE_EXAMPLE_RE = re.compile(r"line\s+(?:XX|\d+)%\s*/\s*branch")
+
+
+class TestCoverageStatusSingleFormat:
+    """The auditor parses ``coverage_status`` (±2% cross-check); a
+    format example omitting ``static_analysis`` teaches the tester to
+    record a value the gate's condition 5 cannot be read from."""
+
+    def test_every_format_example_carries_static_analysis(self):
+        violations: list[str] = []
+        found = 0
+        for path in CATALOG_MARKDOWN:
+            for lineno, line in enumerate(_lines(path), start=1):
+                if _COVERAGE_EXAMPLE_RE.search(line) and "gate:" in line:
+                    found += 1
+                    if "static_analysis" not in line:
+                        violations.append(_where(path, lineno))
+        assert found >= 5, f"only {found} coverage_status examples found"
+        assert not violations, (
+            "coverage_status examples missing the static_analysis field:\n"
+            + "\n".join(violations)
+        )
+
+
+# ===========================================================================
+# k. The retired per-step CRAG model stays retired
+# ===========================================================================
+
+
+class TestRetiredPerStepModel:
+    """d2954e6 reconciled the evaluator to once-per-run; three
+    authorities kept describing the per-step model afterwards. This is
+    the drift lock."""
+
+    FILES = (
+        "src/wopr/help.py",
+        "src/wopr/tools/learnings.py",
+        "src/wopr/tools/_embeddings.py",
+        "catalog/crew/README.md",
+        "catalog/crew/agents/wopr-crew-evaluator.md",
+        "catalog/crew/skills/wopr-run-crew/SKILL.md",
+    )
+    STALE_PHRASES = (
+        "before each working-agent",
+        "before each of the four agent steps",
+        "before each agent step",
+        "four-substep pre-step",
+        "next working agent's `relevant_learnings`",
+        "on every crew pre-step",
+    )
+
+    def test_no_authority_describes_per_step_evaluation(self):
+        violations: list[str] = []
+        for rel in self.FILES:
+            text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+            for phrase in self.STALE_PHRASES:
+                if phrase in text:
+                    violations.append(f"{rel}: {phrase!r}")
+        assert not violations, (
+            "the retired per-step CRAG model resurfaced:\n"
+            + "\n".join(violations)
+        )

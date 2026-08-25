@@ -23,7 +23,7 @@ Do NOT run this skill as part of a crew run. It is an out-of-band setup tool, no
 
 3. **Call `mcp__wopr__detect_stack`** with the resolved absolute path as `workspace_path`. The tool requires this argument; it does not infer a workspace from environment state. The result's top-level `workspace_path` field echoes the directory it scanned. If the result is an `error`, surface it cleanly and stop.
 
-4. **Build the recommendation by hand.** There is no recommendation tool; `detect_stack` only detects. Read `catalog/_core/data/doctor-recommendations.yaml` (the framework-to-pack, signal-to-MCP, and language-to-plugin mapping tables) and cross-reference it against: the stack detected in step 3, the packs installed per `.ai-cli/wopr.lock.yaml`, and the MCP registrations in all three CLI configs (`~/.claude.json`, `~/.gemini/settings.json`, and `~/.copilot/mcp-config.json`). From this, derive missing `wopr.yml` paths, missing WOPR packs, missing external MCPs, and copy-paste install commands.
+4. **Build the recommendation by hand.** There is no recommendation tool; `detect_stack` only detects. Read `../../data/doctor-recommendations.yaml` (relative to this skill's base directory) (the framework-to-pack, signal-to-MCP, and language-to-plugin mapping tables) and cross-reference it against: the stack detected in step 3, the packs installed per `.ai-cli/wopr.lock.yaml`, and the MCP registrations in all three CLI configs (`~/.claude.json`, `~/.gemini/settings.json`, and `~/.copilot/mcp-config.json`). From this, derive missing `wopr.yml` paths, missing WOPR packs, missing external MCPs, and copy-paste install commands.
 
 5. **Print a structured report** to the operator. Format the report sections in this order:
    - **Workspace path**: the scanned directory (same line you already showed in step 2).
@@ -76,9 +76,10 @@ No `wopr.yml` files found.
 Installed: `_core`
 Recommended for this stack: `crew`, `angular`
 
-Install:
+Install (each pack ships as a Claude Code plugin from the WOPR marketplace):
 
-    wopr --init --packs crew,angular
+    /plugin install wopr-crew@wopr-marketplace
+    /plugin install wopr-angular@wopr-marketplace
 
 ## External MCPs
 
@@ -88,9 +89,9 @@ Install:
 
 ## Suggested commands
 
-1. `wopr --init --packs crew,angular`
+1. `/plugin install wopr-crew@wopr-marketplace` and `/plugin install wopr-angular@wopr-marketplace`
 2. `claude mcp add ag-mcp -- npx @ag-grid/ag-grid-mcp@latest`
-3. Create `apps/example-app/wopr.yml` from `catalog/crew/templates/wopr.example.yml`
+3. Create `apps/example-app/wopr.yml` from the crew pack's `wopr.example.yml` (fetch via `get_pack_template`, `pack="crew"`)
 
 Doctor is read-only. Run the commands above. Re-run doctor to confirm gaps closed.
 ```
@@ -103,12 +104,12 @@ This skill is read-only.
 
 You MAY:
 - Call `mcp__wopr__detect_stack`.
-- Read `catalog/_core/data/doctor-recommendations.yaml`, `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to build recommendations by hand.
+- Read `../../data/doctor-recommendations.yaml` (relative to this skill's base directory), `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to build recommendations by hand.
 - Read project files to add operator-facing color to the report when a recommendation is non-obvious.
 
 You MAY NOT:
 - Write `wopr.yml`, `.ai-cli/wopr.lock.yaml`, or any other file.
-- Run `wopr --init --packs ...`, `wopr add`, MCP install commands, or any setup command on the operator's behalf.
+- Run `/plugin install ...`, MCP install commands, or any setup command on the operator's behalf.
 - Modify `~/.claude.json`, `~/.gemini/settings.json`, or `~/.copilot/mcp-config.json` to register new MCPs.
 - Install Python packages.
 - Edit project source code.

@@ -4,7 +4,7 @@ Two kinds of templates live here:
 
 **Tracking-document templates** (the four `*.template.md` files): skeletons for the documents a crew run produces and consumes. The caller fills in `[STACK: ...]` markers with stack specifics before the crew starts.
 
-**Project config example** (`wopr.example.yml`): a worked example of the WOPR-shared project configuration file. Each project has its own `wopr.yml` at its project root. Schema reference: `docs/wopr-yml-schema.md`.
+**Project config example** (`wopr.example.yml`): a worked example of the WOPR-shared project configuration file. Each project has its own `wopr.yml` at its project root. Schema reference: `wopr-yml-schema.md` (this directory; ships with the pack).
 
 ## Tracking-document templates
 
@@ -12,7 +12,7 @@ Two kinds of templates live here:
 |---|---|---|---|
 | `coder-spec.template.md` | Coding standards, architecture patterns, naming conventions, implementation rules | coder, auditor | human initially (team decides conventions); coder maintains it as patterns emerge when `spec_writes` is ON |
 | `tester-spec.template.md` | Test framework setup, unit/component patterns, coverage standards, naming conventions | tester, auditor | human initially; tester maintains it as coverage shapes emerge when `spec_writes` is ON |
-| `implementation-tracking.template.md` | Per-REQ status (pending, in-progress, implemented, out-of-scope) | all four agents | coder (status transitions), tester (coverage state), scout (drift corrections), auditor (read-only) |
+| `implementation-tracking.template.md` | Per-REQ status (pending, in-progress, implemented, out-of-scope) | all four agents | coder (⏳ → 🔄 and log entries), tester (coverage state), scout (drift corrections), **orchestrator (🔄 → ✅, only after the coverage gate passes)**, auditor (read-only) |
 | `frontend-handoff-contract.template.md` | Every new or changed API surface item with REQ IDs and UI action items | coder, auditor, frontend team | coder (updates on every API change); auditor (BLOCKS merge if out of sync) |
 
 For migration projects, an additional template (`extracted-requirements.template.md`) ships with the `legacy-migration` pack, which is not part of this distribution. The scout populates it in `deep_analysis` mode by reading the legacy codebase. Non-migration projects do not need this template; they populate the implementation-tracking document's Requirements Baseline directly from their own requirements source (feature backlog, written spec, ticket system).
@@ -24,13 +24,13 @@ For migration projects, an additional template (`extracted-requirements.template
 See:
 
 - `wopr.example.yml` (this directory): worked examples for both a backend and a frontend project.
-- `docs/wopr-yml-schema.md`: full schema with section-by-section field tables.
+- `wopr-yml-schema.md` (this directory): full schema with section-by-section field tables. Agents fetch it via `mcp__wopr__get_pack_template` (`pack="crew"`, `name="wopr-yml-schema.md"`).
 
 The crew does not run without `wopr.yml`. If it is missing at the resolved path, every agent stops and reports.
 
 ## How to use a tracking-document template
 
-The default path is to let the WOPR setup tooling drop these templates for you. Operators should run `/wopr-init-project` (or the targeted stub-writer MCP tools below), not hand-copy from `catalog/crew/templates/`.
+The default path is to let the WOPR setup tooling drop these templates for you. Operators should run `/wopr-init-project` (or the targeted stub-writer MCP tools below), not hand-copy from this directory.
 
 **Recommended (one-shot):**
 
@@ -51,7 +51,7 @@ Both stub writers refuse to overwrite an existing file by default; pass `overwri
 2. Walk through every `[STACK: ...]` marker and replace it with your stack's specifics. Delete sections that do not apply. Add sections for concerns the skeleton doesn't cover.
 3. Point your `wopr.yml` at the filled-in document (`/wopr-init-project` handles this for the default paths).
 
-**Manual fallback:** if for any reason you need to hand-copy, the templates live in `catalog/crew/templates/`. Treat this as the exception, not the default; it is what the stub-writer tools exist to eliminate.
+**Manual fallback:** if for any reason you need to hand-copy, the templates live alongside this README in the crew pack. Treat this as the exception, not the default; it is what the stub-writer tools exist to eliminate.
 
 ## Stack-agnostic vs stack-specific content
 

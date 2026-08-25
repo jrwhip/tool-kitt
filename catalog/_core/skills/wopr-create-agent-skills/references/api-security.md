@@ -22,7 +22,7 @@ Use `~/.claude/scripts/secure-api.sh` - a wrapper that loads credentials interna
 ~/.claude/scripts/secure-api.sh <service> <operation> [args]
 
 # Examples:
-~/.claude/scripts/secure-api.sh facebook list-campaigns
+~/.claude/scripts/secure-api.sh acme-crm list-campaigns
 ~/.claude/scripts/secure-api.sh ghl search-contact "email@example.com"
 ```
 </for_supported_services>
@@ -210,7 +210,7 @@ Test the wrapper without exposing credentials:
 
 ```bash
 # This command appears in chat
-~/.claude/scripts/secure-api.sh facebook list-campaigns
+~/.claude/scripts/secure-api.sh acme-crm list-campaigns
 
 # But API keys never appear - they're loaded inside the script
 ```

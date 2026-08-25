@@ -6,7 +6,7 @@
 # In a real project, only ONE of these blocks would appear at the project root,
 # named exactly `wopr.yml`. They are colocated here for reference.
 #
-# Schema reference: docs/wopr-yml-schema.md
+# Schema reference: wopr-yml-schema.md (ships alongside this file in the crew pack)
 
 # ============================================================================
 # Example A: Spring Boot backend project (legacy migration)
@@ -25,6 +25,10 @@ specs:
   coder_spec: CODER_SPEC.md
   tester_spec: TESTER_SPEC.md
   audit_report: AUDIT_REPORT.md
+  # Optional, default false. true lets each crew agent amend the spec sections
+  # it owns as patterns emerge; false means agents propose rules in their
+  # reports and the operator lands them.
+  spec_writes: false
 
 openapi:
   spec_url: /v3/api-docs

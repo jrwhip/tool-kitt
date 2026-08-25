@@ -85,7 +85,7 @@ Clear, measurable criteria for successful completion.
 **`<context>`** - When loading dynamic state or files
 ```markdown
 <context>
-Current state: ! `git status`
+Current state: !`git status`
 Relevant files: @ package.json
 </context>
 ```
@@ -103,8 +103,8 @@ Before completing, verify:
 **`<testing>`** - When running tests is part of the workflow
 ```markdown
 <testing>
-Run tests: ! `npm test`
-Check linting: ! `npm run lint`
+Run tests: !`npm test`
+Check linting: !`npm run lint`
 </testing>
 ```
 
@@ -133,7 +133,7 @@ This helps [who] achieve [outcome].
 </objective>
 
 <context>
-Current state: ! `relevant command`
+Current state: !`relevant command`
 Files: @ relevant/files
 </context>
 
@@ -229,7 +229,7 @@ This ensures bugs are resolved systematically with proper testing.
 ```markdown
 <context>
 Issue details: @ issues/$ARGUMENTS.md
-Related files: ! `grep -r "TODO.*$ARGUMENTS" src/`
+Related files: !`grep -r "TODO.*$ARGUMENTS" src/`
 </context>
 ```
 (Note: Remove the space after the exclamation mark in actual usage)
@@ -346,10 +346,10 @@ allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*)
 
 ## Context
 
-- Current git status: ! `git status`
-- Current git diff: ! `git diff HEAD`
-- Current branch: ! `git branch --show-current`
-- Recent commits: ! `git log --oneline -10`
+- Current git status: !`git status`
+- Current git diff: !`git diff HEAD`
+- Current branch: !`git branch --show-current`
+- Recent commits: !`git log --oneline -10`
 
 ## Your task
 
@@ -399,8 +399,8 @@ description: Optimize stuff
 
 **3. Use dynamic context for state-dependent tasks**
 ```markdown
-Current git status: ! `git status`
-Files changed: ! `git diff --name-only`
+Current git status: !`git status`
+Files changed: !`git diff --name-only`
 ```
 
 **4. Restrict tools when appropriate**
@@ -462,9 +462,9 @@ Create a git commit for current changes following repository conventions.
 </objective>
 
 <context>
-- Current status: ! `git status`
-- Changes: ! `git diff HEAD`
-- Recent commits: ! `git log --oneline -5`
+- Current status: !`git status`
+- Changes: !`git diff HEAD`
+- Recent commits: !`git log --oneline -5`
 </context>
 
 <process>
@@ -592,7 +592,7 @@ See [references/patterns.md](references/patterns.md) for more examples.
    - `<success_criteria>` - Definition of done
 
    **Include when relevant:**
-   - `<context>` - Dynamic state (! `commands`) or file references (@ files)
+   - `<context>` - Dynamic state (!`commands`) or file references (@ files)
    - `<verification>` - Checks to perform if creating artifacts
    - `<testing>` - Test commands if tests are part of workflow
    - `<output>` - Files created/modified

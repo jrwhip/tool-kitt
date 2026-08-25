@@ -281,12 +281,12 @@ description: Processes Excel files and generates reports. Use when analyzing spr
 
 <pitfall name="wrong_naming_convention">
 ❌ **BAD**: Directory name doesn't match skill name or verb-noun convention:
-- Directory: `facebook-ads`, Name: `facebook-ads-manager`
+- Directory: `acme-crm`, Name: `acme-crm-manager`
 - Directory: `stripe-integration`, Name: `stripe`
 - Directory: `helper-scripts`, Name: `helper`
 
 ✅ **GOOD**: Consistent verb-noun convention:
-- Directory: `manage-facebook-ads`, Name: `manage-facebook-ads`
+- Directory: `manage-acme-crm`, Name: `manage-acme-crm`
 - Directory: `setup-stripe-payments`, Name: `setup-stripe-payments`
 - Directory: `process-pdfs`, Name: `process-pdfs`
 
@@ -474,7 +474,7 @@ Keep SKILL.md concise by linking to detailed reference files. Claude loads refer
 <implementation>
 ```xml
 <objective>
-Manage Facebook Ads campaigns, ad sets, and ads via the Marketing API.
+Manage Acme CRM accounts, campaigns, and contacts via the Acme REST API.
 </objective>
 
 <quick_start>
@@ -484,7 +484,7 @@ See [basic-operations.md](basic-operations.md) for campaign creation and managem
 </quick_start>
 
 <advanced_features>
-**Custom audiences**: See [audiences.md](audiences.md)
+**Audience segments**: See [audiences.md](audiences.md)
 **Conversion tracking**: See [conversions.md](conversions.md)
 **Budget optimization**: See [budgets.md](budgets.md)
 **API reference**: See [api-reference.md](api-reference.md)

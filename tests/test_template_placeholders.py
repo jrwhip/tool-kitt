@@ -24,6 +24,14 @@ does so inside backtick code spans or fenced code blocks; those are
 stripped before the non-template scan so documentation of a marker is
 never confused with a leak of one. Templates are scanned raw — a
 placeholder counts wherever it appears.
+
+A third invariant guards privacy-scrub residue. The 2026-08 workspace
+scrub replaced client and personal identifiers with mapped shapes
+(``[client-...]`` markers, ``FOC26`` codes, ``REQ-COMPLAINANT`` ids);
+none of them may appear in shipped catalog content. Unlike the
+placeholder scan, the residue scan runs on the RAW text — code spans
+and fenced blocks do not excuse residue, and the one leak this check
+was written against sat inside an inline code span.
 """
 
 from __future__ import annotations
@@ -49,6 +57,15 @@ PLACEHOLDER_RE = re.compile(
     r"|\[PROJECT NAME\]"
     r"|<[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+>"
     r"|TODO:"
+)
+
+# Privacy-scrub residue shapes from the 2026-08 identifier scrub.
+# Scanned raw (no code stripping): residue inside a code span is still
+# residue.
+SCRUB_RESIDUE_RE = re.compile(
+    r"\[client-[^\]]*\]"
+    r"|FOC26"
+    r"|REQ-COMPLAINANT"
 )
 
 _INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
@@ -139,4 +156,23 @@ def test_non_template_has_no_leftover_placeholders(asset_path: Path):
     assert not leftovers, (
         f"{_rel_id(asset_path)} contains leftover placeholder tokens "
         f"outside code spans: {leftovers}"
+    )
+
+
+@pytest.mark.parametrize(
+    "path", _template_files() + _non_template_files(), ids=_rel_id
+)
+def test_no_scrub_residue(path: Path):
+    """Invariant 3: no privacy-scrub residue anywhere, code spans included.
+
+    Runs on the raw text deliberately: the placeholder scan's code
+    stripping would hide residue quoted in an inline code span, which is
+    exactly where the known leak lived.
+    """
+    text = path.read_text(encoding="utf-8")
+    residue = sorted(set(SCRUB_RESIDUE_RE.findall(text)))
+    assert not residue, (
+        f"{_rel_id(path)} contains privacy-scrub residue: {residue}. "
+        "These identifiers were scrubbed from the workspace and must not "
+        "ship in catalog content, even inside code spans."
     )

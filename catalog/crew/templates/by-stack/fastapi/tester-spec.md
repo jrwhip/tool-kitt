@@ -2,7 +2,7 @@
 
 > **Stack:** Python 3.12+, pytest, httpx, pytest-asyncio, coverage.py, uv.
 > **This file:** stack-pre-filled starting point.
-> **For the deep version:** `catalog/crew/templates/by-stack/_generic/tester-spec.md`.
+> **For the deep version:** the generic `tester-spec.template.md` in the crew pack's templates (fetch via `get_pack_template`, `pack="crew"`, `name="tester-spec.template.md"`).
 
 ---
 

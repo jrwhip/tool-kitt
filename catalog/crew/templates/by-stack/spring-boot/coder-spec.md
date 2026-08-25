@@ -2,7 +2,7 @@
 
 > **Stack:** Spring Boot 3.x, Java 21, Maven, springdoc-openapi, JPA/Hibernate.
 > **This file:** stack-pre-filled starting point. Adjust per project; do not start from scratch.
-> **For the deep version:** `catalog/crew/templates/by-stack/_generic/coder-spec.md`.
+> **For the deep version:** the generic `coder-spec.template.md` in the crew pack's templates (fetch via `get_pack_template`, `pack="crew"`, `name="coder-spec.template.md"`).
 
 ---
 
@@ -133,6 +133,8 @@ The pinned springdoc version lives in `wopr.yml` (`openapi.pinned_generator_vers
 
 ## Coverage Gate
 
+The five-condition gate (the orchestrator owns and enforces it; the tester records `coverage_status`; the auditor independently re-verifies):
+
 1. Build passes. `mvn clean verify` exits 0.
 2. Full test suite passes. Zero new failures.
 3. Line coverage >= **TODO: project floor (start at 80)**. Branch coverage >= **TODO: project floor (start at 70)**. Measured by JaCoCo at `target/site/jacoco/index.html`.
@@ -143,7 +145,7 @@ The pinned springdoc version lives in `wopr.yml` (`openapi.pinned_generator_vers
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (default), amend this spec when a new pattern emerges. Examples:
+When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend this spec when a new pattern emerges. Examples:
 
 - A new idiom for cross-cutting concerns (a new annotation, a new aspect).
 - A naming convention for a new category of class.

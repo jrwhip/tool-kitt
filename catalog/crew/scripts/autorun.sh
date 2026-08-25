@@ -53,6 +53,15 @@
 #                       takes precedence.
 #                       Default matches Claude Code's common question phrases.
 #
+#   BLOCKED_PATTERN     Extended regex applied to the tail of SESSION_OUTPUT
+#                       to detect a BLOCKED audit verdict before resuming.
+#                       On match the script exits 3 instead of resuming, so
+#                       the loop never plows past a gate the auditor closed.
+#                       The default matches the crew auditor's verdict line
+#                       ("## PR Readiness Verdict: BLOCKED") without matching
+#                       UNBLOCKED.
+#                       Default: "PR Readiness Verdict: *BLOCKED"
+#
 # ------------------------------------------------------------------------------
 # Optional environment variables (paths)
 # ------------------------------------------------------------------------------
@@ -87,6 +96,8 @@
 #       something the heuristics didn't classify)
 #   2   CLI explicitly asked for human input; autorun paused, review
 #       the session output and respond manually
+#   3   Audit gate BLOCKED; session output matched BLOCKED_PATTERN, so
+#       autorun stopped instead of resuming past the auditor's verdict
 #   64  Usage error (WORK_DIR missing or not a directory)
 #
 # ------------------------------------------------------------------------------
@@ -108,6 +119,9 @@
 # ------------------------------------------------------------------------------
 
 set -u
+# pipefail so $? after the resume pipeline reflects the CLI's exit status,
+# not the trailing tee's (which always succeeds and would hide Ctrl+C's 130).
+set -o pipefail
 
 # ---- Required variable check -------------------------------------------------
 
@@ -135,9 +149,13 @@ WAIT_TIME="${WAIT_TIME:-18000}"
 RESUME_MESSAGE="${RESUME_MESSAGE:-continue}"
 
 CLI_RESUME_CMD="${CLI_RESUME_CMD:-claude --resume -y}"
-RATE_LIMIT_PATTERN="${RATE_LIMIT_PATTERN:-You've hit your limit|resets [0-9]+[ap]m}"
+# Default kept in a plain assignment: an apostrophe inside a double-quoted
+# ${VAR:-...} word opens a quote in bash and breaks the parse (zsh tolerates it).
+DEFAULT_RATE_LIMIT_PATTERN="You've hit your limit|resets [0-9]+[ap]m"
+RATE_LIMIT_PATTERN="${RATE_LIMIT_PATTERN:-$DEFAULT_RATE_LIMIT_PATTERN}"
 RESET_TIME_PATTERN="${RESET_TIME_PATTERN:-[0-9]+[ap]m}"
 NEEDS_INPUT_PATTERN="${NEEDS_INPUT_PATTERN:-(what would you like|do you want me to|should I |how would you like|want me to proceed|shall I |please (clarify|provide|confirm|let me know)|which option|waiting for your|need your input)}"
+BLOCKED_PATTERN="${BLOCKED_PATTERN:-PR Readiness Verdict: *BLOCKED}"
 
 cd "$WORK_DIR" || { echo "Failed to cd to $WORK_DIR" >&2; exit 1; }
 
@@ -207,6 +225,18 @@ calculate_wait_time() {
     echo $WAIT_TIME  # fallback
 }
 
+# Detect a BLOCKED audit verdict in the last session's output. Resuming past
+# a closed gate would let the loop keep working on a PR the auditor rejected.
+# Case-sensitive on purpose: the verdict token is uppercase, and a loose match
+# would trip on prose that merely mentions being blocked.
+check_blocked() {
+    local last_lines=$(tail -100 "$SESSION_OUTPUT" 2>/dev/null)
+    if echo "$last_lines" | grep -qE "$BLOCKED_PATTERN"; then
+        return 0
+    fi
+    return 1
+}
+
 # Detect explicit requests for human input. Rate-limit exits are excluded
 # first so they take precedence over the question heuristic.
 check_needs_user_input() {
@@ -270,6 +300,7 @@ while true; do
     # auto-accept permission prompts; other CLIs will need an equivalent.
     echo "$RESUME_MESSAGE" | eval "$CLI_RESUME_CMD" 2>&1 | tee -a "$LOG_FILE" | tee "$SESSION_OUTPUT"
 
+    # pipefail makes this the CLI's (eval element's) status, not the last tee's.
     EXIT_CODE=$?
     log "Session ended with exit code: $EXIT_CODE"
 
@@ -277,6 +308,15 @@ while true; do
     if [ $EXIT_CODE -eq 130 ]; then
         log "Manually interrupted. Exiting."
         exit 0
+    fi
+
+    # BLOCKED audit verdict means stop; never resume past a closed gate
+    if check_blocked; then
+        log "BLOCKED: session output matched BLOCKED_PATTERN (\"$BLOCKED_PATTERN\")."
+        log "The audit gate is closed. Resolve the blockers, then resume manually."
+        update_prompt_log "BLOCKED audit verdict detected, autorun stopped" $SESSION_COUNT
+        notify "Audit gate BLOCKED. Autorun stopped."
+        exit 3
     fi
 
     # Rate limit means wait and loop

@@ -1,6 +1,6 @@
 # Coder Spec Template
 
-> **For pack users:** this is a skeleton for the coding standards document the `legacy-migration-coder` agent reads before doing any work. Fill in every `[STACK: ...]` marker with your stack's specifics. Delete sections that do not apply. Add sections the skeleton doesn't have if your stack has unique concerns (for example: WASM boundary crossings, serialization formats, cross-language FFI).
+> **For pack users:** this is a skeleton for the coding standards document the `crew-coder` agent reads before doing any work. Fill in every `[STACK: ...]` marker with your stack's specifics. Delete sections that do not apply. Add sections the skeleton doesn't have if your stack has unique concerns (for example: WASM boundary crossings, serialization formats, cross-language FFI).
 >
 > The goal of this document is to give the coder agent a single authoritative source for every decision it would otherwise make ad-hoc. If you find the coder doing something you have to correct twice, that correction belongs here.
 
@@ -403,7 +403,7 @@ Anything the above sections did not cover. Examples: file upload handling, webso
 
 ## 22. Coverage Gate
 
-**Universal rule:** a REQ does not advance from `🔄 In Progress` to `✅ Implemented` until the coverage gate passes. The coder marks a REQ as `✅` only when all five conditions are met:
+**Universal rule:** a REQ does not advance from `🔄 In Progress` to `✅ Implemented` until the coverage gate passes. The gate is owned and stated by the crew orchestrator (`wopr-run-crew`); this section supplies the stack-specific commands and floors for its five conditions and does not redefine ownership. **The orchestrator — never the coder — flips the status to `✅`**, and only when all five conditions are met:
 
 1. **Build passes.** `[STACK: build command]` exits 0.
 2. **Tests pass.** `[STACK: full test command]` exits 0. Zero new failures.

@@ -72,7 +72,7 @@ Add these tags based on skill complexity and domain requirements:
 **Example**:
 ```xml
 <context>
-The Facebook Marketing API uses a hierarchy: Account → Campaign → Ad Set → Ad. Each level has different configuration options and requires specific permissions. Always verify API access before making changes.
+The Acme CRM API uses a hierarchy: Account → Campaign → Contact. Each level has different configuration options and requires specific permissions. Always verify API access before making changes.
 </context>
 ```
 </tag>

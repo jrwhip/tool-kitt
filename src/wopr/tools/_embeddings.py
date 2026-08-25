@@ -288,7 +288,7 @@ def _get_embedder() -> Any:
       flag is set so subsequent calls short-circuit without
       re-attempting the ~130MB download. A download-storm per search
       on an air-gapped box would be observable as multi-second
-      latency on every crew pre-step. The sticky flag clears
+      latency on every crew run's pre-step. The sticky flag clears
       only on process restart, intentionally: the operator should
       see the failure once, fix the environment (install offline,
       open firewall, free space), then restart.

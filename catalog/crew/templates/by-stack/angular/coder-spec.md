@@ -2,7 +2,7 @@
 
 > **Stack:** Angular 21+, TypeScript, Vitest, OpenAPI consumer. Works for a standalone Angular CLI project or an Nx monorepo; adjust the commands below to match.
 > **This file:** stack-pre-filled starting point. Adjust per project; do not start from scratch.
-> **For the deep version with every consideration spelled out:** see `catalog/crew/templates/by-stack/_generic/coder-spec.md` (the generic template the crew agents originally consumed).
+> **For the deep version with every consideration spelled out:** see the generic `coder-spec.template.md` that ships in the crew pack's templates (fetch via `get_pack_template`, `pack="crew"`, `name="coder-spec.template.md"`).
 
 ---
 
@@ -113,7 +113,7 @@ If a needed endpoint is missing from the generated client, STOP and flag it as a
 
 ## Coverage Gate
 
-The five-condition gate (auditor enforces; tester records):
+The five-condition gate (the orchestrator owns and enforces it; the tester records `coverage_status`; the auditor independently re-verifies):
 
 1. Build passes. `ng build` (or `npx nx build <app>` in an Nx monorepo) exits 0.
 2. Full test suite passes. `ng test` (or `npx nx run-many --target=test --all` in an Nx monorepo) exits 0.
@@ -125,7 +125,7 @@ The five-condition gate (auditor enforces; tester records):
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (default), the coder amends this spec when a new pattern emerges. Examples that belong here the moment they are used:
+When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), the coder amends this spec when a new pattern emerges. Examples that belong here the moment they are used:
 
 - A new component pattern this project will repeat (a route guard idiom, a form composition shape, etc.).
 - A naming convention for a new category of file.

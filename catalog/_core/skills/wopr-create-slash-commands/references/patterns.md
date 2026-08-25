@@ -19,10 +19,10 @@ Create a git commit for current changes following repository conventions.
 </objective>
 
 <context>
-- Current git status: ! `git status`
-- Current git diff (staged and unstaged changes): ! `git diff HEAD`
-- Current branch: ! `git branch --show-current`
-- Recent commits: ! `git log --oneline -10`
+- Current git status: !`git status`
+- Current git diff (staged and unstaged changes): !`git diff HEAD`
+- Current branch: !`git branch --show-current`
+- Recent commits: !`git log --oneline -10`
 </context>
 
 <process>
@@ -57,7 +57,7 @@ Create a commit for current changes.
 </objective>
 
 <context>
-Current changes: ! `git status`
+Current changes: !`git status`
 </context>
 
 <process>
@@ -423,9 +423,9 @@ This helps understand current project state across git, dependencies, and tests.
 </objective>
 
 <context>
-- Git: ! `git status --short`
-- Node: ! `npm list --depth=0 2>/dev/null | head -20`
-- Tests: ! `npm test -- --listTests 2>/dev/null | wc -l`
+- Git: !`git status --short`
+- Node: !`npm list --depth=0 2>/dev/null | head -20`
+- Tests: !`npm test -- --listTests 2>/dev/null | wc -l`
 </context>
 
 <process>
@@ -461,7 +461,7 @@ This ensures deployment safety through automated testing gates.
 </objective>
 
 <context>
-Test results: ! `npm test`
+Test results: !`npm test`
 </context>
 
 <process>
@@ -508,9 +508,9 @@ This ensures features are developed systematically with proper planning, impleme
    - Update documentation
 
 3. **Review**
-   - Run tests: ! `npm test`
-   - Check lint: ! `npm run lint`
-   - Verify changes: ! `git diff`
+   - Run tests: !`npm test`
+   - Check lint: !`npm run lint`
+   - Verify changes: !`git diff`
 
 4. **Completion**
    - Create commit
@@ -518,8 +518,8 @@ This ensures features are developed systematically with proper planning, impleme
 </process>
 
 <testing>
-- Run tests: ! `npm test`
-- Check lint: ! `npm run lint`
+- Run tests: !`npm test`
+- Check lint: !`npm run lint`
 </testing>
 
 <verification>
@@ -597,7 +597,7 @@ This prevents running arbitrary bash commands while allowing necessary git opera
 </objective>
 
 <context>
-Current git state: ! `git status`
+Current git state: !`git status`
 </context>
 
 <process>
@@ -662,8 +662,8 @@ This ensures code quality while restricting to specific npm scripts.
 </objective>
 
 <testing>
-Tests: ! `npm test`
-Lint: ! `npm run lint`
+Tests: !`npm test`
+Lint: !`npm run lint`
 </testing>
 
 <process>
@@ -702,8 +702,8 @@ allowed-tools: SequentialThinking
 ### 2. Load Dynamic Context When Needed
 
 ```markdown
-Current state: ! `git status`
-Recent activity: ! `git log --oneline -5`
+Current state: !`git status`
+Recent activity: !`git log --oneline -5`
 ```
 
 ### 3. Reference Files Explicitly
@@ -789,8 +789,8 @@ Create a git commit
 
 Better:
 ```markdown
-Current changes: ! `git status`
-Diff: ! `git diff`
+Current changes: !`git status`
+Diff: !`git diff`
 
 Create a git commit for these changes
 ```

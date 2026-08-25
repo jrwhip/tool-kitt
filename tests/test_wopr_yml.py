@@ -984,9 +984,9 @@ class TestWriteSpecStubs:
         })
         result = wopr_yml.write_spec_stubs(str(workspace), detection, ".")
         assert result.startswith("Wrote")
-        assert "_generic" in result
-        # The generic template is the original 400-line skeleton with
-        # ``[STACK: ...]`` markers.
+        assert "generic" in result
+        # The generic fallback is the top-level skeleton with
+        # ``[STACK: ...]`` markers, landed under the canonical name.
         coder = (workspace / "specs" / "coder-spec.md").read_text(encoding="utf-8")
         assert "[STACK:" in coder
 

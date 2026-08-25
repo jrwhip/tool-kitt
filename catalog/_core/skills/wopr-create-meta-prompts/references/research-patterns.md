@@ -616,7 +616,7 @@ Include tool usage hints in research prompts when specific sources are needed.
 
 <pitfalls_reference>
 Before completing research, review common pitfalls:
-Load: [research-pitfalls.md](research-pitfalls.md)
+Load: [research-pitfalls.md](../../wopr-create-plans/references/research-pitfalls.md) (canonical copy in the sibling wopr-create-plans skill; both skills ship in the wopr-core plugin)
 
 Key patterns to avoid:
 - Configuration scope assumptions - enumerate all scopes

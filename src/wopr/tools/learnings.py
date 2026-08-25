@@ -3,8 +3,9 @@
 Implements the workspace-vs-system memory model and the deterministic
 pre-filter used by Corrective RAG (CRAG). The crew auditor calls
 :func:`append_learnings` at end of every gate; the ``wopr-run-crew``
-orchestrator calls :func:`learnings_search` before each working-agent step
-and hands the result to the ``crew-evaluator`` agent for grading.
+orchestrator calls :func:`learnings_search` once per crew run, before
+Step 1, and hands the result to the ``crew-evaluator`` agent for grading
+only when the prefilter returns more than five candidates.
 
 Single source of truth per entry. No mirroring. Workspace mode reads only the
 workspace's ``LEARNINGS.md``; outside-workspace mode aggregates ``~/.wopr/LEARNINGS.md``

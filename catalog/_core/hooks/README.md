@@ -51,7 +51,7 @@ Registration is an **upsert by identity**: an existing entry is located by the h
 
 Use `python3 scripts/configure_hook.py --list` to see every declared hook and its targets.
 
-The crew pack's `wopr-run-crew` skill optionally invokes both during project setup. See `catalog/crew/skills/wopr-run-crew/SKILL.md` `<project_setup>` for how the crew integrates them.
+The crew pack's `wopr-run-crew` skill optionally invokes both during project setup. See the crew pack's `wopr-run-crew` skill, `<project_setup>` section, for how the crew integrates them.
 
 ### `prompt-log-hook.py`
 
@@ -249,7 +249,7 @@ The hook is a silent no-op when `wopr` is not on PATH, so it is safe to register
 
 #### Coverage boundary
 
-This hook covers **Claude Code only**, and only on projects where it is registered. Native skill invocations on Copilot CLI (`~/.copilot/skills/`) and Gemini CLI (`~/.gemini/skills/`) are not counted by anything: both CLIs load skills entirely in-process. Copilot's `agentStop` hook plus its `events.jsonl` transcript make an equivalent counter *buildable*, but what a native skill invocation looks like in that transcript has not been verified on a real session, and an unverified counter that silently returns zero is worse than a documented gap. See `docs/skill-usage-telemetry.md`.
+This hook covers **Claude Code only**, and only on projects where it is registered. Native skill invocations on Copilot CLI (`~/.copilot/skills/`) and Gemini CLI (`~/.gemini/skills/`) are not counted by anything: both CLIs load skills entirely in-process. Copilot's `agentStop` hook plus its `events.jsonl` transcript make an equivalent counter *buildable*, but what a native skill invocation looks like in that transcript has not been verified on a real session, and an unverified counter that silently returns zero is worse than a documented gap. See the skill-usage telemetry doc (docs/skill-usage-telemetry.md in a repo checkout).
 
 #### Install
 
@@ -296,6 +296,6 @@ All optional.
 
 `git-branch-guard.sh` was adapted from `webteam-ai-scaffolding/ai/scripts/sh/git-branch-guard.sh`. The scaffolding version hardcoded the `feature/*` pattern; this version reads it from `BRANCH_GUARD_PATTERN`.
 
-`capture-skill-trigger-hook.py` is original WOPR code, not ported from anywhere and not based on a verified Hermes design precedent — an earlier draft of this doc claimed Hermes triggers autonomous skill-writing on "any run with 5+ tool calls" and that number could not be located in the cloned Hermes source (`hermes-agent/agent/curator.py`, `learn_prompt.py`, or elsewhere) when checked directly. See `docs/perpetual-learning.md` and `src/wopr/tools/_curator.py` for WOPR's other Hermes ports, which credit specific files rather than a paraphrased number.
+`capture-skill-trigger-hook.py` is original WOPR code, not ported from anywhere and not based on a verified Hermes design precedent — an earlier draft of this doc claimed Hermes triggers autonomous skill-writing on "any run with 5+ tool calls" and that number could not be located in the cloned Hermes source (`hermes-agent/agent/curator.py`, `learn_prompt.py`, or elsewhere) when checked directly. See the perpetual-learning doc (docs/perpetual-learning.md in a repo checkout) and `src/wopr/tools/_curator.py` for WOPR's other Hermes ports, which credit specific files rather than a paraphrased number.
 
 `skill-usage-hook.py` is original WOPR code. The sidecar it feeds is a port of hermes-agent's `tools/skill_usage.py` semantics (see `src/wopr/tools/_skill_usage.py` for what was and was not carried over); the hook itself has no upstream — Hermes bumps its counters from its own in-process skill tools and never needed to read a CLI's transcript.

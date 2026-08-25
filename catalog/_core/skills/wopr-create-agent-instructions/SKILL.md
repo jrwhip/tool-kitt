@@ -47,7 +47,7 @@ Do NOT run during a crew run; this is out-of-band setup.
 
 9. **After a successful write**, remind the operator of the remaining setup steps:
    - `/wopr-create-yml` if `wopr.yml` is still missing for this target.
-   - `wopr --init --packs crew,<stack-pack>` if doctor flagged missing packs.
+   - `/plugin install wopr-crew@wopr-marketplace` (plus the stack pack's plugin) if doctor flagged missing packs.
    - Re-run `/wopr-doctor` to confirm readiness.
 </procedure>
 

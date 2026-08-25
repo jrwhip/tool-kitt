@@ -4,23 +4,15 @@ Universal four-role agent crew for disciplined REQ-driven development. One scout
 
 This pack is the load-bearing surface for any project that wants WOPR-driven development discipline: net-new feature work, ongoing iteration on an existing modern project, blocker fixes, frontend handoffs, or legacy migration. The crew does not care where REQs come from; it cares about role separation, model alignment, and the audit gate.
 
-The migration-specific layer (Phase 0 deep analysis, legacy extraction tooling, translation tables, schema extractor) lives in the `legacy-migration` pack as an opt-in add-on for migration projects.
+The migration-specific layer (Phase 0 deep analysis, legacy extraction tooling, translation tables, schema extractor) is planned as an opt-in `legacy-migration` pack; it is not part of this distribution. The crew's `deep_analysis` scout mode and the `legacy-migration.*` `wopr.yml` fields are the integration points it will compose with.
 
 ## Install
-
-Standalone:
-
-```sh
-wopr add crew
-```
-
-With migration support:
 
 ```sh
 claude plugin install wopr-crew@wopr-marketplace
 ```
 
-Profiles that compose this pack are listed in `catalog.yaml` (`legacy-migration-team`, `everything`, etc.).
+Every profile in `catalog.yaml` (`angular-team`, `python-ai`, `fullstack`, `everything`) composes this pack.
 
 ## What this pack ships
 
@@ -66,15 +58,15 @@ How to invoke per CLI:
 
 * **Claude Code**: `/wopr-run-crew DEMO-123` (the Skill tool handles the slash-prefix), or natural language ("run the wopr-run-crew skill against DEMO-123").
 * **Gemini CLI**: same as Claude (slash-prefix or natural language); the skill is symlinked to `~/.gemini/skills/`.
-* **Copilot CLI**: `copilot --agent wopr-crew --prompt "DEMO-123"`, or invoke the agent inside a session via `@wopr-crew DEMO-123`, or natural language ("use the wopr-crew agent against DEMO-123"). The agent dispatches the four role subagents (`@wopr-crew-scout`, `coder`, `tester`, `auditor`) via Copilot's documented `agent` tool (subagent dispatch).
+* **Copilot CLI**: deferred. The former agent-mode entry (`agents/wopr-crew.md`) was removed with it; when Copilot support lands, it will dispatch the four role subagents via Copilot's documented `agent` tool.
 
 ## Perpetual learning: the CRAG read path
 
-Every crew run carries forward distilled lessons from prior runs through a Corrective RAG (CRAG) read path. Before each of the four agent steps, the orchestrator runs a four-substep pre-step:
+Every crew run carries forward distilled lessons from prior runs through a Corrective RAG (CRAG) read path. Once per crew run, before Step 1, the orchestrator runs a three-substep pre-step:
 
 1. A deterministic pre-filter (the `learnings_search` MCP tool) narrows the corpus by REQ-ID match, stack-tag intersection, and recency.
-2. If anything passes the filter, an independent `crew-evaluator` agent grades the candidates HIGH / MEDIUM / LOW against the current REQ context. The evaluator is read-only and isolated from the auditor by design; it is the structural defense against self-improvement-loop bias.
-3. HIGH and MEDIUM entries are injected into the next working agent's `relevant_learnings` input. LOW entries are kept out of the prompt but listed by ID for traceability.
+2. Only when the pre-filter returns more than five candidates, an independent `crew-evaluator` agent grades them HIGH / MEDIUM / LOW against the current REQ context (five or fewer are injected whole, marked advisory — at that corpus size selection adds nothing). The evaluator is read-only and isolated from the auditor by design; it is the structural defense against self-improvement-loop bias.
+3. HIGH and MEDIUM entries form the single `relevant_learnings` block that goes to all four working agents. LOW entries are kept out of the prompt but listed by ID for traceability.
 
 After the gate, the auditor performs a **distillation step**: zero to three new entries get appended to `LEARNINGS.md` via the `append_learnings` MCP tool. The auditor is the only writer in the system. Distillation is append-only and end-of-run only.
 
@@ -87,7 +79,7 @@ The workspace root is resolved the same way by every learnings tool (seed, appen
 
 Three new MCP tools register with the WOPR server: `mcp__wopr__append_learnings`, `mcp__wopr__learnings_search`, `mcp__wopr__learnings_path`. The auditor uses the first; the orchestrator uses the second during the pre-step; the third is diagnostic.
 
-Full operator-facing reference (file format, MCP tool reference, operating procedure, failure modes, design decisions, research citations) is in `webteam-ai-tools/docs/perpetual-learning.md`. The orchestrator's procedural definition of the pre-step lives under `<crag_pre_step>` in `skills/wopr-run-crew/SKILL.md`. The evaluator's grading rubric and output contract live in `agents/wopr-crew-evaluator.md`. The auditor's distillation rules live under "Distillation step" in `agents/wopr-crew-auditor.md`.
+Full operator-facing reference (file format, MCP tool reference, operating procedure, failure modes, design decisions, research citations) is in `docs/perpetual-learning.md` (this repo). The orchestrator's procedural definition of the pre-step lives under `<crag_pre_step>` in `skills/wopr-run-crew/SKILL.md`. The evaluator's grading rubric and output contract live in `agents/wopr-crew-evaluator.md`. The auditor's distillation rules live under "Distillation step" in `agents/wopr-crew-auditor.md`.
 
 ## Scout-contract handoff
 
@@ -152,7 +144,7 @@ Doctor surfaces `requirements.local_path_missing` (warning) when `source: local`
 Every project using the crew has a `wopr.yml` at its project root. The schema is shared across WOPR packs (any pack that needs project context reads `wopr.yml`). See:
 
 - `templates/wopr.example.yml`: worked examples for backend and frontend projects
-- `docs/wopr-yml-schema.md`: full schema with field tables
+- `catalog/crew/templates/wopr-yml-schema.md`: full schema with field tables (ships with the pack; agents fetch it via `get_pack_template`)
 
 The crew does not run without `wopr.yml`. If it is missing, every agent stops and reports.
 
@@ -180,8 +172,8 @@ Grounding material from the original extraction lives at `research/seeds/demo-ap
 
 ## Relationship to other packs
 
-- **`legacy-migration`** depends on this pack. Composes on top for migration projects.
-- **`java`** ships Spring Boot patterns and reviewers. Independent of this pack but commonly composed via the `legacy-migration-team` and `java-team` profiles.
-- **`angular`** ships Angular patterns and reviewers. Same shape.
+- **`legacy-migration`** (planned, not in this distribution) will depend on this pack and compose on top for migration projects.
+- **`angular`** ships Angular patterns and reviewers. Composed with the crew via the `angular-team`, `fullstack`, and `everything` profiles.
+- **`python`** ships FastAPI/Python patterns and reviewers. Composed via `python-ai`, `fullstack`, and `everything`.
 - **`_core`** ships the prompt-log Stop hook and git-branch-guard PreToolUse hook that the project setup section above references.
 - **`auditors`** ships skill/command/subagent quality auditors. Useful when authoring new packs but not required for crew runs.

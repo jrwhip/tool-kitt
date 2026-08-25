@@ -5,7 +5,7 @@
 # repeatable target to run REQ-GOLD-2 against, so results can be compared
 # across crew-skill versions. See README.md for the run procedure.
 #
-# Schema reference: webteam-ai-tools/docs/wopr-yml-schema.md
+# Schema reference: wopr-yml-schema.md (WOPR crew pack; mcp get_pack_template)
 
 project:
   slug: wopr-golden-fixture

@@ -140,8 +140,8 @@ description: Review PR with context
 Review PR #$1 with priority $2 and assign to $3
 
 Context from git:
-- Changes: ! `gh pr diff $1`
-- Status: ! `gh pr view $1 --json state`
+- Changes: !`gh pr diff $1`
+- Status: !`gh pr view $1 --json state`
 ```
 
 **Usage**:
@@ -212,8 +212,8 @@ description: Review changes for issue
 Issue #$ARGUMENTS
 
 Recent changes:
-- Status: ! `git status`
-- Diff: ! `git diff`
+- Status: !`git status`
+- Diff: !`git diff`
 
 Review the changes related to this issue.
 ```
@@ -240,8 +240,8 @@ allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*)
 
 Create commit for issue #$ARGUMENTS
 
-Status: ! `git status`
-Changes: ! `git diff HEAD`
+Status: !`git status`
+Changes: !`git diff HEAD`
 ```
 
 ## Notes

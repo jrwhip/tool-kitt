@@ -6,7 +6,7 @@ Register the WOPR skill-usage Stop hook in this project. Idempotent; safe to re-
 
 The hook fires at the end of every turn, reads Claude Code's own transcript, and counts native `Skill` tool invocations into WOPR's usage sidecar (`~/.wopr/skill-usage.json`) by shelling out to `wopr skill-usage record`. It records skill **names and counts only** — never prompt text, arguments, or file paths.
 
-**Why you need it:** this hook is the only writer of skill-usage telemetry. Claude Code invokes skills natively, invisible to any MCP-side counter, so without the hook every count reads zero no matter how heavily the skills are used. See `docs/skill-usage-telemetry.md` for the full coverage boundary before you act on any number.
+**Why you need it:** this hook is the only writer of skill-usage telemetry. Claude Code invokes skills natively, invisible to any MCP-side counter, so without the hook every count reads zero no matter how heavily the skills are used. See the skill-usage telemetry doc (docs/skill-usage-telemetry.md in a repo checkout) for the full coverage boundary before you act on any number.
 
 **Preview without making changes:**
 

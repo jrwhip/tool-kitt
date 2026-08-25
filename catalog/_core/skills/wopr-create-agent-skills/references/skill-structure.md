@@ -96,7 +96,7 @@ description: What it does and when to use it (third person, specific triggers)
 
 **Examples**:
 - ✅ `process-pdfs`
-- ✅ `manage-facebook-ads`
+- ✅ `manage-acme-crm`
 - ✅ `setup-stripe-payments`
 - ❌ `PDF_Processor` (uppercase)
 - ❌ `helper` (vague)
@@ -153,13 +153,13 @@ Examples: `create-agent-skills`, `create-hooks`, `create-landing-pages`
 <pattern name="manage">
 Managing external services or resources
 
-Examples: `manage-facebook-ads`, `manage-zoom`, `manage-stripe`, `manage-supabase`
+Examples: `manage-acme-crm`, `manage-zoom`, `manage-stripe`, `manage-supabase`
 </pattern>
 
 <pattern name="setup">
 Configuration/integration tasks
 
-Examples: `setup-stripe-payments`, `setup-meta-tracking`
+Examples: `setup-stripe-payments`, `setup-analytics-tracking`
 </pattern>
 
 <pattern name="generate">
@@ -172,7 +172,7 @@ Examples: `generate-ai-images`
 - Vague: `helper`, `utils`, `tools`
 - Generic: `documents`, `data`, `files`
 - Reserved words: `anthropic-helper`, `claude-tools`
-- Inconsistent: Directory `facebook-ads` but name `facebook-ads-manager`
+- Inconsistent: Directory `acme-crm` but name `acme-crm-manager`
 </avoid_patterns>
 </naming_conventions>
 
@@ -338,8 +338,8 @@ Form filling...
 </pitfall>
 
 <pitfall name="wrong_naming_convention">
-- ❌ Directory: `facebook-ads`, Name: `facebook-ads-manager`
-- ✅ Directory: `manage-facebook-ads`, Name: `manage-facebook-ads`
+- ❌ Directory: `acme-crm`, Name: `acme-crm-manager`
+- ✅ Directory: `manage-acme-crm`, Name: `manage-acme-crm`
 - ❌ Directory: `stripe-integration`, Name: `stripe`
 - ✅ Directory: `setup-stripe-payments`, Name: `setup-stripe-payments`
 </pitfall>

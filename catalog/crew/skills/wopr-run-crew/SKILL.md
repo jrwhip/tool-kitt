@@ -12,9 +12,9 @@ scout  ->  coder  ->  tester  ->  auditor
 
 - **Four roles, never merged.** Scout reads, coder writes production code, tester writes tests, auditor gates. An agent that writes code and its own tests approves its own output; the boundaries are what makes the crew trustworthy.
 - **One REQ per crew run.** The caller picks the sequence; the crew executes one at a time.
-- **Models per role** (keep in sync with the `model:` frontmatter in `agents/`): scout **haiku**; coder, tester, auditor **sonnet**. The auditor is a gate, not a per-change reviewer; do not invoke it during coder iteration.
+- **Models per role** (keep in sync with the `model:` frontmatter in `agents/`): scout **haiku**; coder, tester, auditor, evaluator **sonnet**. The auditor is a gate, not a per-change reviewer; do not invoke it during coder iteration.
 - **Every agent runs via the Task tool** (`subagent_type=<agent-name>`, fresh isolated context). Never role-play an agent in the parent conversation. Orchestrator work stays in the parent: pre-steps, gates, tracking-doc status updates.
-- **Spec files are the authority.** Agents follow the project's coder and tester specs resolved from `wopr.yml`. With `spec_writes` ON (default), the owning agent amends its spec when a new pattern emerges; OFF, agents flag proposals and the operator decides.
+- **Spec files are the authority.** Agents follow the project's coder and tester specs resolved from `wopr.yml`. With `specs.spec_writes: true` in `wopr.yml`, the owning agent amends its spec when a new pattern emerges; OFF (the default), agents flag proposals in their reports and the operator decides what lands. The orchestrator reads the field once at run start and passes it to every crew agent.
 - **Stop on failure.** Missing required input: stop and report, do not guess paths. Auditor BLOCKED: stop; the next step is a human decision, not a re-run.
 - **OpenAPI is mandatory.** The backend emits a spec; the frontend consumes a generated client; agents reference target-side contracts by JSON Pointer. No spec, no crew run: stop at setup.
 </essential_principles>
@@ -22,7 +22,7 @@ scout  ->  coder  ->  tester  ->  auditor
 <project_setup>
 ## Setup (once per project)
 
-`wopr.yml` must exist at project root and parse cleanly. Schema: `docs/wopr-yml-schema.md` (this repo); worked example: `catalog/crew/templates/wopr.example.yml`. Coder and tester specs are instantiated from `catalog/crew/templates/` and operator-approved before the first run; agents maintain them thereafter.
+`wopr.yml` must exist at project root and parse cleanly. Schema and worked example ship with the crew pack: fetch via `mcp__wopr__get_pack_template` (`pack="crew"`, `name="wopr-yml-schema.md"`) and `name="wopr.example.yml"`. Coder and tester specs are instantiated from the pack templates (landed by `/wopr-init-project` or the stub-writer tools) and operator-approved before the first run; agents maintain them thereafter.
 
 Two opt-in project hooks exist: `/wopr-configure-prompt-log` (per-turn log to PROMPT_LOG.md) and `/wopr-configure-git-guard` (blocks commits off `feature/*`). Offer them once on a new project, record the operator's answer in the tracking doc, honor it thereafter.
 </project_setup>
@@ -30,7 +30,7 @@ Two opt-in project hooks exist: `/wopr-configure-prompt-log` (per-turn log to PR
 <session_intake>
 ## Session intake (once per session, not per REQ)
 
-1. **Run type.** Ask the operator: (1) crew run, (2) blocker fix after a BLOCKED audit, (3) frontend handoff track, (4) any of these unattended via `scripts/autorun.sh`. Route to the matching sequence below.
+1. **Run type.** Ask the operator: (1) crew run, (2) blocker fix after a BLOCKED audit, (3) frontend handoff track. Route to the matching sequence below. (Unattended operation is not an intake option: the operator launches `scripts/autorun.sh` outside the session; it resumes attended sequences and exits on a BLOCKED verdict, because BLOCKER classification is an operator decision.)
 2. **Scope.** From the tracking document's baseline, confirm which REQ(s) this session targets. The orchestrator never invents a REQ-ID.
 3. **Structural context.** Ask for session-level decisions not in the REQs (module consolidation, endpoint renames, excluded scope, data-migration decisions, version pins, known-wrong legacy behaviors to drop, reference docs). Record the answers, or an explicit "none", in the tracking document; every agent reads them from there. Mid-session changes are edits to the document, not a re-interview.
 
@@ -62,7 +62,7 @@ The same `relevant_learnings` block goes to all four agents. Specs win over lear
 
 Preconditions: setup complete (`wopr.yml`, specs, reachable OpenAPI spec per `openapi.spec_url`), session intake done, REQ resolution pre-flight passed.
 
-**Step 1: Scout** (Task `subagent_type=crew-scout`). One dispatch does discovery and alignment: verify the tracking document's baseline against reality (record ALIGNED / DRIFTED / STALE in the Gap Analysis table; on STALE, stop and let the operator decide), then produce the five-section report and write the scout contract to `<target_dir>/crew-contracts/<REQ-ID>/scout.md`. Inputs: `wopr.yml` path, target REQ ID, fresh REQ body, session structural context (from the tracking doc), `relevant_learnings`.
+**Step 1: Scout** (Task `subagent_type=crew-scout`). One dispatch does discovery and alignment: verify the tracking document's baseline against reality (record ALIGNED / DRIFTED / STALE in the Gap Analysis table; on STALE, stop and let the operator decide), then produce the five-section report and write the scout contract to `<target_dir>/crew-contracts/<REQ-ID>/scout.md`. Inputs: `wopr.yml` path, `mode` (pass explicitly: `gap_analysis` unless this is a migration project with an empty/skeleton tracking document AND `legacy-migration.legacy_source_root` is set, in which case `deep_analysis`), target REQ ID, fresh REQ body, session structural context (from the tracking doc), `relevant_learnings`.
 
 **Gate: contract validation.** Call `validate_scout_contract` with the contract's absolute path. It checks shape AND consistency: workspace-escaping paths are errors; absent files, frontmatter/body path drift, and inventory entries outside `files_touched` are warnings. `ok: false`: stop and surface the errors verbatim; a malformed contract is a scout failure to fix, not something to work around. Warnings are advisory. When the orchestrator later overrides any contract content on evidence, it edits the contract to match the decision and notes the override inline, so downstream agents and the auditor cross-check against current truth rather than a stale plan. This gate exists because un-contracted discovery gets re-done downstream at higher model prices.
 
@@ -70,9 +70,9 @@ Preconditions: setup complete (`wopr.yml`, specs, reachable OpenAPI spec per `op
 
 **Step 3: Tester** (Task `subagent_type=crew-tester`). Inputs: as coder, plus the coder's changed-file list. Tests only, fixtures and mocks from generated types, full suite run, line and branch coverage measured, `coverage_status` recorded.
 
-**Gate: coverage (five conditions).** (1) Build passes. (2) Full suite passes, zero new failures. (3) Coverage meets the tester-spec floors. (4) If the REQ touched the API surface, the handoff contract covers the change with a JSON Pointer into the spec. (5) Static analysis reports clean for this REQ's changes. Any failure: route to the blocker-fix sequence; do not dispatch the auditor to rediscover a known-failing gate. All pass: **the orchestrator** marks the REQ Implemented in the tracking document and closes out its Gap Analysis row in the same edit, updating every cell of the row including its narrative notes (a stale "pending" note beside an Implemented status, in either table or within one row, is a contradiction the next reader trips over).
+**Gate: coverage (five conditions).** This is the gate's single authoritative statement; the specs and agent files reference it and supply stack parameters, they do not redefine it. The orchestrator owns it. (1) Build passes. (2) Full suite passes, zero new failures. (3) Coverage meets the tester-spec floors. (4) If the REQ touched the API surface, the handoff contract covers the change with a JSON Pointer into the spec. (5) Static analysis reports clean for this REQ's changes (the tester triggers the scan and records the verdict in `coverage_status`). Any failure: run the **gate-failure fix** — route the failing condition to its owner (build or production-code failure → coder; test, coverage, or static-analysis failure → tester; handoff-contract gap → coder), dispatch that one agent with the failing condition, then re-check the gate. Loop until it passes; do not dispatch the auditor to rediscover a known-failing gate, and do not use the blocker-fix sequence (that sequence exists for audit verdicts and re-dispatches the auditor). All pass: **the orchestrator** marks the REQ Implemented in the tracking document and closes out its Gap Analysis row in the same edit, updating every cell of the row including its narrative notes (a stale "pending" note beside an Implemented status, in either table or within one row, is a contradiction the next reader trips over).
 
-**Step 4: Auditor** (Task `subagent_type=crew-auditor`). Inputs: `wopr.yml` path, scout contract, fresh REQ body, prior audit report path (empty on first run), `spec_writes`, `relevant_learnings`. Runs its checklist, independently re-verifying rather than trusting recorded values; writes the audit report; distills 0 to 3 learnings entries (the auditor is the only learnings writer); returns BLOCKED or UNBLOCKED.
+**Step 4: Auditor** (Task `subagent_type=crew-auditor`). Inputs: `wopr.yml` path, scout contract, fresh REQ body, prior audit report path (empty on first run), `spec_writes`, `relevant_learnings`. Runs its checklist, independently re-verifying rather than trusting recorded values; writes the audit report; distills 0 to 3 learnings entries (the auditor is the sole distiller); returns BLOCKED or UNBLOCKED. **After the auditor returns, check its report for a `### Learnings (not persisted)` section** — it appears when `append_learnings` was unavailable in the auditor's session. If present, the orchestrator calls `append_learnings` itself with those entries verbatim (`target_workspace_path` = the wopr.yml directory), so distilled learnings are never silently dropped.
 
 **Gate: verdict.** BLOCKED: route to the blocker-fix sequence. UNBLOCKED: the REQ is done. Repeat for the next REQ.
 </crew_sequence>
@@ -111,9 +111,9 @@ Run the standard sequence against the frontend project with two differences: the
 <reference_index>
 ## References
 
-- Config: `docs/wopr-yml-schema.md` (this repo), `catalog/crew/templates/wopr.example.yml`
-- Agents: `catalog/crew/agents/wopr-crew-{scout,coder,tester,auditor,evaluator}.md`
-- Templates: `catalog/crew/templates/{coder-spec,tester-spec,implementation-tracking,frontend-handoff-contract}.template.md`
-- Scripts and hooks: `catalog/crew/scripts/autorun.sh`, `catalog/_core/hooks/` (prompt-log, git-branch-guard)
-- Pack overview: `catalog/crew/README.md`
+- Config: schema `wopr-yml-schema.md` and worked example `wopr.example.yml`, both via `mcp__wopr__get_pack_template` (`pack="crew"`)
+- Agents: dispatched by name — `crew-scout`, `crew-coder`, `crew-tester`, `crew-auditor`, `crew-evaluator` (definitions ship with this plugin)
+- Templates: enumerate via `mcp__wopr__list_pack_templates` (`pack="crew"`); fetch via `mcp__wopr__get_pack_template`
+- Scripts and hooks: `scripts/autorun.sh` in this plugin's root; the prompt-log and git-branch-guard hooks ship with the wopr-core plugin and are registered via `/wopr-configure-prompt-log` and `/wopr-configure-git-guard`
+- Pack overview: the crew pack README (repo checkout only; not shipped in the plugin)
 </reference_index>

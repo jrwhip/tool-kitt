@@ -16,7 +16,7 @@ Make a fresh project AI-ready in one operator command. After this skill runs to 
 - `LEARNINGS.md` created (empty) so the CRAG read path has a target file when the auditor first writes a lesson.
 - A `/wopr-doctor` re-run that returns "ready" or specifically names the remaining human-required edits.
 
-Without this skill, the operator has to chain `/wopr-doctor` -> `/wopr-create-yml` -> `/wopr-create-agent-instructions` -> manual `wopr --init --packs ...` -> manual `LEARNINGS.md` touch by hand. The empty-shell state that bit dogfooding came from operators stopping partway through that chain.
+Without this skill, the operator has to chain `/wopr-doctor` -> `/wopr-create-yml` -> `/wopr-create-agent-instructions` -> manual `/plugin install` of missing packs -> manual `LEARNINGS.md` touch by hand. The empty-shell state that bit dogfooding came from operators stopping partway through that chain.
 </objective>
 
 <when_to_run>
@@ -34,13 +34,13 @@ Do NOT run during a crew run. This is setup, not runtime.
 
 3. **Call `mcp__wopr__detect_stack`** with the resolved absolute workspace path.
 
-4. **Build the recommendation by hand**, the same way `/wopr-doctor` step 4 does: read `catalog/_core/data/doctor-recommendations.yaml` and cross-reference it against the detection JSON, `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to get the list of missing packs and missing MCPs. There is no recommendation tool.
+4. **Build the recommendation by hand**, the same way `/wopr-doctor` step 4 does: read `../../data/doctor-recommendations.yaml` (relative to this skill's base directory) and cross-reference it against the detection JSON, `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to get the list of missing packs and missing MCPs. There is no recommendation tool.
 
 5. **Show the operator a one-block initialization plan** before any write happens. Render:
    - Resolved target path.
    - Detected stack (framework, language, package manager, test runner).
    - Files to be created: list each path (e.g. `apps/example-app/wopr.yml`, `apps/example-app/specs/coder-spec.md`, `apps/example-app/specs/tester-spec.md`, `apps/example-app/AGENTS.md`, `apps/example-app/CLAUDE.md`, `apps/example-app/GEMINI.md`, `<workspace>/.github/copilot-instructions.md`, `apps/example-app/LEARNINGS.md`).
-   - Packs to install: list missing packs and the exact `wopr --init --packs ...` command the operator will run after the skill finishes.
+   - Packs to install: list missing packs and the exact `/plugin install <pack>@wopr-marketplace` commands the operator will run after the skill finishes.
    - MCPs to install: list missing MCPs and their install commands.
    - "Confirm with `yes` to proceed."
 
@@ -67,7 +67,7 @@ Do NOT run during a crew run. This is setup, not runtime.
 9. **After all writes succeed, re-run `mcp__wopr__detect_stack` and rebuild the recommendation by hand** (step 4's method) and print a final report so the operator can see what (if anything) is still pending. This is the same shape as `/wopr-doctor`'s closing report.
 
 10. **Print the operator-action followups** that the skill itself cannot run (those would change ~/.claude.json or install global packages):
-    - The exact `wopr --init --packs <list>` invocation to install missing WOPR packs.
+    - The exact `/plugin install <pack>@wopr-marketplace` invocations to install missing WOPR packs.
     - The exact MCP install commands for any missing external MCPs.
     - The reminder to restart Claude Code so the new agents / skills / MCP tools register.
 </procedure>
@@ -84,7 +84,7 @@ Use plain markdown sections. Render proposed file contents inside fenced code bl
 <role_boundaries>
 You MAY:
 - Call `mcp__wopr__detect_stack`.
-- Read `catalog/_core/data/doctor-recommendations.yaml`, `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to build recommendations by hand.
+- Read `../../data/doctor-recommendations.yaml` (relative to this skill's base directory), `.ai-cli/wopr.lock.yaml`, and the three CLI MCP configs to build recommendations by hand.
 - Call `mcp__wopr__propose_wopr_yml`, `mcp__wopr__write_wopr_yml`.
 - Call `mcp__wopr__write_spec_stubs`.
 - Call `mcp__wopr__write_tracking_doc_stub` and `mcp__wopr__write_handoff_contract_stub` to drop the pack-shipped templates so role agents never have to filesystem-search for them at run time.
@@ -95,7 +95,7 @@ You MAY:
 You MAY NOT:
 - Skip the operator confirmation step. The full plan must be shown and approved before any write.
 - Silently overwrite ANY existing file. If a file is present, surface the error from the tool (or, for the agent-instructions files you write directly, your own existence check) and ask the operator whether to proceed with an explicit overwrite.
-- Install WOPR packs (`wopr --init --packs ...`) or external MCPs on the operator's behalf. Those commands change `~/.claude.json` and must remain operator-driven.
+- Install WOPR packs (`/plugin install ...`) or external MCPs on the operator's behalf. Those commands change `~/.claude.json` and must remain operator-driven.
 - Create parent directories beyond `<target>/specs/`. The target itself must already exist.
 - Modify proposed file contents between propose and write. The operator confirms specific strings; those exact strings are what land.
 </role_boundaries>

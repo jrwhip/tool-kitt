@@ -76,7 +76,7 @@ When a skill needs to do work, apply this heuristic before reaching for the Task
 
 Common skill steps that look like agent work but should be scripts: branch creation, file moves, build invocations, exit-code parsing, coverage threshold checks, scanner invocations, existence checks, structured-artifact parsing.
 
-A skill that orchestrates ten deterministic steps via ten Task dispatches will burn an order of magnitude more tokens than the same skill orchestrating ten script invocations. Reserve agent dispatch for the reasoning work where that cost is justified (synthesis, design, audit-against-spec). See `catalog/crew/README.md` "Scripts vs agents" for the heuristic in context with concrete examples from the crew pack.
+A skill that orchestrates ten deterministic steps via ten Task dispatches will burn an order of magnitude more tokens than the same skill orchestrating ten script invocations. Reserve agent dispatch for the reasoning work where that cost is justified (synthesis, design, audit-against-spec). See the crew pack README's "Scripts vs agents" section for the heuristic in context with concrete examples from the crew pack.
 </essential_principles>
 
 <intake>
