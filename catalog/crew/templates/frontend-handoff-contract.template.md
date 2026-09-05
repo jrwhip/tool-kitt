@@ -12,10 +12,10 @@
 
 > **Created:** [YYYY-MM-DD]
 > **Audience:** Frontend team migrating from the legacy backend to the [STACK: target stack] rewrite
-> **Purpose:** Documents every new, changed, or removed API surface item introduced in this rewrite. Every endpoint entry has a REQ ID linking back to the extracted-requirements document and a JSON Pointer linking forward to the OpenAPI spec. The spec is the source of truth; this document is a human-readable work breakdown for the frontend team, not a duplicate contract.
-> **OpenAPI spec URL or artifact path:** `[STACK: e.g. https://api.example.com/v3/api-docs, or specs/openapi.json committed in <backend-repo>]`
+> **Purpose:** Documents every new, changed, or removed API surface item introduced in this rewrite. Every entry has a REQ ID linking back to the extracted-requirements document and a contract reference linking forward to the API contract (`api_contract` in `wopr.yml`: a JSON Pointer into the OpenAPI document, or an operation / type name in the GraphQL schema). The contract is the source of truth; this document is a human-readable work breakdown for the frontend team, not a duplicate contract.
+> **API contract (kind and location):** `[STACK: e.g. openapi at https://api.example.com/v3/api-docs; openapi at specs/openapi.json committed in <backend-repo>; graphql at amplify/data/resource.ts]`
 > **Spec version:** `[STACK: e.g. 4.2.1]` (as of [YYYY-MM-DD])
-> **Generator version pinned:** `[STACK: e.g. openapi-generator-cli 7.21.0]`
+> **Generator version pinned:** `[STACK: e.g. openapi-generator-cli 7.21.0, aws-amplify 6.20.0]`
 > **Migration Context summary:** [STACK: one-line summary. Full content in the extracted-requirements document's Migration Context section.]
 
 ---
@@ -37,7 +37,7 @@
 **Base path:** `[STACK: e.g. /api/v1/widgets]`
 **Covers REQs:** REQ-[DOMAIN]-N[, ...]
 
-| Method | Path | Success Status | REQ ID | Spec Ref (JSON Pointer) | Legacy Path / Migration Note |
+| Method | Path | Success Status | REQ ID | Spec Ref (Contract Reference) | Legacy Path / Migration Note |
 |---|---|---|---|---|---|
 | `GET` | `[STACK: e.g. /api/v1/widgets]` | 200 | REQ-[DOMAIN]-1 | `[STACK: e.g. #/paths/~1api~1v1~1widgets/get]` | [STACK: legacy path, or "new", or "consolidated from /web/widgets + /admin/widgets", or "renamed from /getWidgets"] |
 | `GET` | `[STACK: e.g. /api/v1/widgets/{id}]` | 200 | REQ-[DOMAIN]-3 | `[STACK: e.g. #/paths/~1api~1v1~1widgets~1{id}/get]` | [STACK] |
@@ -45,7 +45,9 @@
 | `PUT` | `[STACK: e.g. /api/v1/widgets/{id}]` | 200 | REQ-[DOMAIN]-8 | `[STACK]` | [STACK] |
 | `DELETE` | `[STACK: e.g. /api/v1/widgets/{id}]` | 200 | REQ-[DOMAIN]-9 | `[STACK]` | [STACK] |
 
-**JSON Pointer syntax reminder:** forward slashes in paths are escaped as `~1`. A path segment `{id}` stays literal. `~` itself is escaped as `~0`. Example: `/api/v1/widgets/{id}` becomes `~1api~1v1~1widgets~1{id}` inside a JSON Pointer.
+**JSON Pointer syntax reminder (OpenAPI):** forward slashes in paths are escaped as `~1`. A path segment `{id}` stays literal. `~` itself is escaped as `~0`. Example: `/api/v1/widgets/{id}` becomes `~1api~1v1~1widgets~1{id}` inside a JSON Pointer.
+
+**GraphQL projects:** the table columns map to the schema: Method → operation kind (`query` / `mutation` / `subscription`), Path → operation name, Success Status → result type, Spec Ref → `Query.<name>` / `Mutation.<name>` / `<Type>` as declared in the schema. Keep the column order so the auditor's handoff check reads both shapes the same way.
 
 **Notes and gotchas:**
 
@@ -70,7 +72,7 @@
 **Base path:** `[STACK]`
 **Covers REQs:** REQ-[DOMAIN]-N[, ...]
 
-| Method | Path | Success Status | REQ ID | Spec Ref (JSON Pointer) | Legacy Path / Migration Note |
+| Method | Path | Success Status | REQ ID | Spec Ref (Contract Reference) | Legacy Path / Migration Note |
 |---|---|---|---|---|---|
 | | | | | | |
 
@@ -88,13 +90,13 @@
 
 Endpoints that existed in the legacy API but are NOT fully in the rewrite. Frontend must not wire UI to these. Two flavors:
 
-- **Removed from spec:** the endpoint is not in the OpenAPI spec at all. The generated client does not include it. Calling it from UI code won't compile.
+- **Removed from spec:** the endpoint is not in the API contract at all. The generated client does not include it. Calling it from UI code won't compile.
 - **Deferred in scope:** the endpoint is in the spec (stubbed or functional) but this migration phase marks it out-of-scope. The generated client includes it; the frontend should not wire UI to it yet. The auditor flags any UI code that does.
 
 | Legacy endpoint | Status | Reason | Replacement (if any) | Spec Ref (if still in spec) |
 |---|---|---|---|---|
 | `[STACK: legacy path]` | Removed from spec | [STACK: e.g. "Functionality dropped; replaced by event-driven flow"] | none | N/A |
-| `[STACK: legacy path]` | Deferred in scope | [STACK: e.g. "Deferred until auth is wired"] | [STACK: legacy-compatible alternative or "none"] | `[STACK: JSON Pointer if in spec]` |
+| `[STACK: legacy path]` | Deferred in scope | [STACK: e.g. "Deferred until auth is wired"] | [STACK: legacy-compatible alternative or "none"] | `[STACK: contract reference if in spec]` |
 | `[STACK: legacy path]` | Removed from spec | [STACK: e.g. "Functionality moved to admin-only endpoint X"] | [STACK] | N/A |
 
 ---

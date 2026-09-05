@@ -95,7 +95,7 @@ The auditor BLOCKS on:
 - A DTO field with no `@Schema(description = "...")`.
 - An annotation change that did not regenerate the spec.
 
-The pinned springdoc version lives in `wopr.yml` (`openapi.pinned_generator_version`) and matches `pom.xml`.
+The pinned springdoc version lives in `wopr.yml` (`api_contract.pinned_generator_version`) and matches `pom.xml`.
 
 ---
 

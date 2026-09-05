@@ -55,7 +55,7 @@ class WoprYmlInventory:
     """A `wopr.yml` file found in the workspace.
 
     ``summary`` is a small subset of the parsed file that the recommender
-    needs (specs paths, openapi pin, base_package). Operator-facing
+    needs (specs paths, API contract pin, base_package). Operator-facing
     skills surface these so the report shows what each wopr.yml
     declares, not just that it exists.
     """
@@ -470,7 +470,7 @@ def _summarize_wopr_yml(data: Any) -> dict[str, Any]:
     """Extract the recommender-relevant subset of a parsed wopr.yml.
 
     Picks just the fields downstream skills surface: project identity,
-    spec paths, openapi pin. Avoids forwarding the whole document so
+    spec paths, API contract pin. Avoids forwarding the whole document so
     callers do not couple to fields that are not yet stable.
     """
     if not isinstance(data, dict):
@@ -493,11 +493,25 @@ def _summarize_wopr_yml(data: Any) -> dict[str, Any]:
             "tester_spec": specs.get("tester_spec"),
             "audit_report": specs.get("audit_report"),
         }
-    openapi = data.get("openapi") if isinstance(data.get("openapi"), dict) else {}
-    if openapi:
-        summary["openapi"] = {
-            "spec_url": openapi.get("spec_url"),
-            "pinned_generator_version": openapi.get("pinned_generator_version"),
+    # API contract: the machine-readable surface agents cite (OpenAPI
+    # document or GraphQL schema). The section was named ``openapi``
+    # before GraphQL projects existed; a legacy ``openapi:`` block is
+    # read as ``api_contract`` with ``kind: openapi`` so those projects
+    # keep working. ``api_contract`` wins when both are present.
+    raw_contract = data.get("api_contract")
+    legacy_openapi = data.get("openapi")
+    if isinstance(raw_contract, dict):
+        summary["api_contract"] = {
+            "kind": raw_contract.get("kind") or "openapi",
+            "spec_url": raw_contract.get("spec_url"),
+            "pinned_generator_version": raw_contract.get("pinned_generator_version"),
+        }
+    elif isinstance(legacy_openapi, dict):
+        summary["api_contract"] = {
+            "kind": "openapi",
+            "spec_url": legacy_openapi.get("spec_url"),
+            "pinned_generator_version": legacy_openapi.get("pinned_generator_version"),
+            "legacy_section": "openapi",
         }
     # Requirements source resolution. Absent section defaults to
     # source=local with path=requirements so existing projects (which
@@ -505,7 +519,7 @@ def _summarize_wopr_yml(data: Any) -> dict[str, Any]:
     # always includes a normalized requirements block so downstream
     # readiness checks have a single shape to consume. Store each
     # ``data.get`` call once and narrow via isinstance so mypy can
-    # follow the type through (the existing project/specs/openapi
+    # follow the type through (the existing project/specs/api_contract
     # blocks happen to escape narrowing only because each is guarded
     # by an ``if`` before use; the requirements block is unconditional).
     raw_requirements = data.get("requirements")
@@ -544,7 +558,7 @@ def _detect_wopr_yml_files(workspace: Path) -> list[WoprYmlInventory]:
     """Find every `wopr.yml` in the workspace, parse it, and summarize.
 
     The summary surfaces the recommender-relevant subset (project
-    identity, spec paths, openapi pin). Operator-facing skills render
+    identity, spec paths, API contract pin). Operator-facing skills render
     this so the report shows what each wopr.yml declares, not just that
     it exists.
     """

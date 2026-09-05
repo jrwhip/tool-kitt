@@ -45,7 +45,7 @@ In Jira or GitHub, the body is identical; frontmatter maps to issue fields (prio
 - Boundaries get their own criteria: the exact min, the exact max, one past the max.
 - **One concern per REQ.** A REQ that needs "and" between two user-visible behaviors is two REQs.
 - **A REQ is one user-meaningful capability — count REQs by capability, not by crew run-sizing.** Do not pre-fragment a capability so each shard fits one crew run; that inflates the count and scatters intent (seventeen REQs where nine capabilities suffice is a spec defect). When a capability is bigger than one run, the operator stages it at execution time with `depends_on`, and every stage names the capability it serves.
-- Every REQ ends with the standing criteria: full test suite green including pre-existing tests, and the change visible in the OpenAPI document when it touches the API surface.
+- Every REQ ends with the standing criteria: full test suite green including pre-existing tests, and the change visible in the API contract (OpenAPI document or GraphQL schema) when it touches the API surface.
 - **Never echo the implementation.** A requirement states the intent the code is measured against; a criterion derived by reading the code — naming a source file, restating what a function already does — is malformed, because it certifies whatever exists. No implementation design: no file names, no schema sketches, no library choices, except constraints the operator explicitly decided.
 - **A replatform rewrites the REQs it obsoletes, in the same change.** Frontmatter, `status:`, and `depends_on` must stay true to the new platform; orphaned upstream REQs still reading `pending` are a tracking lie the next session trips over.
 </quality_bar>

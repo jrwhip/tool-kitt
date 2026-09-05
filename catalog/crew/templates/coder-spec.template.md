@@ -121,9 +121,9 @@ If there are no structural decisions for this session, state that explicitly: "N
 
 ## 4. API Spec and Client Generation
 
-**Universal pattern:** the API contract is one artifact, authored once on the backend and consumed by the frontend. The backend generates an OpenAPI spec from code annotations. The frontend generates typed client services from that spec. Neither side writes client code or schemas by hand.
+**Universal pattern:** the API contract is one artifact, authored once on the backend and consumed by the frontend. The backend owns the contract: an OpenAPI spec generated from code annotations, or a GraphQL schema (`api_contract.kind` in `wopr.yml`). The frontend generates typed client code from that contract. Neither side writes client code or schemas by hand.
 
-**OpenAPI is mandatory for projects using this pack.** A migration with no OpenAPI spec is not in scope. If the target backend cannot emit a spec, stop here and address that first.
+**A machine-readable API contract is mandatory for projects using this pack.** A project with no contract is not in scope. If the target backend cannot produce one, stop here and address that first. The rest of this section is written for `kind: openapi`; a GraphQL project rewrites 4a–4c for its schema and client-generation tooling (schema file is authored, not generated; generated types are regenerated, never hand-edited; the same lockstep pin applies).
 
 This section has three halves. Backend projects fill in 4a. Frontend projects fill in 4b. Any project that overrides generator output (frontend always, backend sometimes) fills in 4c.
 
@@ -422,7 +422,7 @@ Anything the above sections did not cover. Examples: file upload handling, webso
 1. **Build passes.** `[STACK: build command]` exits 0.
 2. **Tests pass.** `[STACK: full test command]` exits 0. Zero new failures.
 3. **Traceability.** Every acceptance criterion of the REQ maps to at least one named test in the tester's criterion→test map; a zero-test criterion fails the gate. Line coverage ≥ `[STACK: floor, e.g. 80%]` and branch coverage ≥ `[STACK: floor, e.g. 70%]` are measured and **recorded as diagnostics** (see `[STACK: tester-spec path]` section 6); the map, not the percentage, is what passes.
-4. **Handoff contract current.** If the REQ changed the API surface (new endpoint, removed endpoint, changed status code, changed request or response shape, changed header), `[STACK: handoff contract path]` has a line item covering the change with a JSON Pointer into the published spec.
+4. **Handoff contract current.** If the REQ changed the API surface (new endpoint, removed endpoint, changed status code, changed request or response shape, changed header), `[STACK: handoff contract path]` has a line item covering the change with a contract reference that resolves against the published API contract (JSON Pointer for OpenAPI; operation / type name for GraphQL).
 5. **Static-analysis quality gate passes.** The project's configured static-analysis tool (e.g. SonarCloud, SonarQube, ruff, ESLint, or equivalent) reports the configured Quality Gate as `Passed` for the latest scan covering this REQ's commits. Critical, blocker, and major issues introduced by this REQ count as failures even when the project's overall gate would otherwise pass.
 
 If any condition fails, the REQ stays `🔄` and the failure is logged in the implementation-tracking document's `coverage_status` field for that log entry.

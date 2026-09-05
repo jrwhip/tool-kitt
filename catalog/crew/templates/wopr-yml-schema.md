@@ -7,7 +7,7 @@
 `wopr.yml` is the per-project configuration file that WOPR packs read at the start of every agent invocation. It lives at the project root. It carries:
 
 - Project-level facts every WOPR workflow pack needs (slug, source roots, build file, base package).
-- Cross-pack concerns (spec file paths, OpenAPI spec URL and pinned generator version, requirements source).
+- Cross-pack concerns (spec file paths, API contract location and pinned generator version, requirements source).
 - Pack-specific sections that only the relevant pack reads.
 
 Putting all of these in one file at project root means a project can be served by multiple WOPR packs (legacy-migration, java, angular, future workflow packs) without accumulating `.legacy-migration.yml`, `.java.yml`, `.angular.yml`, etc. side by side. Each pack reads the shared sections it needs plus its own pack-specific section.
@@ -26,7 +26,7 @@ If `wopr.yml` is missing at the resolved path, the tool stops and reports an err
 ```yaml
 project:        # required, pack-agnostic
 specs:          # required, pack-agnostic
-openapi:        # required if any consuming pack uses OpenAPI
+api_contract:   # required by the crew pack: the machine-readable API contract (OpenAPI or GraphQL)
 requirements:   # optional, pack-agnostic; defaults to source: local when absent
 learnings:      # optional, pack-agnostic; semantic-search (CRAG) configuration
 legacy-migration:   # required only when the legacy-migration pack is in use
@@ -59,14 +59,17 @@ Pack-agnostic. The authoritative documents the agents read on every invocation. 
 | `visual_check` | optional | string | The command that runs the visual-regression suite (e.g. `npx playwright test --grep @visual`). Required when `design_spec` is set; the auditor runs it at the gate and a failing comparison is a BLOCKER. Baselines are committed to the repo and only ever approved by the operator. |
 | `spec_writes` | optional | boolean | Default **`false`**. Governs whether crew agents may amend the spec sections they own (coder: pattern rules; tester: coverage shapes; auditor: audit rules). `false`: agents *propose* rules in their reports and the operator decides what lands. `true`: the owning agent amends its spec directly as patterns emerge. Read by the crew orchestrator at run start and passed to every crew agent; not parsed by `stack_detect.py`. Certain invariant sections are never amendable regardless of this flag (see the coder-spec template). |
 
-## Section: `openapi`
+## Section: `api_contract`
 
-Required only when a consuming pack uses OpenAPI. Read by `stack_detect.py`'s `_summarize_wopr_yml`.
+The machine-readable API contract that crew agents cite instead of hand-copying shapes. Required by the crew pack (no contract, no crew run). Read by `stack_detect.py`'s `_summarize_wopr_yml`.
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
-| `spec_url` | yes | string | URL or path to the target OpenAPI spec. Examples: `/v3/api-docs`, `https://api.example.com/v3/api-docs`, `specs/openapi.json`. |
-| `pinned_generator_version` | yes | string | Format: `<tool> <semver>`. Used by auditor for lockstep verification. Examples: `openapi-generator-cli 7.21.0`, `springdoc-openapi 2.7.0`. |
+| `kind` | no | `openapi` \| `graphql` | Default `openapi`. Decides how agents address contract items: JSON Pointer into the OpenAPI document, or operation / type name in the GraphQL schema. |
+| `spec_url` | yes | string | URL or path to the contract. OpenAPI: `/v3/api-docs`, `https://api.example.com/v3/api-docs`, `specs/openapi.json`. GraphQL: the schema source, e.g. `amplify/data/resource.ts` (Amplify Gen 2) or `schema.graphql`. |
+| `pinned_generator_version` | yes | string | Format: `<tool> <semver>`. The tool that produces (backend) or consumes (frontend) the contract; used by the auditor for lockstep verification. OpenAPI: `openapi-generator-cli 7.21.0`, `springdoc-openapi 2.7.0`. GraphQL: `aws-amplify 6.20.0`, `graphql-codegen 5.0.0`. |
+
+**Legacy alias.** Before GraphQL projects existed this section was named `openapi:` (same fields, no `kind`). The parser still reads `openapi:` as `api_contract` with `kind: openapi` and flags it (`legacy_section: openapi` in the summary); `api_contract` wins when both are present. New files use `api_contract`.
 
 ## Section: `requirements`
 
@@ -125,7 +128,7 @@ Each maps 1:1 onto a harness env var:
 
 - **`<target_dir>`**, wherever it appears in pack documentation (crew agents, orchestrator skill, contracts), means **the directory containing the project's `wopr.yml`** — the project root by default, or the override directory when the operator passes an explicit config path. It is a documentation term resolved from the `wopr.yml` location, not a `wopr.yml` field. Example: the scout contract lands at `<target_dir>/crew-contracts/<REQ-ID>/scout.md`.
 - All paths in shared sections (`project`, `specs`) are **relative to project root** unless the field documentation explicitly says otherwise.
-- `openapi.spec_url` accepts a URL OR a relative path; agents detect the form.
+- `api_contract.spec_url` accepts a URL OR a relative path; agents detect the form.
 - `requirements.local.path` is relative to this `wopr.yml`.
 - `legacy-migration.legacy_source_root` and `legacy-migration.legacy_ui_source_root` are **absolute**. The legacy source typically lives outside the project repo (a sibling directory or a separate clone).
 - `legacy-migration.extracted_requirements`, `tracking_doc`, `legacy_analysis_root`, `schema_path`, and `handoff_contract` are **relative to project root**.
@@ -133,7 +136,7 @@ Each maps 1:1 onto a harness env var:
 
 ## Future packs
 
-A new WOPR workflow pack adds its own section to `wopr.yml`. It reads the shared sections (`project`, `specs`, `openapi` if applicable, `requirements`) plus its own section. It does not modify or read other packs' sections. Adding a new section does not break existing packs.
+A new WOPR workflow pack adds its own section to `wopr.yml`. It reads the shared sections (`project`, `specs`, `api_contract` if applicable, `requirements`) plus its own section. It does not modify or read other packs' sections. Adding a new section does not break existing packs.
 
 If a new pack needs a field that already exists in a shared section, it reads from there. If it needs a new shared concern (e.g., a `lint` section that multiple packs would benefit from), the schema gets a new top-level section and this doc updates.
 

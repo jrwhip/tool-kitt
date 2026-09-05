@@ -20,7 +20,8 @@ specs:
   tester_spec: specs/tester-spec.md
   audit_report: AUDIT_REPORT.md
 
-openapi:
+api_contract:
+  kind: openapi
   # FastAPI serves its generated OpenAPI document at this path on the running
   # app; there is no separate static spec artifact for this fixture.
   spec_url: /openapi.json

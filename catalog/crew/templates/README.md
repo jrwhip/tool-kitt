@@ -19,7 +19,7 @@ For migration projects, an additional template (`extracted-requirements.template
 
 ## Project config (`wopr.yml`)
 
-`wopr.yml` is the WOPR-shared project configuration file, read by every agent on every invocation. It carries the project's slug, source roots, build file, OpenAPI spec URL and pinned generator version, paths to the spec documents, and (for migration projects) the legacy source root, extracted requirements path, schema path, and handoff contract path.
+`wopr.yml` is the WOPR-shared project configuration file, read by every agent on every invocation. It carries the project's slug, source roots, build file, API contract location (`api_contract`: OpenAPI or GraphQL) and pinned generator version, paths to the spec documents, and (for migration projects) the legacy source root, extracted requirements path, schema path, and handoff contract path.
 
 See:
 

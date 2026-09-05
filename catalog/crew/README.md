@@ -1,6 +1,6 @@
 # crew pack
 
-Universal four-role agent crew for disciplined REQ-driven development. One scout, one coder, one tester, one auditor. One REQ per crew run. OpenAPI-first. Spec-files-as-authority. Coverage-gated.
+Universal four-role agent crew for disciplined REQ-driven development. One scout, one coder, one tester, one auditor. One REQ per crew run. API-contract-first (OpenAPI or GraphQL). Spec-files-as-authority. Coverage-gated.
 
 This pack is the load-bearing surface for any project that wants WOPR-driven development discipline: net-new feature work, ongoing iteration on an existing modern project, blocker fixes, frontend handoffs, or legacy migration. The crew does not care where REQs come from; it cares about role separation, model alignment, and the audit gate.
 

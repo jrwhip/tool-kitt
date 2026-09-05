@@ -124,9 +124,10 @@ class TestProposeWoprYml:
         # target_source_root reflects the derived package.
         assert parsed["project"]["target_source_root"].startswith("src/main/java/")
         assert parsed["project"]["test_root"] == "src/test/java"
-        # OpenAPI producer defaults populated.
-        assert parsed["openapi"]["spec_url"] == "/v3/api-docs"
-        assert "springdoc-openapi" in parsed["openapi"]["pinned_generator_version"]
+        # OpenAPI producer defaults populated under api_contract.
+        assert parsed["api_contract"]["kind"] == "openapi"
+        assert parsed["api_contract"]["spec_url"] == "/v3/api-docs"
+        assert "springdoc-openapi" in parsed["api_contract"]["pinned_generator_version"]
 
     def test_angular_nx_app_target(self, workspace: Path):
         _write_angular_nx_app(workspace)
@@ -138,8 +139,9 @@ class TestProposeWoprYml:
         assert parsed["project"]["target_source_root"] == "src/app"
         # Angular target does not get a base_package.
         assert "base_package" not in parsed["project"]
-        # Frontend consumer: openapi pin lifted from root package.json devDeps.
-        assert parsed["openapi"]["pinned_generator_version"] == "openapi-generator-cli 7.21.0"
+        # Frontend consumer: generator pin lifted from root package.json devDeps.
+        assert parsed["api_contract"]["kind"] == "openapi"
+        assert parsed["api_contract"]["pinned_generator_version"] == "openapi-generator-cli 7.21.0"
 
     def test_fastapi_single_app(self, workspace: Path):
         _write_fastapi_single_app(workspace)
@@ -148,7 +150,8 @@ class TestProposeWoprYml:
         parsed = yaml.safe_load(proposed)
         assert parsed["project"]["build_file"] == "pyproject.toml"
         assert parsed["project"]["test_root"] == "tests"
-        # No openapi block for a fastapi project that doesn't declare a role.
+        # No api_contract block for a fastapi project that doesn't declare a role.
+        assert "api_contract" not in parsed
         assert "openapi" not in parsed
 
     def test_output_round_trips_through_yaml_safe_load(self, workspace: Path):
@@ -567,7 +570,7 @@ class TestProposeWoprYml:
         # `openapi-generator-cli 1.2.3-alpha` would have passed the
         # earlier `"1.2.3" in ...` assertion).
         assert (
-            parsed["openapi"]["pinned_generator_version"]
+            parsed["api_contract"]["pinned_generator_version"]
             == "openapi-generator-cli 1.2.3"
         )
 
@@ -603,7 +606,7 @@ class TestProposeWoprYml:
         assert proposed.startswith("# wopr.yml generated")
         parsed = yaml.safe_load(proposed)
         assert (
-            parsed["openapi"]["pinned_generator_version"]
+            parsed["api_contract"]["pinned_generator_version"]
             == "openapi-generator-cli TODO"
         )
 
@@ -656,7 +659,7 @@ class TestProposeWoprYml:
         # All four top-level sections still present and parseable.
         assert "project" in parsed
         assert "specs" in parsed
-        assert "openapi" in parsed
+        assert "api_contract" in parsed
         assert "requirements" in parsed
 
     def test_legacy_migration_block_omitted_by_default(self, workspace: Path):
@@ -1150,3 +1153,68 @@ class TestRegister:
             "write_handoff_contract_stub",
             "write_tracking_doc_stub",
         ]
+
+
+class TestApiContractSummary:
+    """``_summarize_wopr_yml`` forwards the ``api_contract`` section and
+    reads the pre-rename ``openapi:`` section as an alias."""
+
+    def _summary(self, workspace: Path, yml: str) -> dict[str, Any]:
+        _write_fastapi_single_app(workspace)
+        (workspace / "wopr.yml").write_text(yml, encoding="utf-8")
+        detection = json.loads(detect_stack(str(workspace)))
+        inventory = detection["wopr_yml_inventory"]
+        assert len(inventory) == 1 and inventory[0]["parse_ok"]
+        return inventory[0]["summary"]
+
+    def test_graphql_contract_is_forwarded_with_kind(self, workspace: Path):
+        summary = self._summary(
+            workspace,
+            "project: {slug: x}\n"
+            "api_contract:\n"
+            "  kind: graphql\n"
+            "  spec_url: amplify/data/resource.ts\n"
+            "  pinned_generator_version: aws-amplify 6.20.0\n",
+        )
+        assert summary["api_contract"] == {
+            "kind": "graphql",
+            "spec_url": "amplify/data/resource.ts",
+            "pinned_generator_version": "aws-amplify 6.20.0",
+        }
+
+    def test_kind_defaults_to_openapi(self, workspace: Path):
+        summary = self._summary(
+            workspace,
+            "project: {slug: x}\napi_contract: {spec_url: /v3/api-docs}\n",
+        )
+        assert summary["api_contract"]["kind"] == "openapi"
+
+    def test_legacy_openapi_section_is_read_as_alias(self, workspace: Path):
+        summary = self._summary(
+            workspace,
+            "project: {slug: x}\n"
+            "openapi:\n"
+            "  spec_url: /v3/api-docs\n"
+            "  pinned_generator_version: springdoc-openapi 2.7.0\n",
+        )
+        assert summary["api_contract"] == {
+            "kind": "openapi",
+            "spec_url": "/v3/api-docs",
+            "pinned_generator_version": "springdoc-openapi 2.7.0",
+            "legacy_section": "openapi",
+        }
+        assert "openapi" not in summary
+
+    def test_api_contract_wins_over_legacy_section(self, workspace: Path):
+        summary = self._summary(
+            workspace,
+            "project: {slug: x}\n"
+            "openapi: {spec_url: /old}\n"
+            "api_contract: {kind: graphql, spec_url: /new}\n",
+        )
+        assert summary["api_contract"]["spec_url"] == "/new"
+        assert "legacy_section" not in summary["api_contract"]
+
+    def test_absent_section_emits_nothing(self, workspace: Path):
+        summary = self._summary(workspace, "project: {slug: x}\n")
+        assert "api_contract" not in summary

@@ -1,7 +1,7 @@
 # wopr.yml example: two worked configurations
 #
 # This file shows TWO complete configurations: one for a Spring Boot backend project
-# and one for an Angular frontend project that consumes the backend's OpenAPI spec.
+# and one for an Angular frontend project that consumes the backend's API contract.
 #
 # In a real project, only ONE of these blocks would appear at the project root,
 # named exactly `wopr.yml`. They are colocated here for reference.
@@ -35,9 +35,16 @@ specs:
   # design_spec: DESIGN_SPEC.md
   # visual_check: npx playwright test --grep @visual
 
-openapi:
+# The machine-readable API contract agents cite. kind: openapi (default) or graphql.
+# A pre-rename `openapi:` block (same fields, no kind) is still read as kind: openapi.
+api_contract:
+  kind: openapi
   spec_url: /v3/api-docs
   pinned_generator_version: springdoc-openapi 2.7.0
+  # GraphQL example (Amplify Gen 2):
+  #   kind: graphql
+  #   spec_url: amplify/data/resource.ts
+  #   pinned_generator_version: aws-amplify 6.20.0
 
 # Optional. Semantic-search (CRAG) configuration for learnings_search.
 # Omit the whole section to accept the default (provider: local).
@@ -90,7 +97,7 @@ legacy-migration:
     api_scope_regex: /api/                                  # -> PARITY_API_SCOPE_REGEX
 
 # ============================================================================
-# Example B: Angular frontend project (consumes the backend's OpenAPI spec)
+# Example B: Angular frontend project (consumes the backend's API contract)
 # Lives at:  <monorepo-root>/apps/<app-name>/wopr.yml
 # ============================================================================
 #
@@ -107,7 +114,8 @@ legacy-migration:
 #   tester_spec: TESTER_SPEC.md
 #   audit_report: AUDIT_REPORT.md
 #
-# openapi:
+# api_contract:
+#   kind: openapi
 #   spec_url: ../../libs/demo-admin/api/src/lib/generated/openapi.json
 #   pinned_generator_version: openapi-generator-cli 7.21.0
 #

@@ -13,7 +13,7 @@
 | Implementation tracking | `IMPLEMENTATION_TRACKING.md` | Which REQs need coverage, which need disabled stubs |
 | Extracted requirements | (legacy projects) `EXTRACTED_REQUIREMENTS.md` | Acceptance criteria per REQ |
 | Coder spec | `specs/coder-spec.md` | What the production code should look like |
-| OpenAPI spec | path in `wopr.yml` (`openapi.spec_url`) | Source of truth for endpoint shapes; tests assert against generated types |
+| OpenAPI spec | path in `wopr.yml` (`api_contract.spec_url`) | Source of truth for endpoint shapes; tests assert against generated types |
 
 ---
 

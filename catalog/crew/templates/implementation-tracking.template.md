@@ -11,8 +11,8 @@
 > **Last updated:** [YYYY-MM-DD] ([one-line note on what changed])
 > **Scope:** [STACK: e.g. API + DB layers only. Auth, email, documents, PDF export deferred.]
 > **Status legend:** `⏳ Pending`, `🔄 In Progress`, `✅ Implemented`, `❌ Out of Scope`
-> **Spec version pinned:** `[STACK: e.g. backend openapi.json @ 4.2.1, fetched 2026-04-15]`
-> **Generator version pinned:** `[STACK: e.g. openapi-generator-cli 7.21.0]`
+> **Spec version pinned:** `[STACK: e.g. backend openapi.json @ 4.2.1, fetched 2026-04-15; or @aws-amplify/backend 1.24.0 for a GraphQL schema]`
+> **Generator version pinned:** `[STACK: e.g. openapi-generator-cli 7.21.0, aws-amplify 6.20.0]`
 > **Migration Context summary:** [STACK: one-line summary; full content lives in the requirements source's Migration Context section (extracted-requirements document for migrations; project-defined location otherwise) and the coder spec's Migration Context section. Agents read those files; this field is a pointer, not a source of truth. The label is "Migration Context" for historical reasons; for non-migration projects, treat this as the session's structural context (e.g., "introducing OpenAPI client generation; replacing handwritten HTTP services").]
 
 ---
@@ -25,7 +25,7 @@
 | Database | [STACK: e.g. Oracle (ojdbc11 23.2.0.0)] |
 | ORM | [STACK: e.g. Spring Data JPA / Hibernate] |
 | Build | [STACK: e.g. Maven] |
-| API Docs | [STACK: e.g. springdoc-openapi] |
+| API contract | [STACK: e.g. springdoc-openapi; AppSync GraphQL schema] |
 | Logging | [STACK: e.g. slf4j + custom aspect] |
 | Mapping | [STACK: e.g. ModelMapper 3.2.4 (strict, explicit type maps)] |
 | Security | [STACK: e.g. Spring Security OAuth2 resource server] |
@@ -85,7 +85,7 @@ Append-only log of significant implementation events. Each entry is dated and po
 - **Files:** [list of new or modified production files]
 - **Tests:** [list of new or modified test files]
 - **Coverage status:** [STACK: e.g. `line 83% / branch 72% / static_analysis: PASS / gate: PASS`, or `line 67% / branch 50% / static_analysis: PASS / gate: FAIL (missing error path coverage for REQ-X-2)`]
-- **Spec version at this commit:** [STACK: e.g. `openapi.json @ 4.2.1`]
+- **Spec version at this commit:** [STACK: e.g. `openapi.json @ 4.2.1`, `@aws-amplify/backend 1.24.0`]
 - **Notes:** [anything the next agent or reviewer needs to know, e.g. "role checks deferred until auth is live", "virus scan deferred"]
 
 ### [YYYY-MM-DD] - [REQ-ID or feature name]

@@ -4,7 +4,7 @@ description: Scaffold a `wopr.yml` at a specified path inside the workspace, wit
 ---
 
 <objective>
-Operator-facing scaffolding for `wopr.yml`. Detects the stack of a target inside the workspace, generates a proposed YAML with sensible defaults filled in (slug, name, source roots, build file, base package for Java, OpenAPI hints), shows the operator the proposed content, and writes the file on confirmation. Never writes without confirmation. Never overwrites an existing file unless explicitly told to.
+Operator-facing scaffolding for `wopr.yml`. Detects the stack of a target inside the workspace, generates a proposed YAML with sensible defaults filled in (slug, name, source roots, build file, base package for Java, API contract hints), shows the operator the proposed content, and writes the file on confirmation. Never writes without confirmation. Never overwrites an existing file unless explicitly told to.
 </objective>
 
 <when_to_run>
@@ -65,8 +65,9 @@ Example skill turn after a successful propose:
 >   tester_spec: specs/tester-spec.md  # TODO: copy from catalog/crew/templates/tester-spec.template.md
 >   audit_report: AUDIT_REPORT.md
 >
-> openapi:
->   spec_url: TODO: relative path to the backend's openapi.json (or a URL).
+> api_contract:
+>   kind: openapi
+>   spec_url: null
 >   pinned_generator_version: openapi-generator-cli 7.21.0
 >   # TODO: Point `spec_url` at the backend's published spec. Pin must match the backend's `spec_version`.
 >

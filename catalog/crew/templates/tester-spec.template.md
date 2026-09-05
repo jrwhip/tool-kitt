@@ -23,7 +23,7 @@ The tester agent reads these before writing any tests.
 | Implementation tracking | `[STACK: e.g. CURRENT_REQUIREMENTS.md]` | Which REQs need coverage, which need disabled stubs, which need nothing. Also carries the pinned `spec_version` and `generator_version`. |
 | Extracted requirements | `[STACK: e.g. LEGACY_REQUIREMENTS.md]` | Acceptance criteria for each REQ |
 | Coder spec | `[STACK: e.g. CODER_SPEC.md]` | What the production code is supposed to look like, the Migration Context for this session, and the coverage gate definition (section 22). |
-| OpenAPI spec | `[STACK: e.g. /v3/api-docs, specs/openapi.json]` | Source of truth for endpoint shapes, status codes, and model types. Tests assert against the spec, not against hand-copied types. |
+| API contract | `[STACK: e.g. /v3/api-docs, specs/openapi.json, schema.graphql]` | Source of truth for operation shapes, status codes or result types, and model types (`api_contract.spec_url` in `wopr.yml`). Tests assert against types generated from the contract, not against hand-copied types. |
 
 ---
 
@@ -206,7 +206,7 @@ The coverage gate is a five-condition contract owned and stated by the crew orch
 
 The auditor cross-checks the tracking document's `coverage_status` against a fresh coverage report. Drift between the two is a BLOCKER finding. A tester marking coverage as PASS when a fresh report shows FAIL is a BLOCKER finding.
 
-**What the auditor checks:** coverage targets are met per package; no untested public service method; no untested HTTP-status-code path per endpoint; every endpoint covered by a test has a JSON Pointer reference matching the spec's current state.
+**What the auditor checks:** coverage targets are met per package; no untested public service method; no untested HTTP-status-code path per endpoint; every endpoint covered by a test has a contract reference (JSON Pointer for OpenAPI; operation / type name for GraphQL) matching the API contract's current state.
 
 ---
 

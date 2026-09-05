@@ -260,11 +260,14 @@ def _derive_build_file(profile: dict[str, Any], target_dir: Path) -> str:
     return "TODO"
 
 
-def _derive_openapi_section(
+def _derive_api_contract_section(
     profile: dict[str, Any], workspace_path: str
 ) -> tuple[str | None, str | None, str | None]:
-    """Return (spec_url, pinned_generator_version, todo_comment).
+    """Return (spec_url, pinned_generator_version, todo_comment) for `api_contract`.
 
+    Detection only recognises OpenAPI producers (springdoc) and consumers
+    (openapi-generator-cli), so every derived block is ``kind: openapi``.
+    GraphQL projects declare the block by hand; see wopr-yml-schema.md.
     The todo_comment is set when the field needs human review.
     """
     role = profile.get("openapi_role")
@@ -380,7 +383,7 @@ def propose_wopr_yml(detection_json: str, target_path: str) -> str:
     source_root = _derive_target_source_root(profile, base_package)
     test_root = _derive_test_root(profile)
     build_file = _derive_build_file(profile, target_dir)
-    spec_url, pinned_version, openapi_todo = _derive_openapi_section(
+    spec_url, pinned_version, contract_todo = _derive_api_contract_section(
         profile, workspace_path
     )
 
@@ -421,17 +424,18 @@ def propose_wopr_yml(detection_json: str, target_path: str) -> str:
 
     if spec_url is not None or pinned_version is not None:
         lines.append("")
-        lines.append("openapi:")
-        # Always emit spec_url when the openapi block exists; use `null`
-        # plus a TODO comment when the value could not be derived.
+        lines.append("api_contract:")
+        lines.append("  kind: openapi")
+        # Always emit spec_url when the api_contract block exists; use
+        # `null` plus a TODO comment when the value could not be derived.
         if spec_url is not None:
             lines.append(f"  spec_url: {spec_url}")
         else:
             lines.append("  spec_url: null")
         if pinned_version is not None:
             lines.append(f"  pinned_generator_version: {pinned_version}")
-        if openapi_todo:
-            lines.append(f"  # TODO: {openapi_todo}")
+        if contract_todo:
+            lines.append(f"  # TODO: {contract_todo}")
 
     # Requirements source: where the orchestrator pulls the active REQ
     # body from at crew dispatch. Default is `local` so existing

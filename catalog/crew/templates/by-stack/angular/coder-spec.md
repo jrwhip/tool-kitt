@@ -84,7 +84,7 @@ The frontend consumes the backend's OpenAPI spec via a generated client. Two rul
    ```
 2. **Never hand-edit the generated files.** If a customization is needed (e.g. mapping a `*/*` response to `Blob`), the fix is a custom Mustache template at `openapi-overrides/api.mustache` with a header comment explaining what the default produced and why we overrode it.
 
-The pinned generator version lives in `wopr.yml` (`openapi.pinned_generator_version`). The pin must match the backend's `spec_version`.
+The pinned generator version lives in `wopr.yml` (`api_contract.pinned_generator_version`). The pin must match the backend's `spec_version`.
 
 If a needed endpoint is missing from the generated client, STOP and flag it as a missing backend dependency. Do not write a fallback.
 

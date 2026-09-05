@@ -35,7 +35,7 @@ The orchestrator passes `mode` explicitly; you never self-select it.
 
 1. **Requirements Status.** Statuses summarized from the tracking document; drift between stated status and codebase reality goes to Handoff Notes; end with the alignment verdict in gap_analysis mode.
 2. **Relevant File Paths.** Exact paths per layer the stack actually uses; say explicitly when a layer does not exist rather than inventing one.
-3. **Spec and Legacy Schema References.** Read the OpenAPI spec; give JSON Pointer references (operations, schemas, responses; `/` escapes as `~1`) for everything the REQ depends on. Never hand-copy shapes; the pointer is the link. A REQ needing an operation the spec lacks is a BLOCKER-class note. Note `uniqueItems: true` fields (they change generated container types). Legacy schema extraction only when migrating.
+3. **Contract and Legacy Schema References.** Read the API contract at `api_contract.spec_url`; give a contract reference for everything the REQ depends on. `kind: openapi`: JSON Pointers (operations, schemas, responses; `/` escapes as `~1`); note `uniqueItems: true` fields (they change generated container types). `kind: graphql`: operation names (`Query.x`, `Mutation.x`, `Subscription.x`) and type / input / enum names as declared in the schema. Never hand-copy shapes; the reference is the link. A REQ needing an operation the contract lacks is a BLOCKER-class note. Legacy schema extraction only when migrating.
 4. **Test Coverage Gaps.** What has coverage and what does not, grouped by file.
 5. **Handoff Notes.** Drift, naming inconsistencies, conflicts with the coder spec, open questions, anything surprising.
 
