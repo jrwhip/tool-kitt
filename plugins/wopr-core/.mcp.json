@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "wopr": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-serve.sh",
+      "env": {
+        "WOPR_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}"
+      }
+    }
+  }
+}

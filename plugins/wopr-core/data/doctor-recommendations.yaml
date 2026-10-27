@@ -1,0 +1,74 @@
+# WOPR Doctor recommendation table
+#
+# Edited by hand. `/wopr-doctor` and `/wopr-init-project` read this file
+# directly with the file-read tool (there is no recommendation tool and
+# no code loader for this file); no restart needed for data edits.
+#
+# Sections:
+#   framework_to_pack:  detected framework -> list of WOPR packs to install
+#   signal_to_mcp:      detected external signal -> MCP server registration
+#   language_to_plugin: detected stack language -> official upstream plugin
+#
+# Conservative posture: only entries where the install command is stable
+# and the recommendation is high-confidence. Silence is preferred over
+# wrong advice.
+
+framework_to_pack:
+  angular:
+    - crew
+    - angular
+  react:
+    - crew
+    - react
+  vue:
+    - crew
+  next:
+    - crew
+    - react
+  spring-boot:
+    - crew
+    - java
+  fastapi:
+    - crew
+    - python
+  flask:
+    - crew
+    - python
+  django:
+    - crew
+    - python
+
+# Detected external signals that map to a Claude Code MCP registration.
+#
+# Each entry:
+#   server_name:        the key as it appears in ~/.claude.json's mcpServers.
+#   install_command:    the operator-runnable command. Slash-prefixed entries
+#                       are Claude Code slash commands; bare commands are
+#                       shell commands.
+#   documentation_url:  reference URL for the MCP.
+signal_to_mcp:
+  ag-grid:
+    server_name: ag-mcp
+    install_command: claude mcp add ag-mcp -- npx @ag-grid/ag-grid-mcp@latest
+    documentation_url: https://www.ag-grid.com/mcp-server/
+  atlassian:
+    server_name: plugin:atlassian:atlassian
+    install_command: /mcp add atlassian
+    documentation_url: https://www.atlassian.com/platform/remote-mcp-server
+  chrome-devtools:
+    server_name: chrome-devtools
+    install_command: claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest
+    documentation_url: https://github.com/ChromeDevTools/chrome-devtools-mcp
+
+# Detected stack languages that map to an OFFICIAL UPSTREAM PLUGIN
+# (Copilot CLI / Claude Code `/plugin` flow) rather than a WOPR pack.
+# WOPR deliberately does not vendor these — the upstream marketplace is
+# the source of truth and self-updates (the vendored .NET pack was
+# removed 2026-08-03 for exactly this reason). There is no reliable
+# cross-CLI "plugin already installed" check, so the suggestion repeats
+# whenever the stack is detected; the dismissal latch is the off switch.
+language_to_plugin:
+  csharp:
+    plugin_name: dotnet-agent-skills
+    install_command: "/plugin marketplace add dotnet/skills   # then: /plugin install <plugin>@dotnet-agent-skills"
+    documentation_url: https://github.com/dotnet/skills

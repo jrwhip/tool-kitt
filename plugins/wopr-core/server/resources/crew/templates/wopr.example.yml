@@ -1,0 +1,132 @@
+# wopr.yml example: two worked configurations
+#
+# This file shows TWO complete configurations: one for a Spring Boot backend project
+# and one for an Angular frontend project that consumes the backend's API contract.
+#
+# In a real project, only ONE of these blocks would appear at the project root,
+# named exactly `wopr.yml`. They are colocated here for reference.
+#
+# Schema reference: wopr-yml-schema.md (ships alongside this file in the crew pack)
+
+# ============================================================================
+# Example A: Spring Boot backend project (legacy migration)
+# Lives at:  <project-root>/wopr.yml  (e.g. /path/to/demo-api-poc/wopr.yml)
+# ============================================================================
+
+project:
+  slug: demo-api
+  name: Demo API
+  target_source_root: src/main/java/com/example/app
+  test_root: src/test/java
+  build_file: pom.xml
+  base_package: com.example.app
+
+specs:
+  coder_spec: CODER_SPEC.md
+  tester_spec: TESTER_SPEC.md
+  audit_report: AUDIT_REPORT.md
+  # Optional, default false. true lets each crew agent amend the spec sections
+  # it owns as patterns emerge; false means agents propose rules in their
+  # reports and the operator lands them.
+  spec_writes: false
+  # Optional pair; set both or neither. Presence of design_spec dispatches the
+  # crew-designer role; visual_check is the visual-regression command the
+  # auditor runs at the gate. Omit for backend-only projects.
+  # design_spec: DESIGN_SPEC.md
+  # visual_check: npx playwright test --grep @visual
+
+# The machine-readable API contract agents cite. kind: openapi (default) or graphql.
+# A pre-rename `openapi:` block (same fields, no kind) is still read as kind: openapi.
+api_contract:
+  kind: openapi
+  spec_url: /v3/api-docs
+  pinned_generator_version: springdoc-openapi 2.7.0
+  # GraphQL example (Amplify Gen 2):
+  #   kind: graphql
+  #   spec_url: amplify/data/resource.ts
+  #   pinned_generator_version: aws-amplify 6.20.0
+
+# Optional. Semantic-search (CRAG) configuration for learnings_search.
+# Omit the whole section to accept the default (provider: local).
+# learnings:
+#   embeddings:
+#     # local (default) | bedrock | none.
+#     #   local   - bundled fastembed model; works offline after first download.
+#     #   bedrock - Amazon Titan Text Embeddings V2; needs wopr[bedrock] + AWS creds.
+#     #   none    - opt out of semantic search; deterministic prefilter only.
+#     # The WOPR_EMBEDDING_PROVIDER env var overrides this field.
+#     provider: local
+
+legacy-migration:
+  # Absolute path. Legacy backend codebase the scout reads in deep_analysis mode.
+  legacy_source_root: /path/to/legacy/api/repo
+  # Optional. Absolute path to legacy frontend if the scout should also map UI -> API calls.
+  legacy_ui_source_root: /path/to/legacy/ui/repo
+  # Path relative to project root. Where the scout writes REQ blocks.
+  extracted_requirements: LEGACY_REQUIREMENTS.md
+  # Path relative to project root. Implementation-tracking document.
+  tracking_doc: CURRENT_REQUIREMENTS.md
+  # Optional. Where extract_legacy_context.py writes summary files. Default: legacy-analysis/.
+  legacy_analysis_root: legacy-analysis
+  # Optional. Legacy schema reference (DDL or ORM mappings) for the coder.
+  schema_path: legacy_ddl.sql
+  # Optional. Env-var prefix for schema-extractor scripts. Scripts read
+  # ${PREFIX}_ORA_DB_PROXY, ${PREFIX}_ORA_DB_PASSWORD (Oracle) or
+  # ${PREFIX}_PG_DB_USER, ${PREFIX}_PG_DB_PASSWORD (PostgreSQL).
+  schema_env_prefix: YOUR_PREFIX  # e.g. WIDGETS, ORDERS, etc.
+  # Optional. Frontend handoff contract path (relative to project root).
+  handoff_contract: FRONTEND_HANDOFF_CONTRACT.md
+  # Optional. Parity-harness config (the legacy-migration/parity reference
+  # scaffold, copied into the project, e.g. tools/parity/). The pack runbook
+  # resolves these into the PARITY_* env the harness reads. Present only when the
+  # project runs the parity harness.
+  parity:
+    legacy_url: https://legacy.example.gov/app              # -> PARITY_LEGACY_URL
+    # The modern app under test. The field/env name says "angular" (the reference
+    # stack); it is just the modern side, whatever framework you migrate to.
+    angular_url: http://localhost:4400/app                  # -> PARITY_ANGULAR_URL
+    # AuthAdapter: a shipped reference (client-openam-oidc | noop) or your own module.
+    auth_adapter: client-openam-oidc                           # -> PARITY_AUTH_ADAPTER
+    catalog: tools/parity/catalog.json                      # -> PARITY_CATALOG
+    legacy_storage: tools/parity/storage/dev.legacy.json    # -> PARITY_LEGACY_STORAGE
+    angular_storage: tools/parity/storage/dev.angular.json  # -> PARITY_ANGULAR_STORAGE
+    # Required for parameterized routes (a real id/code in YOUR data); no default.
+    test_user_id: "REPLACE"                                 # -> PARITY_TEST_USER_ID
+    test_prog_type: "REPLACE"                               # -> PARITY_TEST_PROG_TYPE
+    # Optional. Scope of your API surface (default /jsp/legacy-app/api/).
+    api_scope_regex: /api/                                  # -> PARITY_API_SCOPE_REGEX
+
+# ============================================================================
+# Example B: Angular frontend project (consumes the backend's API contract)
+# Lives at:  <monorepo-root>/apps/<app-name>/wopr.yml
+# ============================================================================
+#
+# project:
+#   slug: demo-admin
+#   name: Demo Admin (Frontend)
+#   target_source_root: src/app
+#   test_root: src/app
+#   build_file: project.json
+#   # base_package omitted; not applicable to Angular
+#
+# specs:
+#   coder_spec: CODER_SPEC.md
+#   tester_spec: TESTER_SPEC.md
+#   audit_report: AUDIT_REPORT.md
+#
+# api_contract:
+#   kind: openapi
+#   spec_url: ../../libs/demo-admin/api/src/lib/generated/openapi.json
+#   pinned_generator_version: openapi-generator-cli 7.21.0
+#
+# legacy-migration:
+#   # Frontend points at the legacy frontend codebase as its primary source.
+#   legacy_source_root: /path/to/legacy/ui/repo
+#   extracted_requirements: LEGACY_REQUIREMENTS.md
+#   tracking_doc: CURRENT_REQUIREMENTS.md
+#   # legacy_analysis_root omitted; frontend rarely needs the pre-extraction step
+#   # schema_path omitted; frontend does not migrate a database schema
+#   # schema_env_prefix omitted; frontend does not run schema extractors
+#   # The handoff_contract field on the frontend points at the BACKEND's contract
+#   # by absolute path, since the contract is the bridge between the two halves.
+#   handoff_contract: /path/to/backend/project/FRONTEND_HANDOFF_CONTRACT.md

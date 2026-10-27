@@ -1,0 +1,13 @@
+{
+  "name": "wopr-auditors",
+  "description": "Skill, command, and subagent quality auditors",
+  "version": "1.0.0-dev.5",
+  "author": {
+    "name": "Jerry"
+  },
+  "license": "MIT",
+  "keywords": [
+    "meta",
+    "quality"
+  ]
+}
