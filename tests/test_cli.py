@@ -129,6 +129,28 @@ class TestBuildPluginsSubcommand:
         assert (out / ".claude-plugin" / "marketplace.json").is_file()
         assert (out / "wopr-core" / ".claude-plugin" / "plugin.json").is_file()
 
+    def test_hosts_the_manifest_at_the_marketplace_root(self, tmp_path: Path):
+        root = tmp_path / "repo"
+        out = root / "plugins"
+        assert cli.main(
+            ["build-plugins", "--out", str(out), "--marketplace-root", str(root)]
+        ) == 0
+        assert (root / ".claude-plugin" / "marketplace.json").is_file()
+        assert not (out / ".claude-plugin").exists()
+        assert (out / "wopr-core" / ".claude-plugin" / "plugin.json").is_file()
+
+    def test_rejects_an_out_dir_outside_the_marketplace_root(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ):
+        assert cli.main(
+            [
+                "build-plugins",
+                "--out", str(tmp_path / "elsewhere"),
+                "--marketplace-root", str(tmp_path / "repo"),
+            ]
+        ) == 1
+        assert "must sit inside" in capsys.readouterr().err
+
     def test_reports_the_failure_and_exits_nonzero(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ):

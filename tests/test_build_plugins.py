@@ -30,6 +30,7 @@ import pytest
 from wopr import __version__
 from wopr.build_plugins import (
     BUNDLED_RESOURCES,
+    CLI_PROG,
     EXCLUDED_FILE_NAMES,
     MARKER_NAME,
     MARKETPLACE_NAME,
@@ -38,6 +39,7 @@ from wopr.build_plugins import (
     SERVER_DEPENDENCIES,
     SERVER_ENTRY_POINT,
     SOURCE_TOOL_PREFIX,
+    BuildPluginsError,
     BuildResult,
     PluginCollisionError,
     PluginPlan,
@@ -736,3 +738,111 @@ class TestReporting:
 class TestRepoRootDiscovery:
     def test_finds_the_repo_root_from_the_installed_module(self):
         assert find_repo_root() == REPO_ROOT
+
+
+def _tree_bytes(root: Path) -> dict[str, bytes]:
+    """Every file under ``root`` keyed by POSIX relative path."""
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+@pytest.fixture(scope="module")
+def hosted(tmp_path_factory: pytest.TempPathFactory) -> BuildResult:
+    """One hosted build for the whole module, like ``built`` above."""
+    root = tmp_path_factory.mktemp("hosted-repo")
+    return build_plugins(root / "plugins", REPO_ROOT, marketplace_root=root)
+
+
+class TestHostedLayout:
+    """``marketplace_root`` hosts the manifest above the plugin tree.
+
+    A marketplace served from git needs ``.claude-plugin/marketplace.json``
+    at the repo root with sources that point down into the generated
+    tree. The tree itself must not change shape, or the self-contained
+    tests above would be testing something nobody installs.
+    """
+
+    def test_manifest_lands_under_the_root_not_inside_the_tree(
+        self, hosted: BuildResult
+    ):
+        root = hosted.out_dir.parent
+        assert hosted.manifest_path == root / ".claude-plugin" / "marketplace.json"
+        assert hosted.manifest_path.is_file()
+        assert not (hosted.out_dir / ".claude-plugin").exists()
+
+    def test_sources_resolve_from_the_root_into_the_tree(self, hosted: BuildResult):
+        assert hosted.manifest_path is not None
+        root = hosted.manifest_path.parents[1]
+        manifest = _read_json(hosted.manifest_path)
+        assert manifest["name"] == MARKETPLACE_NAME
+        for entry in manifest["plugins"]:
+            assert entry["source"] == f"./plugins/{entry['name']}"
+            assert (root / entry["source"] / ".claude-plugin" / "plugin.json").is_file()
+
+    def test_the_tree_is_byte_identical_to_a_self_contained_build(
+        self, hosted: BuildResult, built: BuildResult
+    ):
+        manifest_rel = ".claude-plugin/marketplace.json"
+        self_contained = _tree_bytes(built.out_dir)
+        self_contained.pop(manifest_rel)
+        assert _tree_bytes(hosted.out_dir) == self_contained
+
+    def test_only_the_manifest_is_written_outside_the_tree(self, hosted: BuildResult):
+        root = hosted.out_dir.parent
+        assert sorted(p.name for p in root.iterdir()) == [".claude-plugin", "plugins"]
+        assert [p.name for p in (root / ".claude-plugin").iterdir()] == [
+            "marketplace.json"
+        ]
+
+    def test_refuses_an_out_dir_outside_the_root(self, tmp_path: Path):
+        with pytest.raises(BuildPluginsError, match="must sit inside"):
+            build_plugins(
+                tmp_path / "elsewhere", REPO_ROOT, marketplace_root=tmp_path / "root"
+            )
+        assert not (tmp_path / "elsewhere").exists()
+
+    def test_a_root_equal_to_out_is_the_self_contained_layout(self, tmp_path: Path):
+        out = tmp_path / "marketplace"
+        result = build_plugins(out, REPO_ROOT, marketplace_root=out)
+        assert result.manifest_path == out / ".claude-plugin" / "marketplace.json"
+        manifest = _read_json(result.manifest_path)
+        assert all(e["source"] == f"./{e['name']}" for e in manifest["plugins"])
+
+    def test_report_names_the_manifest_only_when_it_is_outside_the_tree(
+        self, hosted: BuildResult, built: BuildResult
+    ):
+        assert str(hosted.manifest_path) in format_build_report(hosted)
+        assert "marketplace manifest:" not in format_build_report(built)
+
+
+class TestCommittedTreeIsCurrent:
+    """A committed ``plugins/`` tree must never lag the catalog.
+
+    Hosting the marketplace from git means the generated tree is checked
+    in. This test is the drift gate: it rebuilds into a scratch root and
+    demands byte equality with what is committed. It skips, rather than
+    passes, in a checkout that hosts nothing.
+    """
+
+    def test_committed_plugins_match_a_fresh_build(self, tmp_path: Path):
+        committed = REPO_ROOT / "plugins"
+        committed_manifest = REPO_ROOT / ".claude-plugin" / "marketplace.json"
+        if not (committed / MARKER_NAME).is_file():
+            pytest.skip("this checkout does not host a committed plugins/ tree")
+
+        root = tmp_path / "repo"
+        result = build_plugins(root / "plugins", REPO_ROOT, marketplace_root=root)
+
+        fresh = _tree_bytes(result.out_dir)
+        stale = _tree_bytes(committed)
+        assert sorted(fresh) == sorted(stale), (
+            "committed plugins/ has a different file set than a fresh build; "
+            f"rerun `{CLI_PROG} build-plugins --out plugins --marketplace-root .`"
+        )
+        changed = [rel for rel in fresh if fresh[rel] != stale[rel]]
+        assert not changed, f"committed plugins/ is stale: {changed[:10]}"
+        assert result.manifest_path is not None
+        assert result.manifest_path.read_bytes() == committed_manifest.read_bytes()

@@ -10,6 +10,7 @@ Usage:
     wopr skill-usage report          # Observed skill usage (a lower bound)
     wopr skill-usage pin NAME        # Never mark a rare skill stale
     wopr build-plugins --out DIR     # Emit the plugin marketplace
+    wopr build-plugins --out plugins --marketplace-root .   # hosted from this repo
     wopr learnings append --entry-file -   # Append a LEARNINGS entry
     wopr learnings search --req-id REQ-1   # Retrieve relevant entries
     wopr --version                   # Show version
@@ -140,9 +141,19 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="DIR",
         required=True,
         help=(
-            "Output directory for the marketplace. Wiped and rewritten on "
+            "Output directory for the plugin tree. Wiped and rewritten on "
             "every run; refused if it is non-empty and was not generated "
             "by this command."
+        ),
+    )
+    build_parser_.add_argument(
+        "--marketplace-root",
+        metavar="DIR",
+        default=None,
+        help=(
+            "Write .claude-plugin/marketplace.json under DIR instead of "
+            "inside --out, with plugin sources relative to DIR. Use the repo "
+            "root to host the marketplace from git; --out must sit inside DIR."
         ),
     )
 
@@ -243,8 +254,15 @@ def _run_build_plugins(args: argparse.Namespace) -> int:
     )
 
     try:
+        marketplace_root = (
+            Path(args.marketplace_root).expanduser().resolve()
+            if args.marketplace_root
+            else None
+        )
         result = build_plugins(
-            Path(args.out).expanduser().resolve(), find_repo_root()
+            Path(args.out).expanduser().resolve(),
+            find_repo_root(),
+            marketplace_root=marketplace_root,
         )
     except BuildPluginsError as e:
         print(f"Error: {e}", file=sys.stderr)
