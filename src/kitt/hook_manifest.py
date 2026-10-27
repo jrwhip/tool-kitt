@@ -52,7 +52,7 @@ Both renderers key an existing entry by the handler *filename* appearing in
 the command string, not by the full command text. A hook whose absolute path
 changed (pipx reinstall, editable -> wheel, a moved catalog) is then
 reconciled in place rather than appended alongside its own stale twin. The
-semantics are ported from ``webteam-ai-scaffolding``'s bootstrap, which
+semantics are ported from an internal scaffolding bootstrap, which
 learned the same lesson: matching on exact command text means every path
 change silently doubles the registrations.
 """

@@ -14,7 +14,7 @@ Exactly one writer exists on the current surface: the **Claude Code skill-usage 
 
 - `skill_usage_report` (MCP tool) and `kitt skill-usage report` (CLI): counts and lifecycle labels per skill.
 - `pin_skill` (MCP tool): marks a skill exempt from staleness labeling.
-- The slimming ledger process: usage numbers are retirement evidence where they exist (`docs/slimming-ledger.md`).
+- The slimming ledger process: usage numbers are retirement evidence where they exist .
 
 ## The coverage boundary, honestly
 

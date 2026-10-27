@@ -306,9 +306,9 @@ It stores tool names, counts, and token figures only — never prompt text, tool
 
 ## Provenance
 
-`prompt-log-hook.py` was adapted from a project-specific version authored by a colleague for the `webteam-demo-api` migration POV. The original hardcoded the log file location and included action-verb preferences biased toward that project's agent names. This version is parameterized and stack-agnostic. Original source: `research/seeds/demo-api/scripts/prompt-log-hook.py` in this repo.
+`prompt-log-hook.py` was adapted from a project-specific version authored by a colleague for an internal migration proof of value. The original hardcoded the log file location and included action-verb preferences biased toward that project's agent names. This version is parameterized and stack-agnostic.
 
-`git-branch-guard.sh` was adapted from `webteam-ai-scaffolding/ai/scripts/sh/git-branch-guard.sh`. The scaffolding version hardcoded the `feature/*` pattern; this version reads it from `BRANCH_GUARD_PATTERN`.
+`git-branch-guard.sh` was adapted from an internal project scaffolding's `git-branch-guard.sh`. The scaffolding version hardcoded the `feature/*` pattern; this version reads it from `BRANCH_GUARD_PATTERN`.
 
 `capture-skill-trigger-hook.py` is original KITT code, not ported from anywhere and not based on a verified Hermes design precedent — an earlier draft of this doc claimed Hermes triggers autonomous skill-writing on "any run with 5+ tool calls" and that number could not be located in the cloned Hermes source (`hermes-agent/agent/curator.py`, `learn_prompt.py`, or elsewhere) when checked directly. See the perpetual-learning doc (docs/perpetual-learning.md in a repo checkout) and `src/kitt/tools/_curator.py` for KITT's other Hermes ports, which credit specific files rather than a paraphrased number.
 

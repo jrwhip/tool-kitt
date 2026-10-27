@@ -4,7 +4,7 @@ Universal four-role agent crew for disciplined REQ-driven development. One scout
 
 This pack is the load-bearing surface for any project that wants KITT-driven development discipline: net-new feature work, ongoing iteration on an existing modern project, blocker fixes, frontend handoffs, or legacy migration. The crew does not care where REQs come from; it cares about role separation, model alignment, and the audit gate.
 
-The migration-specific layer (Phase 0 deep analysis, legacy extraction tooling, translation tables, schema extractor) is planned as an opt-in `legacy-migration` pack; it is not part of this distribution. The crew's `deep_analysis` scout mode and the `legacy-migration.*` `kitt.yml` fields are the integration points it will compose with.
+A migration-specific layer (Phase 0 deep analysis, legacy extraction tooling, translation tables, schema extractor) is not part of KITT. The crew's `deep_analysis` scout mode and the `legacy-migration.*` `kitt.yml` fields are the integration points such a pack composes with.
 
 ## Install
 
@@ -163,7 +163,7 @@ If you prefer the manual path:
 
 Optional but recommended: register the KITT bootstrap hooks. `/kitt-configure-prompt-log` adds a Stop hook for the per-turn audit log; `/kitt-configure-git-guard` adds a PreToolUse hook that keeps agents off `main` and `develop`.
 
-For migration projects, the `legacy-migration` pack (not shipped in this distribution) composes on top and populates the migration-specific `kitt.yml` fields.
+For migration projects, a migration-specific pack composes on top and populates the migration-specific `kitt.yml` fields.
 
 **Important:** the crew role agents (`scout`, `coder`, `tester`, `auditor`, orchestrator) are forbidden from running `find` against the workspace or `/` to locate pack-shipped templates. The stub-writer tools above (and `mcp__kitt__get_pack_template` for direct read access) exist to make brute-force filesystem search unnecessary. Operator-driven `/kitt-init-project` is the canonical entry point.
 
@@ -175,7 +175,7 @@ Grounding material from the original extraction lives at `research/seeds/demo-ap
 
 ## Relationship to other packs
 
-- **`legacy-migration`** (planned, not in this distribution) will depend on this pack and compose on top for migration projects.
+- A migration-specific pack can depend on this pack and compose on top for migration projects.
 - **`angular`** ships Angular patterns and reviewers. Composed with the crew via the `angular-team`, `fullstack`, and `everything` profiles.
 - **`python`** ships FastAPI/Python patterns and reviewers. Composed via `python-ai`, `fullstack`, and `everything`.
 - **`_core`** ships the prompt-log Stop hook and git-branch-guard PreToolUse hook that the project setup section above references.

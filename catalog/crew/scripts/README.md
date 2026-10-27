@@ -8,7 +8,7 @@ Orchestration scripts for the crew pack. These are not agents or skills; they ar
 |---|---|---|
 | `autorun.sh` | Unattended-run loop for long AI CLI sessions. Detects rate-limit exits, waits for the reset window, and resumes automatically. CLI-agnostic via environment-variable overrides. | Multi-hour crew runs that outlast a single rate-limit window; overnight runs. |
 
-`legacy-migration` pack (not shipped in this distribution; it lives in the source archive) carries additional migration-project scripts. Its inventory travels with that pack.
+A migration-specific pack is not part of KITT; one that composes on top of this pack would carry its own script inventory.
 
 ## `autorun.sh`
 
@@ -130,4 +130,4 @@ Both heuristics are intentionally narrow to avoid false positives. False negativ
 
 ## Provenance
 
-Adapted from a project-specific version authored by a colleague for the `webteam-demo-api` migration POV. The original hardcoded working directory paths, the prompt log file location, and the CLI invocation (`claude --resume -y`). This version accepts all three via environment variables, disables prompt-log integration by default (so callers opt in rather than opt out), and parameterizes the rate-limit and user-input detection regexes so the script works with any CLI that has resumable sessions. Original source: `research/seeds/demo-api/scripts/claude-autorun.sh`.
+Adapted from a project-specific version authored by a colleague for an internal migration proof of value. The original hardcoded working directory paths, the prompt log file location, and the CLI invocation (`claude --resume -y`). This version accepts all three via environment variables, disables prompt-log integration by default (so callers opt in rather than opt out), and parameterizes the rate-limit and user-input detection regexes so the script works with any CLI that has resumable sessions.

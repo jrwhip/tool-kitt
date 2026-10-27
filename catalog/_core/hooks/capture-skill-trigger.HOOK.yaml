@@ -7,7 +7,7 @@
 # blocks, and `agentStop` supports only decision/reason where `Stop`
 # supports non-blocking `additionalContext`, so the port was a second
 # program rather than a renamed event, and it was never verified against
-# a live firing. The quarry keeps both if Copilot support returns.
+# a live firing. Earlier generations kept both; restore them if Copilot support returns.
 name: capture-skill-trigger
 description: >-
   Nudge the agent to consider running kitt-capture-skill once a session
