@@ -25,9 +25,8 @@ CliType: TypeAlias = Literal["claude", "copilot", "gemini", "unknown"]
 ENV_AI_CLI_TYPE = "AI_CLI_TYPE"
 ENV_AI_CLI_WORKSPACE = "AI_CLI_WORKSPACE"
 ENV_KITT_WORKSPACE = f"{ENV_PREFIX}WORKSPACE"
-# Legacy alias for ``KITT_WORKSPACE``. Kept for back-compat with
-# operator shells that still export the old name. Drop once the
-# 0.x → 1.0 migration window closes.
+# Legacy alias for ``KITT_WORKSPACE``: the name the 2025 ``tool-kitt``
+# release read. Kept so a shell that still exports it keeps working.
 ENV_TOOL_KITT_WORKSPACE = "TOOL_KITT_WORKSPACE"
 ENV_KITT_CATALOG = f"{ENV_PREFIX}CATALOG"
 ENV_KITT_HOME = f"{ENV_PREFIX}HOME"
