@@ -4,6 +4,10 @@ Evidence document. The presentation's thesis is larger than this file: what is p
 
 Presentation source data. Every number in this document is reproducible from this repository (`evals/golden-req/`) or cited to a published Anthropic source. No number is estimated.
 
+## Terminology: WOPR is not the harness
+
+Strictly, the harness is the runtime that owns the agent loop: context management, tool execution, permissions, model calls. That is Claude Code (or Gemini CLI, or Copilot). WOPR ships no loop of its own; it is skills, subagents, MCP tools, and specs, all executed by the host harness, which is exactly why it can be cross-CLI. The accurate label for WOPR is an orchestration and methodology layer, a harness extension: the crew (scout, coder, tester, auditor) is orchestration expressed through the harness's subagent mechanism, not an independent runtime. The defensible framing for the talk is "WOPR turns a general-purpose harness into a disciplined one," not "WOPR is a harness." This document uses "harness" loosely for the harness-plus-WOPR stack because the shrink measurements apply to the layered whole; when precision matters on a slide, use the strict sense.
+
 ## The thesis in three sentences
 
 A quality toolset multiplies what a strong model can do: structure, verification, and memory produce outcomes a bare model cannot guarantee. But a harness encodes assumptions about the model it was built for, and as models improve those assumptions become overhead, then become drag. So a harness is not an asset you build once; it is something you must re-measure and shrink as the models grow, and every cut must be gated on evidence, because terser is not automatically better.

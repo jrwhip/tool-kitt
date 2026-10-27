@@ -16,6 +16,7 @@ scout  ->  coder  ->  tester  ->  auditor
 - **Every agent runs via the Task tool** (`subagent_type=<agent-name>`, fresh isolated context). Never role-play an agent in the parent conversation. Orchestrator work stays in the parent: pre-steps, gates, tracking-doc status updates.
 - **Spec files are the authority.** Agents follow the project's coder and tester specs resolved from `wopr.yml`. With `specs.spec_writes: true` in `wopr.yml`, the owning agent amends its spec when a new pattern emerges; OFF (the default), agents flag proposals in their reports and the operator decides what lands. The orchestrator reads the field once at run start and passes it to every crew agent.
 - **Stop on failure.** Missing required input: stop and report, do not guess paths. Auditor BLOCKED: stop; the next step is a human decision, not a re-run.
+- **Two operator gates, and no sequence skips either.** The REQ review gate runs before the first dispatch and gates the requirement; the auditor's verdict runs after the code and gates the implementation. Neither one substitutes for the other: an approved REQ says nothing about the code, and an UNBLOCKED audit only certifies that the code matches whatever the REQ said.
 - **A machine-readable API contract is mandatory** (`api_contract` in `wopr.yml`: an OpenAPI document or a GraphQL schema, per `kind`). The backend owns the contract; the frontend consumes a generated client; agents cite contract items by **contract reference**: a JSON Pointer into the OpenAPI document, or the operation / type name in the GraphQL schema. Never hand-copied shapes. No contract, no crew run: stop at setup.
 </essential_principles>
 
@@ -46,6 +47,28 @@ Greenfield project with no requirements source: skip 2 and 3; the first crew run
 - `source: jira`: REQ body is the Jira issue description, fetched with `getJiraIssue` from the Atlassian MCP. Pre-flight once at start: (1) the Atlassian MCP tools are callable, else stop with a pointer to register the MCP or switch to `local`; (2) resolve the site via `getAccessibleAtlassianResources`: exactly one site, cache its id as cloud_id; zero or multiple sites, stop and say so; (3) smoke-test the configured REQ-ID fetch, surfacing the underlying error on failure; (4) if `requirements.jira.project_key` is set, soft-warn on prefix mismatch.
 </req_resolution>
 
+<req_review_gate>
+## Gate: REQ review (operator, once per REQ per session)
+
+Runs after REQ resolution pre-flight and before the CRAG pre-step, on every sequence that has a REQ in scope. The audit verdict at Step 4 gates the code; it cannot gate the requirement, because by the time it runs the scout contract, the tests, and the code were all derived from the REQ text. **A wrong REQ caught here costs one turn; caught at the audit it has already paid for a full crew.**
+
+1. Show the operator the fresh REQ body verbatim — frontmatter and every section, not a summary — plus one line per entry in `depends_on` giving that REQ's current status, so an unmet prerequisite surfaces here instead of in the audit.
+2. Ask for one of four answers and wait. **Silence is not approval: no agent dispatch, and no CRAG call, before the answer lands.**
+   - **Approve** — proceed to the CRAG pre-step.
+   - **Edit** — the operator dictates the correction; the orchestrator rewrites the REQ at its source, re-shows it, and asks again. No round limit.
+   - **Rework** — the requirement is wrong in shape rather than in wording. Stop the run and hand the REQ back to the `wopr-draft-req` skill, which owns the format and the criteria quality bar; re-enter this gate on its output.
+   - **Cancel** — the requirement is wrong at its root. Leave the REQ in place at `status: pending`, stop, and dispatch nothing. Do not delete it.
+3. Record the outcome on the REQ's Requirements Baseline row in the tracking document: `REQ review: approved <date>, <n> round(s)`, or `REQ review: cancelled <date> — <reason>`.
+
+**What one approval covers.** This REQ, at the text the operator just read, for the rest of the session. The blocker-fix sequence does not re-gate — the REQ did not change, the code did. An operator edit to the REQ body after approval voids it: re-enter this gate before the next dispatch.
+
+**`source: jira`:** on **Edit**, the orchestrator writes the issue only if the Atlassian MCP exposes a write tool in this session. When it does not, say so plainly, let the operator edit the issue, then re-fetch and re-show rather than editing a local copy that the next dispatch would not see.
+
+**Skip only when no REQ is in scope** — a light run on a styling or copy change the operator described in session. There is no requirement document to review, and the change description is the operator's own words from one turn earlier.
+
+**Unattended runs stop here, by design.** `scripts/autorun.sh` matches on the CLI asking for human direction and notifies instead of resuming, the same way it handles a BLOCKED verdict. An unattended loop therefore pauses once per REQ at this gate; that is the gate working, not the script failing.
+</req_review_gate>
+
 <crag_pre_step>
 ## CRAG pre-step (once per crew run, before Step 1)
 
@@ -60,7 +83,7 @@ The same `relevant_learnings` block goes to all four agents. Specs win over lear
 <crew_sequence>
 ## Crew run: one REQ, four roles
 
-Preconditions: setup complete (`wopr.yml`, specs, reachable API contract per `api_contract.spec_url`), session intake done, REQ resolution pre-flight passed.
+Preconditions: setup complete (`wopr.yml`, specs, reachable API contract per `api_contract.spec_url`), session intake done, REQ resolution pre-flight passed, REQ review gate approved.
 
 **Step 1: Scout** (Task `subagent_type=crew-scout`). One dispatch does discovery and alignment: verify the tracking document's baseline against reality (record ALIGNED / DRIFTED / STALE in the Gap Analysis table; on STALE, stop and let the operator decide), then produce the five-section report and write the scout contract to `<target_dir>/crew-contracts/<REQ-ID>/scout.md`. Inputs: `wopr.yml` path, `mode` (pass explicitly: `gap_analysis` unless this is a migration project with an empty/skeleton tracking document AND `legacy-migration.legacy_source_root` is set, in which case `deep_analysis`), target REQ ID, fresh REQ body, session structural context (from the tracking doc), `relevant_learnings`.
 
@@ -100,6 +123,8 @@ For styling, copy, and other small well-scoped changes: **coder → auditor**. N
 
 **Qualification is mechanical, not judgment:** the change must need no new or modified tests (existing suite still passes untouched) and touch no API surface. If implementing reveals a test impact or an API change, stop and restart as a full crew run; do not stretch the light sequence.
 
+**The REQ review gate still applies when a REQ is in scope**, and runs before step 1 below. It is skipped only for a change the operator described in session with no requirement document behind it.
+
 1. Dispatch the coder (Task `subagent_type=crew-coder`) with `wopr.yml` path, the change description, `spec_writes`, and an explicit note that this is a light run: no scout contract exists, so its own reading replaces the contract, and the no-tests boundary holds as usual.
 2. Run the full suite and the static-analysis check; any failure routes back to the coder.
 3. Dispatch the auditor as in Step 4 of the crew sequence (prior report path, `spec_writes`, `relevant_learnings` optional). It runs its checklist against the change; BLOCKED routes to the blocker-fix sequence.
@@ -118,6 +143,7 @@ Run the standard sequence against the frontend project with two differences: the
 ## Before declaring a crew run complete
 
 - Exactly one REQ went through all four roles, and the tracking document matches reality (status, `coverage_status`, `spec_version`, no stale Gap Analysis row).
+- The REQ review gate was answered by the operator before the first dispatch, and its outcome is recorded on the REQ's Requirements Baseline row.
 - The coverage gate passed before the auditor ran, and the full suite passed, not just the new tests.
 - The audit report file exists for this run and the verdict is UNBLOCKED. Declaring a BLOCKED run complete is declaring a broken crew complete.
 - API-surface REQs: the handoff contract has a current entry with a resolvable contract reference, and `generator_version` / `spec_version` are in lockstep.
