@@ -34,6 +34,7 @@ from kitt.build_plugins import (
     EXCLUDED_FILE_NAMES,
     MARKER_NAME,
     MARKETPLACE_NAME,
+    MARKETPLACE_OWNER,
     MCP_SERVER_KEY,
     REWRITTEN_SUFFIXES,
     SERVER_DEPENDENCIES,
@@ -208,7 +209,7 @@ class TestMarketplaceManifest:
     def test_required_fields_are_present(self, out_dir: Path):
         manifest = _read_json(out_dir / ".claude-plugin" / "marketplace.json")
         assert manifest["name"] == MARKETPLACE_NAME
-        assert manifest["owner"]["name"] == "Jerry"
+        assert manifest["owner"]["name"] == MARKETPLACE_OWNER
         assert isinstance(manifest["plugins"], list)
         assert manifest["plugins"]
 
@@ -254,7 +255,7 @@ class TestPluginManifests:
             assert manifest["name"] == plugin_dir.name
             assert manifest["description"].strip()
             assert manifest["version"] == to_semver(__version__)
-            assert manifest["author"]["name"] == "Jerry"
+            assert manifest["author"]["name"] == MARKETPLACE_OWNER
             assert manifest["license"] == "MIT"
 
     def test_components_sit_at_the_plugin_root_not_under_claude_plugin(

@@ -130,7 +130,7 @@ AUXILIARY_DIRS: tuple[str, ...] = ("hooks", "scripts", "templates", "data")
 the scripts they register), NOT a Claude Code ``hooks/hooks.json``.
 Claude Code only loads ``hooks/hooks.json`` by default and no emitted
 pack has one, so the directory is inert until an operator runs
-``/kitt-configure-*``. See P3-NOTES.md."""
+``/kitt-configure-*``."""
 
 EXCLUDED_FILE_NAMES = frozenset({"routing-eval.jsonl"})
 EXCLUDED_DIR_NAMES = frozenset({"__pycache__", "node_modules"})

@@ -63,7 +63,7 @@ PLUGIN_PREFIX = f"{PRODUCT}-"
 """Every emitted plugin is named ``<prefix><pack>``."""
 
 MARKETPLACE_NAME = f"{PRODUCT}-marketplace"
-MARKETPLACE_OWNER = "Jerry"
+MARKETPLACE_OWNER = "Jared Whipple"
 MARKETPLACE_DESCRIPTION = (
     f"{PRODUCT_TITLE}: a right-sized agent harness for Claude Code, shipped "
     "as one plugin per pack."

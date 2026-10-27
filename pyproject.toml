@@ -6,7 +6,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "Jerry" }
+    { name = "Jared Whipple" }
 ]
 keywords = ["mcp", "claude", "ai", "cli", "kitt"]
 classifiers = [
