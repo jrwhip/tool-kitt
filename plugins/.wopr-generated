@@ -1,6 +1,0 @@
-{
-  "generator": "wopr build-plugins",
-  "generator_version": "1.0.0-dev.5",
-  "marketplace": "wopr-marketplace",
-  "warning": "This directory is regenerated in full on every `wopr build-plugins` run. Every file is overwritten. Edit the catalog, not this tree."
-}
