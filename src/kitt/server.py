@@ -24,6 +24,7 @@ from .product import CONFIG_FILENAME, LOGGER_NAME, MCP_SERVER_KEY, PLUGIN_PREFIX
 from .tools import (
     crew_contracts,
     handoff,
+    kitt_yml,
     learnings,
     osv_check,
     pack_templates,
@@ -32,7 +33,6 @@ from .tools import (
     skill_usage,
     stack_detect,
     stub_writers,
-    kitt_yml,
 )
 from .tools._workspace_target import (
     InvalidTargetWorkspaceError,

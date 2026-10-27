@@ -16,13 +16,13 @@ import yaml
 
 from kitt import _atomic_write
 from kitt.tools import kitt_yml
-from kitt.tools.stack_detect import detect_stack
 
 # ``workspace`` and ``fake_mcp`` fixtures live in tests/conftest.py.
 from kitt.tools.kitt_yml import (
     propose_kitt_yml,
     write_kitt_yml,
 )
+from kitt.tools.stack_detect import detect_stack
 
 
 def _write_spring_boot(workspace: Path) -> None:
@@ -1139,8 +1139,8 @@ class TestRegister:
         # Stub writers live in tools.stub_writers.
         assert sorted(fake_mcp.registered) == [
             "propose_kitt_yml",
-            "write_spec_stubs",
             "write_kitt_yml",
+            "write_spec_stubs",
         ]
 
     def test_stub_writers_register_registers_expected_tools(self, fake_mcp):

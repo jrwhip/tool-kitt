@@ -47,9 +47,9 @@ EXPECTED_TOOLS = [
     "skill_usage_report",
     "validate_scout_contract",
     "write_handoff_contract_stub",
+    "write_kitt_yml",
     "write_spec_stubs",
     "write_tracking_doc_stub",
-    "write_kitt_yml",
 ]
 
 
@@ -138,9 +138,9 @@ class TestGetWorkspaceInfo:
             "agents_md",
             "claude_md",
             "handoff",
+            "kitt_yml",
             "learnings",
             "todos",
-            "kitt_yml",
         ]
 
     async def test_still_reports_workspace_and_local_counters(self, tmp_path):

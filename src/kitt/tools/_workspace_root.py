@@ -79,8 +79,8 @@ from ._learnings_format import LEARNINGS_FILENAME
 
 __all__ = [
     "GIT_DIR_NAME",
-    "MARKER_FILENAMES",
     "KITT_YML_FILENAME",
+    "MARKER_FILENAMES",
     "WorkspaceRoot",
     "find_git_toplevel",
     "find_workspace_root",

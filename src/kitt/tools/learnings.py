@@ -66,8 +66,8 @@ from ._learnings_sidecar import (
     load_or_rebuild_sidecar as _load_or_rebuild_sidecar,
 )
 from ._workspace_root import (
-    MARKER_FILENAMES,
     KITT_YML_FILENAME,
+    MARKER_FILENAMES,
     WorkspaceRoot,
     find_workspace_root,
     has_marker,
@@ -93,9 +93,9 @@ if TYPE_CHECKING:
 # ``LEARNINGS_FILENAME`` re-exported from ``_learnings_format`` so existing
 # ``from .learnings import LEARNINGS_FILENAME`` consumers continue to work.
 __all__ = [
+    "KITT_YML_FILENAME",
     "LEARNINGS_FILENAME",
     "MARKER_FILENAMES",
-    "KITT_YML_FILENAME",
     "WORKSPACES_REGISTRY_FILENAME",
     "LearningEntry",
     "append_learnings",
