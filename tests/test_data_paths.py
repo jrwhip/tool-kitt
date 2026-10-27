@@ -1,18 +1,18 @@
 """Tests for the shared catalog-vs-bundled data-file resolver.
 
-``wopr.tools._data_paths`` centralizes the repo-vs-bundled
+``kitt.tools._data_paths`` centralizes the repo-vs-bundled
 path math three tool modules previously duplicated. Pinning the
 return order and the fallback semantics here keeps a future module
 re-layout from silently changing what doctor, learnings, and
-wopr_yml see.
+kitt_yml see.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from wopr.tools import _data_paths
-from wopr.tools._data_paths import (
+from kitt.tools import _data_paths
+from kitt.tools._data_paths import (
     candidate_data_paths,
     resolve_data_path,
 )
@@ -61,8 +61,8 @@ class TestCandidateDataPaths:
 class TestResolveDataPath:
     def test_returns_first_existing_candidate(self, monkeypatch):
         """When both candidates exist, the repo one wins."""
-        repo_path = Path("/tmp/__wopr_test_repo")
-        bundled_path = Path("/tmp/__wopr_test_bundled")
+        repo_path = Path("/tmp/__kitt_test_repo")
+        bundled_path = Path("/tmp/__kitt_test_bundled")
 
         def _stub_candidates(*_args, **_kwargs):
             return [repo_path, bundled_path]
@@ -82,8 +82,8 @@ class TestResolveDataPath:
         assert resolve_data_path("anything") == repo_path
 
     def test_falls_through_to_bundled_when_repo_missing(self, monkeypatch):
-        repo_path = Path("/tmp/__wopr_test_repo_missing")
-        bundled_path = Path("/tmp/__wopr_test_bundled_present")
+        repo_path = Path("/tmp/__kitt_test_repo_missing")
+        bundled_path = Path("/tmp/__kitt_test_bundled_present")
 
         def _stub_candidates(*_args, **_kwargs):
             return [repo_path, bundled_path]
@@ -103,8 +103,8 @@ class TestResolveDataPath:
         assert resolve_data_path("anything") == bundled_path
 
     def test_returns_none_when_neither_candidate_exists(self, monkeypatch):
-        repo_path = Path("/tmp/__wopr_neither_repo")
-        bundled_path = Path("/tmp/__wopr_neither_bundled")
+        repo_path = Path("/tmp/__kitt_neither_repo")
+        bundled_path = Path("/tmp/__kitt_neither_bundled")
 
         def _stub_candidates(*_args, **_kwargs):
             return [repo_path, bundled_path]

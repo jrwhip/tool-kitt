@@ -36,7 +36,7 @@ venv/
 .env.*
 !.env.example
 
-# WOPR embeddings sidecars. Machine-specific dense vectors keyed by the
+# KITT embeddings sidecars. Machine-specific dense vectors keyed by the
 # local embedding model's version; regenerated on demand whenever the
 # markdown corpus changes, so committing one only produces noisy diffs
 # and merge conflicts. Same rule the `ensure_sidecar_gitignored` helper

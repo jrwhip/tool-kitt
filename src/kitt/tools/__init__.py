@@ -1,1 +1,1 @@
-"""Tool modules for the WOPR MCP server."""
+"""Tool modules for the KITT MCP server."""

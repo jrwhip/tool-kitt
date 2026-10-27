@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import json
 
-from wopr.tools import pack_templates
-from wopr.tools.pack_templates import (
+from kitt.tools import pack_templates
+from kitt.tools.pack_templates import (
     get_pack_template,
     list_pack_templates,
 )

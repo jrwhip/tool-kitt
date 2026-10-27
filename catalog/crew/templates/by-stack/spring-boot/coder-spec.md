@@ -43,10 +43,10 @@ If the project uses Gradle instead of Maven, replace `mvn <goal>` with `./gradle
 | Production source | `src/main/java/<base_package>/...` |
 | Resources | `src/main/resources/` |
 | Tests | `src/test/java/<base_package>/...` |
-| Static OpenAPI artifact | `src/main/resources/openapi.json` (or wherever `wopr.yml` declares) |
+| Static OpenAPI artifact | `src/main/resources/openapi.json` (or wherever `kitt.yml` declares) |
 | Database migrations | `src/main/resources/db/migration/` (Flyway) |
 
-`base_package` lives in `wopr.yml` (`project.base_package`). All new classes go under that root.
+`base_package` lives in `kitt.yml` (`project.base_package`). All new classes go under that root.
 
 ---
 
@@ -95,7 +95,7 @@ The auditor BLOCKS on:
 - A DTO field with no `@Schema(description = "...")`.
 - An annotation change that did not regenerate the spec.
 
-The pinned springdoc version lives in `wopr.yml` (`api_contract.pinned_generator_version`) and matches `pom.xml`.
+The pinned springdoc version lives in `kitt.yml` (`api_contract.pinned_generator_version`) and matches `pom.xml`.
 
 ---
 
@@ -145,7 +145,7 @@ The five-condition gate (the orchestrator owns and enforces it; the tester recor
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend this spec when a new pattern emerges. Examples:
+When `spec_writes` is ON (`kitt.yml` `specs.spec_writes`; default OFF), amend this spec when a new pattern emerges. Examples:
 
 - A new idiom for cross-cutting concerns (a new annotation, a new aspect).
 - A naming convention for a new category of class.

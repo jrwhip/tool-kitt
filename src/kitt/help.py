@@ -1,7 +1,7 @@
 """
-Help system for WOPR.
+Help system for KITT.
 
-Shared logic used by both the CLI (`wopr help`) and the MCP tool (`get_help`).
+Shared logic used by both the CLI (`kitt help`) and the MCP tool (`get_help`).
 
 Audience: the agent, not a first-time human reader. Every topic states what
 exists in THIS repository. Nothing here describes a planned surface, and
@@ -19,10 +19,10 @@ from .catalog import (
 )
 
 HELP_TOPICS = {
-    "overview": "What WOPR is, and what it deliberately is not",
+    "overview": "What KITT is, and what it deliberately is not",
     "packs": "The six catalog packs and the profiles over them",
     "tools": "The 23 MCP tools, by group",
-    "cli": "The wopr command line surface",
+    "cli": "The kitt command line surface",
     "learnings": "The learnings corpus, retrieval, and curation",
 }
 
@@ -51,7 +51,7 @@ def get_help(topic: str | None = None, workspace: Path | None = None) -> str:
 
 def _topic_index(workspace: Path | None = None) -> str:
     lines = [
-        "WOPR",
+        "KITT",
         "",
         "An MCP server plus a catalog of Claude Code commands, skills, and",
         "agents. Target: Claude Code only.",
@@ -65,7 +65,7 @@ def _topic_index(workspace: Path | None = None) -> str:
     lines.extend([
         "",
         "Usage:",
-        "  CLI:  wopr help <topic>",
+        "  CLI:  kitt help <topic>",
         "  MCP:  get_help(topic='<topic>')",
     ])
 
@@ -92,12 +92,12 @@ def _help_overview(workspace: Path | None = None) -> str:
         "  Catalog      Six packs of Claude Code commands, skills, and",
         "               agents under `catalog/`. Content, not code.",
         "",
-        "WHAT WOPR DOES NOT DO",
+        "WHAT KITT DOES NOT DO",
         "",
-        "  - No installer. There is no `wopr --init`, no `add`/`remove`, and",
+        "  - No installer. There is no `kitt --init`, no `add`/`remove`, and",
         "    no `--uninstall`. Catalog content reaches a session as the",
         "    per-pack Claude Code plugins (plus a server bundle) that",
-        "    `wopr build-plugins --out DIR` emits.",
+        "    `kitt build-plugins --out DIR` emits.",
         "  - No Gemini or Copilot support. Converters for both still exist",
         "    in `converters.py`, unused by any shipped command path.",
         "  - No skill-loading tiers and no skill resolver. Which pack you",
@@ -153,8 +153,8 @@ def _help_packs(workspace: Path | None = None) -> str:
         "  catalog/<pack>/agents/<name>.md          subagents",
         "  catalog/<pack>/templates/                crew stub templates",
         "",
-        "  Read a file directly. `wopr catalog` lists packs and profiles;",
-        "  `wopr list` shows what a workspace's lock file records.",
+        "  Read a file directly. `kitt catalog` lists packs and profiles;",
+        "  `kitt list` shows what a workspace's lock file records.",
     ])
 
     return "\n".join(lines)
@@ -178,8 +178,8 @@ def _help_tools(workspace: Path | None = None) -> str:
         "CREW SUBSTRATE (7)",
         "",
         "  detect_stack            Scan a workspace and return detection JSON.",
-        "  propose_wopr_yml        Turn detection JSON into a proposed wopr.yml.",
-        "  write_wopr_yml          Write it. Takes the same detection JSON.",
+        "  propose_kitt_yml        Turn detection JSON into a proposed kitt.yml.",
+        "  write_kitt_yml          Write it. Takes the same detection JSON.",
         "  write_spec_stubs        Create the spec files the crew treats as",
         "                          authority.",
         "  write_tracking_doc_stub      Implementation-tracking stub.",
@@ -187,7 +187,7 @@ def _help_tools(workspace: Path | None = None) -> str:
         "  validate_scout_contract      Validate a scout contract file. This",
         "                          is the crew's gate: invalid means stop.",
         "",
-        "  detect_stack feeds propose_wopr_yml and write_wopr_yml; both",
+        "  detect_stack feeds propose_kitt_yml and write_kitt_yml; both",
         "  require its output as `detection_json`.",
         "",
         "SKILL QA AND TELEMETRY (4)",
@@ -233,17 +233,17 @@ def _help_cli(workspace: Path | None = None) -> str:
     lines = [
         "CLI",
         "",
-        "  wopr                             Run the MCP server on stdio.",
+        "  kitt                             Run the MCP server on stdio.",
         "                                   No subcommand means server mode.",
-        "  wopr list                        Packs recorded in a workspace's",
+        "  kitt list                        Packs recorded in a workspace's",
         "                                   .ai-cli lock file.",
-        "  wopr catalog                     All packs and profiles in the",
+        "  kitt catalog                     All packs and profiles in the",
         "                                   catalog.",
-        "  wopr help [topic]                This help.",
-        "  wopr skill-usage report          Observed skill usage.",
-        "  wopr skill-usage pin <name>      Never report a rare skill stale.",
-        "  wopr skill-usage unpin <name>    Undo a pin.",
-        "  wopr skill-usage record <source> <name>...",
+        "  kitt help [topic]                This help.",
+        "  kitt skill-usage report          Observed skill usage.",
+        "  kitt skill-usage pin <name>      Never report a rare skill stale.",
+        "  kitt skill-usage unpin <name>    Undo a pin.",
+        "  kitt skill-usage record <source> <name>...",
         "                                   Record invocations. What the",
         "                                   Claude Code Stop hook calls.",
         "",
@@ -251,12 +251,12 @@ def _help_cli(workspace: Path | None = None) -> str:
         "",
         "  --workspace PATH, -w    Workspace for a subcommand or the server.",
         "  --catalog PATH          External catalog directory.",
-        "  --global, -g            Inspect ~/.wopr instead of the workspace.",
+        "  --global, -g            Inspect ~/.kitt instead of the workspace.",
         "  --version, -v           Version.",
         "",
         "There is no install, add, remove, or uninstall subcommand. Pack",
         "deployment happens through the per-pack Claude Code plugins",
-        "`wopr build-plugins` emits.",
+        "`kitt build-plugins` emits.",
     ]
     return "\n".join(lines)
 
@@ -293,7 +293,7 @@ def _help_learnings(workspace: Path | None = None) -> str:
         "  than five does the crew-evaluator grade them. The resulting",
         "  `relevant_learnings` block goes to all four working agents.",
         "  See <crag_pre_step> in",
-        "  catalog/crew/skills/wopr-run-crew/SKILL.md.",
+        "  catalog/crew/skills/kitt-run-crew/SKILL.md.",
         "",
         "SEEDS",
         "",

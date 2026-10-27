@@ -1,4 +1,4 @@
-"""Tests for ``wopr.tools._leak_vet``.
+"""Tests for ``kitt.tools._leak_vet``.
 
 Mirrors the standalone-module test style used for other ``tools/_*.py``
 helpers (e.g. ``test_embeddings.py``): unit tests directly against the
@@ -8,7 +8,7 @@ covered separately in ``test_learnings.py``.
 
 from __future__ import annotations
 
-from wopr.tools._leak_vet import find_leak_indicators, format_leak_report
+from kitt.tools._leak_vet import find_leak_indicators, format_leak_report
 
 
 class TestFindLeakIndicators:

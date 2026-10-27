@@ -8,7 +8,7 @@ Same discipline as P1-NOTES. Every judgment call is recorded, including
 the ones that went against the brief and the two places where a P1
 figure did not hold up.
 
-Not touched, deliberately: `wopr-run-crew/SKILL.md` beyond one import
+Not touched, deliberately: `kitt-run-crew/SKILL.md` beyond one import
 line (its current text is the golden-run baseline), any
 `routing-eval.jsonl` (owned by a parallel workstream), and P1-NOTES.md
 (historical record).
@@ -29,7 +29,7 @@ line (its current text is the golden-run baseline), any
 Files changed: 34 (16 deleted, 3 added, 15 modified), 1,067 insertions
 against 2,057 deletions.
 
-`uv run ruff check src tests` and `uv run mypy src/wopr` clean.
+`uv run ruff check src tests` and `uv run mypy src/kitt` clean.
 
 ## 2. Two P1 figures that did not survive checking
 
@@ -57,25 +57,25 @@ is left alone: it is the record of what P1 believed.
 ### 2.2 The `ai_cli_mcp` site count was five commands, not two
 
 P1-NOTES section 6.1 records the stale shims as "two `meta-authoring`
-commands, one line in `wopr-run-crew/SKILL.md`" plus the `crew/README.md`
+commands, one line in `kitt-run-crew/SKILL.md`" plus the `crew/README.md`
 path. A repo-wide grep finds:
 
 | File | Sites |
 | --- | --- |
-| `commands/wopr-configure-capture-skill-hook.md` | 4 |
-| `commands/wopr-configure-capture-skill-hook-copilot.md` | 4 (file deleted) |
-| `commands/wopr-configure-git-guard.md` | 4 |
-| `commands/wopr-configure-prompt-log.md` | 4 |
-| `commands/wopr-configure-skill-usage-hook.md` | 4 |
+| `commands/kitt-configure-capture-skill-hook.md` | 4 |
+| `commands/kitt-configure-capture-skill-hook-copilot.md` | 4 (file deleted) |
+| `commands/kitt-configure-git-guard.md` | 4 |
+| `commands/kitt-configure-prompt-log.md` | 4 |
+| `commands/kitt-configure-skill-usage-hook.md` | 4 |
 | `scripts/configure_hook.py` | 2 (one is a live import) |
 | `hooks/README.md` | 4 |
 | `crew/README.md` | 1 |
-| `crew/skills/wopr-run-crew/SKILL.md` | 1 |
+| `crew/skills/kitt-run-crew/SKILL.md` | 1 |
 
 All fixed. The shim in the commands is
-`python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')"`,
+`python3 -c "import kitt, pathlib; print(pathlib.Path(kitt.__file__).parent / 'resources')"`,
 which is the same expression with the package renamed. The prose
-"so the `ai_cli_mcp` package is importable" became "so the `wopr`
+"so the `ai_cli_mcp` package is importable" became "so the `kitt`
 package is importable".
 
 ## 3. `hook_manifest.py`: a kept command with a dead dependency
@@ -83,9 +83,9 @@ package is importable".
 `catalog/meta-authoring/scripts/configure_hook.py` imports
 `ai_cli_mcp.hook_manifest`. P1 did not port `hook_manifest.py` (section
 5.1: it was classified as installer machinery). Renaming the import to
-`wopr.hook_manifest` therefore points at a module that does not exist,
-and `/wopr-configure-capture-skill-hook` and
-`/wopr-configure-skill-usage-hook` (both kept under task 4c, both
+`kitt.hook_manifest` therefore points at a module that does not exist,
+and `/kitt-configure-capture-skill-hook` and
+`/kitt-configure-skill-usage-hook` (both kept under task 4c, both
 Claude-targeted) shell out to that script.
 
 Three options were considered:
@@ -115,14 +115,14 @@ bespoke scripts with no such dependency and are unaffected.
 
 The old file was written for a three-CLI product with a symlink
 installer. Every section describing that product was wrong here, and
-`wopr help install` in particular printed a `pipx install` line pointing
+`kitt help install` in particular printed a `pipx install` line pointing
 at a private client repository URL.
 
 Topics went from 8 to 5:
 
 | Old topic | Disposition |
 | --- | --- |
-| `overview` | Rewritten. Now leads with what WOPR does NOT do, because the surface an agent is most likely to guess wrong is the one that was removed. |
+| `overview` | Rewritten. Now leads with what KITT does NOT do, because the surface an agent is most likely to guess wrong is the one that was removed. |
 | `install` | Deleted outright. There is no installer, and the URL it printed was stale and private. |
 | `packs` | Kept, reads `catalog.yaml` as before. The "MANAGING PACKS" block (`--init`, `add`, `remove`) is gone; a LAYOUT block naming the on-disk paths replaced it. |
 | `commands` | Deleted. It listed commands by hand, half of which no longer exist, and it duplicated a directory listing. |
@@ -134,21 +134,21 @@ Topics went from 8 to 5:
 
 Specific removals:
 
-- `wopr --init`, `--init --packs`, `--init --profile`, `wopr add`,
-  `wopr remove`, `wopr --uninstall` and its `--force` / `--global`
+- `kitt --init`, `--init --packs`, `--init --profile`, `kitt add`,
+  `kitt remove`, `kitt --uninstall` and its `--force` / `--global`
   variants. None exists.
 - The pipx install and upgrade instructions, including the private URL.
 - The Gemini CLI and Copilot CLI sections of `overview`, `install`,
   `commands`, `skills`, `agents` and `cli`.
-- `~/.wopr/install-manifest.json`, written by the retired installer.
-- The `wopr-loading:` tier table (`always` / `resolver` / `dormant`) and
-  the generated `wopr-skill-resolver` skill.
+- `~/.kitt/install-manifest.json`, written by the retired installer.
+- The `kitt-loading:` tier table (`always` / `resolver` / `dormant`) and
+  the generated `kitt-skill-resolver` skill.
 - The `extras` tool block (dice, weather, notes, time tracking) and the
   `resources.py` shim block (`list/get_shared_*`, `run_skill`,
   `invoke_agent`) from the tools topic.
 - Named skills and agents from packs that never crossed over
-  (`wopr-build-spring-boot-apps`, `wopr-java-perfectionist-reviewer`,
-  the `.NET` plugin pointer, `wopr-*-architect` for `ios` and `java`).
+  (`kitt-build-spring-boot-apps`, `kitt-java-perfectionist-reviewer`,
+  the `.NET` plugin pointer, `kitt-*-architect` for `ios` and `java`).
 - `_get_shared_dir`, `_list_resources`, `_list_skill_dirs`. They
   enumerated `<workspace>/.ai-cli/shared/`, which only the retired
   installer populated, so their output was always empty.
@@ -163,17 +163,17 @@ Two accuracy corrections made during a read-back of the generated text:
 - The `learnings` topic first described the CRAG pre-step as running
   once per crew run with a threshold-gated evaluator. That is the
   planned P2 change, not current behavior. `<crag_pre_step>` in
-  `wopr-run-crew/SKILL.md` runs before **each** working-agent Task call
+  `kitt-run-crew/SKILL.md` runs before **each** working-agent Task call
   and short-circuits only on an empty candidate set. Rewritten to match
   the file.
 
 Every command, flag and tool name the new file prints was executed or
-grepped against this build. `wopr skill-usage unpin` and
-`wopr skill-usage record` were confirmed in `skill_usage_cli.py` before
+grepped against this build. `kitt skill-usage unpin` and
+`kitt skill-usage record` were confirmed in `skill_usage_cli.py` before
 being documented.
 
 Note on the brief: it asked for "serve/list/catalog/skill-usage". There
-is no `serve` subcommand. `wopr` with no subcommand runs the MCP server
+is no `serve` subcommand. `kitt` with no subcommand runs the MCP server
 on stdio, and there is a fourth subcommand, `help`. The `cli` topic
 documents what `argparse` actually accepts.
 
@@ -215,7 +215,7 @@ The third case exists because the first two are removal assertions, and
 a removal assertion passes just as happily if the whole payload
 collapses.
 
-## 6. `/wopr-consider`: 12 files to 1
+## 6. `/kitt-consider`: 12 files to 1
 
 538 lines to 109 (80 percent). Read all 12 first; the shape was
 consistent (`description` + `argument-hint` frontmatter, then
@@ -256,40 +256,40 @@ converter needs a field the new file lacks. `argument-hint` changed from
 `[topic or leave blank for current context]` to
 `[framework] [optional subject]` because the first argument now routes.
 
-Aliases are declared per framework so `/wopr-consider 5why`,
-`/wopr-consider razor` and `/wopr-consider 80-20` all land. Unmatched
+Aliases are declared per framework so `/kitt-consider 5why`,
+`/kitt-consider razor` and `/kitt-consider 80-20` all land. Unmatched
 first words print the list rather than guessing, which matters more now
 that one wrong word selects a different framework instead of failing to
 find a file.
 
-## 7. `wopr-create-prompt` and `wopr-run-prompt`
+## 7. `kitt-create-prompt` and `kitt-run-prompt`
 
-Deleted, 634 lines. `wopr-create-prompt.md` alone was 468 lines, the
+Deleted, 634 lines. `kitt-create-prompt.md` alone was 468 lines, the
 largest command in the catalog by a factor of three. Together they are a
 markdown protocol for authoring a prompt file and then dispatching it to
 fresh sub-contexts, sequentially or in parallel, with hand-specified
 isolation semantics. The Task tool does the dispatch with real isolation
 and plan mode does the authoring.
 
-`wopr-create-meta-prompts` (the `_core` skill) and
-`/wopr-create-meta-prompt` (the `meta-authoring` wrapper) were NOT
+`kitt-create-meta-prompts` (the `_core` skill) and
+`/kitt-create-meta-prompt` (the `meta-authoring` wrapper) were NOT
 touched. They are a different artifact: staged research-plan-implement
 prompt generation, not a dispatcher. Whether they survive is a per-skill
 content-pass question with a routing-eval gate on it.
 
 ## 8. Which configure commands survived, and why
 
-Five `wopr-configure-*` commands existed. Inspected all five for their
+Five `kitt-configure-*` commands existed. Inspected all five for their
 target, meaning the file the command writes into, not the CLI it can be
 typed from.
 
 | Command | Writes into | Verdict |
 | --- | --- | --- |
-| `wopr-configure-capture-skill-hook` | `.claude/settings.json` | KEPT |
-| `wopr-configure-git-guard` | `.claude/settings.json` | KEPT |
-| `wopr-configure-prompt-log` | `.claude/settings.json` | KEPT |
-| `wopr-configure-skill-usage-hook` | `.claude/settings.json` | KEPT |
-| `wopr-configure-capture-skill-hook-copilot` | `.github/hooks/hooks.json` | CUT |
+| `kitt-configure-capture-skill-hook` | `.claude/settings.json` | KEPT |
+| `kitt-configure-git-guard` | `.claude/settings.json` | KEPT |
+| `kitt-configure-prompt-log` | `.claude/settings.json` | KEPT |
+| `kitt-configure-skill-usage-hook` | `.claude/settings.json` | KEPT |
+| `kitt-configure-capture-skill-hook-copilot` | `.github/hooks/hooks.json` | CUT |
 
 Only one had a non-Claude target. Note that `conversion_manifest.py`
 classified the Copilot one as **tier 2** and the four Claude ones as
@@ -359,21 +359,21 @@ removed in this batch. Verified by reading it in full.
 
 `conversion_manifest.py` needed four:
 
-1. Tier 1: the 12 `wopr-consider-*` entries replaced by `wopr-consider`;
-   `wopr-run-prompt` removed.
-2. Tier 2: `wopr-create-prompt` and
-   `wopr-configure-capture-skill-hook-copilot` removed. Tier 2 is now a
-   single entry, `wopr-check-todos`.
+1. Tier 1: the 12 `kitt-consider-*` entries replaced by `kitt-consider`;
+   `kitt-run-prompt` removed.
+2. Tier 2: `kitt-create-prompt` and
+   `kitt-configure-capture-skill-hook-copilot` removed. Tier 2 is now a
+   single entry, `kitt-check-todos`.
 3. `EXPLICIT_INVOCATION_ONLY_COMMANDS` was a comprehension over tier 1
-   filtering on `name.startswith("wopr-consider-")`. After the collapse
+   filtering on `name.startswith("kitt-consider-")`. After the collapse
    that prefix matches nothing, and the failure is silent: the set would
-   have quietly dropped to `{wopr-realign}` plus the wrappers, and
-   `/wopr-consider` would have become model-auto-selectable, which is
+   have quietly dropped to `{kitt-realign}` plus the wrappers, and
+   `/kitt-consider` would have become model-auto-selectable, which is
    the exact behavior the comment says must not happen. Replaced with a
-   literal `{"wopr-consider", "wopr-realign"}` and a comment saying why
+   literal `{"kitt-consider", "kitt-realign"}` and a comment saying why
    it is literal.
 4. The `EXPLICIT_INVOCATION_ONLY_COMMANDS` comment block was updated
-   from "the 12 wopr-consider-* mental models" to the single command.
+   from "the 12 kitt-consider-* mental models" to the single command.
 
 After the changes the three tiers hold 11 + 1 + 9 = 21 names, matching
 the 21 command files on disk exactly.
@@ -383,7 +383,7 @@ the 21 command files on disk exactly.
 No assertion was weakened. Two changed, five were added.
 
 1. **`test_converters.py::test_consider_command_gets_disable_model_invocation`**:
-   the fixture name `"wopr-consider-pareto"` became `"wopr-consider"`.
+   the fixture name `"kitt-consider-pareto"` became `"kitt-consider"`.
    The assertion (`disable-model-invocation is True`) is unchanged. The
    old name would still have passed against a *stale* manifest and
    started failing against the corrected one, which is the correct
@@ -436,7 +436,7 @@ It ends with a Pending section listing what remains eval-gated (crew
 slimming) plus four items this batch found and did not fix:
 `hook_manifest.py`, the leftover privacy placeholders, the unused
 `converters.py` Gemini and Copilot paths, and two pieces of stale prose
-(`wopr-doctor`'s skill text and the `run_skill` explanation in
+(`kitt-doctor`'s skill text and the `run_skill` explanation in
 `hooks/README.md`).
 
 No marketing language, no em dashes, and every number in it is
@@ -446,11 +446,11 @@ reproducible from the repository or the quarry.
 
 - `uv run pytest` -> 554 passed, 1 skipped.
 - `uv run ruff check src tests` -> clean.
-- `uv run mypy src/wopr` -> clean, 41 source files.
-- `uv run wopr --help` -> lists the four real subcommands.
-- `uv run wopr help` and all five topics printed and read back line by
+- `uv run mypy src/kitt` -> clean, 41 source files.
+- `uv run kitt --help` -> lists the four real subcommands.
+- `uv run kitt help` and all five topics printed and read back line by
   line against the code. Two errors found and fixed that way (section 4).
-- `uv run python -c "from wopr.server import create_app; create_app()"`
+- `uv run python -c "from kitt.server import create_app; create_app()"`
   -> imports and builds.
 - Repo-wide `grep -rn "ai_cli_mcp"` -> no live references remain. The
   four surviving hits are `P1-NOTES.md` (historical record, out of scope
@@ -461,4 +461,4 @@ reproducible from the repository or the quarry.
 - Repo-wide grep for every deleted command name -> no dangling
   references outside comments that name them as deleted.
 - No `git push`, no remote added, no write of any kind to
-  `/home/jrwhip/Work/AI/WOPR/webteam-ai-tools`.
+  `/home/jrwhip/Work/AI/KITT/webteam-ai-tools`.

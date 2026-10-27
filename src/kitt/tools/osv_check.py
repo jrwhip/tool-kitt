@@ -1,6 +1,6 @@
 """OSV malware tripwire for registered npx/uvx/pipx MCP servers.
 
-Every MCP server WOPR (or an operator) has registered for Claude Code,
+Every MCP server KITT (or an operator) has registered for Claude Code,
 Copilot, or Gemini is, in practice, an arbitrary program the CLI will
 shell out to on startup. ``npx``/``uvx``/``pipx`` invocations in
 particular fetch and run whatever the named package resolves to at
@@ -18,7 +18,7 @@ check, itself inspired by Block/goose's equivalent). The parsing
 semantics carry over almost unchanged -- there's only one reasonable
 way to pull a package name out of an npx/uvx invocation -- but the
 integration point differs: hermes checks before every subprocess
-launch; WOPR has no launch hook for MCP servers it doesn't own; so
+launch; KITT has no launch hook for MCP servers it doesn't own; so
 this instead becomes a doctor-style, on-demand audit of what's
 *already* registered across the three CLI configs.
 
@@ -33,7 +33,7 @@ annoyance:
 * **Network access is opt-in.** Unlike some network-touching helpers (historically
   read-only, also best-effort), this hits a *third-party* service with
   package names taken from the operator's own MCP config. Doctor tools
-  elsewhere in WOPR do local filesystem reads by default; reaching out
+  elsewhere in KITT do local filesystem reads by default; reaching out
   to api.osv.dev should be a decision the caller makes, not a surprise
   side effect of running the doctor. ``check_mcp_servers_for_malware``
   therefore defaults ``enable_network`` to ``False`` and returns a
@@ -174,7 +174,7 @@ def _query_osv_transport(payload: dict[str, Any], *, timeout: float) -> Any:
         data=data,
         headers={
             "Content-Type": "application/json",
-            "User-Agent": "wopr-osv-check/1.0",
+            "User-Agent": "kitt-osv-check/1.0",
         },
         method="POST",
     )

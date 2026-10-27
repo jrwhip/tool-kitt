@@ -1,6 +1,6 @@
 """Skill usage telemetry sidecar: counts and lifecycle labels, nothing else.
 
-WOPR ships roughly 100 skills across its packs and, until this module,
+KITT ships roughly 100 skills across its packs and, until this module,
 could not answer "which of these does anyone actually use." That
 question drives pack slimming and per-pack plugin packaging, so it
 needs a real, durable answer rather than a guess.
@@ -8,12 +8,12 @@ needs a real, durable answer rather than a guess.
 The design is ported from hermes-agent's ``tools/skill_usage.py``
 (sidecar JSON keyed by skill name, atomic writes, best-effort bumps,
 active/stale/archived lifecycle, a pinned opt-out). Three deliberate
-divergences, each because WOPR's ownership model differs from Hermes's:
+divergences, each because KITT's ownership model differs from Hermes's:
 
 1. **Archiving never touches the filesystem.** In Hermes a skill lives
    in the user's own ``~/.hermes/skills/`` and the curator may move it
-   to ``.archive/``. WOPR skills are catalog-authored and installed by
-   the installer into directories WOPR reconciles on every run. A
+   to ``.archive/``. KITT skills are catalog-authored and installed by
+   the installer into directories KITT reconciles on every run. A
    sidecar that moved or deleted one would be fighting the installer,
    and the next install would put it right back. Here ``archived`` is a
    LABEL: "nothing has been observed
@@ -21,10 +21,10 @@ divergences, each because WOPR's ownership model differs from Hermes's:
    the skill dormant." The operator acts on it; this module never does.
 2. **No provenance/eligibility filter.** Hermes needs one because it
    mixes bundled, hub-installed, and agent-authored skills with
-   different owners. Every skill WOPR counts came from a pack, so the
+   different owners. Every skill KITT counts came from a pack, so the
    only per-skill policy knob needed is ``pinned``.
 3. **No file lock.** Hermes takes an flock around the read-modify-write.
-   WOPR's declared posture (see ``_atomic_write``) is single-operator,
+   KITT's declared posture (see ``_atomic_write``) is single-operator,
    no cross-process locking, and the failure mode here is bounded and
    one-directional: a lost race drops counts, never invents them. That
    is consistent with the coverage contract below, where every count is
@@ -57,7 +57,7 @@ numbers instead of presenting a total that looks authoritative:
 * **Uncovered: Copilot CLI and Gemini CLI native skill invocation.**
   Both install skills natively (``~/.copilot/skills/``,
   ``~/.gemini/skills/``) and invoke them entirely inside the CLI, never
-  touching WOPR's MCP server. Copilot has an ``agentStop`` hook and a
+  touching KITT's MCP server. Copilot has an ``agentStop`` hook and a
   session transcript, so an equivalent counter is buildable, but what a
   native skill invocation looks like in that transcript has not been
   verified on a real session -- and an unverified counter that silently
@@ -133,7 +133,7 @@ MAX_NAME_LENGTH = 128
 
 
 def usage_path() -> Path:
-    """Path of the telemetry sidecar (respects ``WOPR_HOME``)."""
+    """Path of the telemetry sidecar (respects ``KITT_HOME``)."""
     return get_global_home() / USAGE_FILENAME
 
 
@@ -378,7 +378,7 @@ def classify(
     """Derive the lifecycle label for one record. Pure; no I/O.
 
     The clock runs from the last observed invocation, falling back to
-    ``first_seen_at`` (the moment WOPR first saw the skill installed) so
+    ``first_seen_at`` (the moment KITT first saw the skill installed) so
     a never-invoked skill ages from when it appeared rather than from
     epoch -- the seed-on-first-sight rule hermes-agent's curator uses.
 
@@ -417,9 +417,9 @@ def refresh(
 
     Seeding matters: a skill with no record has no anchor, so its
     staleness clock cannot start. Recording ``first_seen_at`` the first
-    time WOPR sees the skill installed is what makes "never invoked in
+    time KITT sees the skill installed is what makes "never invoked in
     120 days" a statement about the skill rather than about when the
-    operator installed WOPR.
+    operator installed KITT.
 
     Records for skills that are no longer installed are KEPT. A pack
     can be removed and re-added, and history that survives that is more
@@ -463,7 +463,7 @@ def coverage_note() -> dict[str, Any]:
         "observed_sources": {
             SOURCE_MCP: (
                 "run_skill MCP tool. Covers every CLI that loads skills "
-                "through the WOPR MCP server."
+                "through the KITT MCP server."
             ),
             SOURCE_HOOK_CLAUDE: (
                 "skill-usage-hook.py Stop hook, counting native Skill tool "

@@ -10,7 +10,7 @@ possible way -- silently, inside a subagent, in a way that reads as
 
 Four things are checked, one class each:
 
-a. **Tool references resolve.** Every ``mcp__wopr__<tool>`` token in the
+a. **Tool references resolve.** Every ``mcp__kitt__<tool>`` token in the
    catalog must name a tool ``create_app()`` actually registers. The
    registered set is enumerated from the live server, not restated here;
    ``tests/test_server.py`` already owns the pinned list, and a second
@@ -21,7 +21,7 @@ c. **Repo paths resolve.** Backtick-quoted repo-relative paths must
    point at something that exists.
 d. **No foreign tool namespace leaks in.** Specifically, the runtime
    plugin prefix must never appear in source. See the policy block in
-   ``src/wopr/build_plugins.py``: source is install-agnostic and the
+   ``src/kitt/build_plugins.py``: source is install-agnostic and the
    generator owns the runtime name. A hand-written runtime name in the
    catalog would be correct for exactly one install shape and wrong
    after the next plugin rename.
@@ -38,11 +38,11 @@ from pathlib import Path
 
 import pytest
 
-from wopr.build_plugins import SOURCE_TOOL_PREFIX, runtime_tool_prefix
-from wopr.config import ServerConfig
-from wopr.context import ServerContext
-from wopr.converters import parse_claude
-from wopr.server import create_app
+from kitt.build_plugins import SOURCE_TOOL_PREFIX, runtime_tool_prefix
+from kitt.config import ServerConfig
+from kitt.context import ServerContext
+from kitt.converters import parse_claude
+from kitt.server import create_app
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CATALOG_ROOT = REPO_ROOT / "catalog"
@@ -76,9 +76,9 @@ def registered_tools(tmp_path: Path) -> frozenset[str]:
 
     Function-scoped on purpose. ``create_app`` calls
     ``ServerContext.init()``, which clobbers a process-wide singleton,
-    and conftest's ``WOPR_HOME`` guard is itself function-scoped -- a
+    and conftest's ``KITT_HOME`` guard is itself function-scoped -- a
     module-scoped fixture here would run before that guard and could
-    touch the operator's real ``~/.wopr``.
+    touch the operator's real ``~/.kitt``.
     """
     ServerContext.reset()
     try:
@@ -114,7 +114,7 @@ class TestToolReferencesResolve:
 
     Claude Code does not error on a call to an unregistered MCP tool in
     prose -- the model simply cannot find it and improvises. Four
-    phantom tools (``recommend_wopr_setup``, ``propose_agent_instructions``,
+    phantom tools (``recommend_kitt_setup``, ``propose_agent_instructions``,
     ``write_agent_instructions``, ``write_extracted_requirements_stub``)
     lived in shipped skills long after the tools behind them were cut.
     """
@@ -174,7 +174,7 @@ def _catalog_agent_names() -> frozenset[str]:
     """Frontmatter ``name:`` of every agent the catalog defines.
 
     The dispatch name is the frontmatter ``name``, not the filename:
-    ``catalog/crew/agents/wopr-crew-auditor.md`` is dispatched as
+    ``catalog/crew/agents/kitt-crew-auditor.md`` is dispatched as
     ``crew-auditor``. Reading the filename instead would pass this test
     while every real dispatch failed.
     """
@@ -257,7 +257,7 @@ and describe a *user's* project or home directory, not this repo. These
 four are the ones that can only mean this repo's own tree."""
 
 ILLUSTRATIVE_PATHS: dict[str, str] = {
-    # wopr-create-agent-skills teaches skill layout in the abstract; these
+    # kitt-create-agent-skills teaches skill layout in the abstract; these
     # three name files in a hypothetical skill the reader is about to
     # write, not files in this repo.
     "scripts/deploy.sh": "example command in references/using-scripts.md",
@@ -276,10 +276,10 @@ def _resolution_bases(path: Path) -> list[Path]:
     Catalog prose writes paths relative to whichever root the reader is
     standing in, and all four readings are used today:
 
-    * repo root -- ``docs/wopr-yml-schema.md``, ``catalog/crew/README.md``
+    * repo root -- ``docs/kitt-yml-schema.md``, ``catalog/crew/README.md``
     * the containing file's own directory
     * the containing skill -- ``templates/brief.md`` in
-      ``wopr-create-plans/README.md`` means that skill's ``templates/``
+      ``kitt-create-plans/README.md`` means that skill's ``templates/``
     * the containing pack -- ``scripts/configure_hook.py`` in
       ``catalog/_core/hooks/README.md`` means ``catalog/_core/scripts/``
 
@@ -384,31 +384,31 @@ those are documentation about the naming scheme, not references to a
 server."""
 
 THIRD_PARTY_SERVERS: dict[str, str] = {
-    # Every entry below is a server WOPR does not ship and does not
+    # Every entry below is a server KITT does not ship and does not
     # require. They appear as documentation examples and as optional
     # integrations, and each one is named here so that a NEW foreign
     # prefix appearing in the catalog fails this test instead of
     # blending in.
-    "memory": "hook-matcher examples in wopr-create-hooks",
-    "filesystem": "hook-matcher examples in wopr-create-hooks",
-    "github": "hook-matcher examples in wopr-create-hooks",
+    "memory": "hook-matcher examples in kitt-create-hooks",
+    "filesystem": "hook-matcher examples in kitt-create-hooks",
+    "github": "hook-matcher examples in kitt-create-hooks",
     "context7": "library-docs lookup suggested by the authoring skills",
-    "ag-mcp": "wopr-doctor reports whether an AG-Grid MCP is registered",
+    "ag-mcp": "kitt-doctor reports whether an AG-Grid MCP is registered",
     "plugin_atlassian_atlassian": (
         "the Atlassian plugin's real runtime namespace, verified against a "
-        "live session's tool list. `source: jira` in wopr.yml calls "
+        "live session's tool list. `source: jira` in kitt.yml calls "
         "mcp__plugin_atlassian_atlassian__getJiraIssue. This is a THIRD-PARTY "
-        "plugin whose runtime name WOPR does not generate, so unlike WOPR's "
+        "plugin whose runtime name KITT does not generate, so unlike KITT's "
         "own tools it is written in runtime form on purpose."
     ),
 }
 
 
 class TestNoForeignToolNamespaceLeaks:
-    def test_the_runtime_wopr_prefix_never_appears_in_source(self):
+    def test_the_runtime_kitt_prefix_never_appears_in_source(self):
         """The one rule with no allowlist.
 
-        ``mcp__plugin_wopr-core_wopr__x`` is what the GENERATOR emits.
+        ``mcp__plugin_kitt-core_kitt__x`` is what the GENERATOR emits.
         In source it is a bug in two directions at once: wrong for a
         repo/wheel install today, and stale the moment a plugin is
         renamed. ``build_plugins.rewrite_tool_names`` is the only thing
@@ -426,27 +426,27 @@ class TestNoForeignToolNamespaceLeaks:
             + "\n".join(violations)
         )
 
-    def test_no_wopr_server_appears_under_any_plugin_namespace(self):
-        """Catches a rename too, e.g. ``mcp__plugin_wopr_wopr__``."""
+    def test_no_kitt_server_appears_under_any_plugin_namespace(self):
+        """Catches a rename too, e.g. ``mcp__plugin_kitt_kitt__``."""
         violations: list[str] = []
         for path in CATALOG_MARKDOWN:
             for lineno, line in enumerate(_lines(path), start=1):
                 for match in _MCP_TOKEN_RE.finditer(line):
                     server = match.group("server")
-                    if server.startswith("plugin_") and server.endswith("_wopr"):
+                    if server.startswith("plugin_") and server.endswith("_kitt"):
                         violations.append(
                             f"{_where(path, lineno)}: mcp__{server}__ is a "
-                            "runtime form of WOPR's own server"
+                            "runtime form of KITT's own server"
                         )
         assert not violations, "\n".join(violations)
 
-    def test_every_server_prefix_is_wopr_or_explicitly_allowed(self):
+    def test_every_server_prefix_is_kitt_or_explicitly_allowed(self):
         violations: list[str] = []
         for path in CATALOG_MARKDOWN:
             for lineno, line in enumerate(_lines(path), start=1):
                 for match in _MCP_TOKEN_RE.finditer(line):
                     server = match.group("server")
-                    if server == "wopr" or server in THIRD_PARTY_SERVERS:
+                    if server == "kitt" or server in THIRD_PARTY_SERVERS:
                         continue
                     violations.append(
                         f"{_where(path, lineno)}: unknown MCP server prefix "
@@ -614,7 +614,7 @@ class TestNamedReportSectionsExist:
 
 
 class TestSchemaDocumentsEveryExampleKey:
-    """``wopr.example.yml`` is what operators copy; the schema doc is
+    """``kitt.example.yml`` is what operators copy; the schema doc is
     what agents are told is authoritative. A key in the example the
     schema never mentions (0.4's ``spec_writes``, the ``parity`` block)
     is a field the operator cannot look up."""
@@ -624,9 +624,9 @@ class TestSchemaDocumentsEveryExampleKey:
 
         templates = CATALOG_ROOT / "crew" / "templates"
         example = yaml.safe_load(
-            (templates / "wopr.example.yml").read_text(encoding="utf-8")
+            (templates / "kitt.example.yml").read_text(encoding="utf-8")
         )
-        schema = (templates / "wopr-yml-schema.md").read_text(encoding="utf-8")
+        schema = (templates / "kitt-yml-schema.md").read_text(encoding="utf-8")
 
         def leaf_keys(node: object) -> set[str]:
             keys: set[str] = set()
@@ -643,7 +643,7 @@ class TestSchemaDocumentsEveryExampleKey:
             and f".{key}`" not in schema
         )
         assert not missing, (
-            "keys in wopr.example.yml the schema doc never mentions: "
+            "keys in kitt.example.yml the schema doc never mentions: "
             f"{missing}"
         )
 
@@ -653,7 +653,7 @@ class TestSchemaDocumentsEveryExampleKey:
 # ===========================================================================
 
 CANONICAL_GATE_FILE = (
-    CATALOG_ROOT / "crew" / "skills" / "wopr-run-crew" / "SKILL.md"
+    CATALOG_ROOT / "crew" / "skills" / "kitt-run-crew" / "SKILL.md"
 )
 
 
@@ -725,12 +725,12 @@ class TestRetiredPerStepModel:
     the drift lock."""
 
     FILES = (
-        "src/wopr/help.py",
-        "src/wopr/tools/learnings.py",
-        "src/wopr/tools/_embeddings.py",
+        "src/kitt/help.py",
+        "src/kitt/tools/learnings.py",
+        "src/kitt/tools/_embeddings.py",
         "catalog/crew/README.md",
-        "catalog/crew/agents/wopr-crew-evaluator.md",
-        "catalog/crew/skills/wopr-run-crew/SKILL.md",
+        "catalog/crew/agents/kitt-crew-evaluator.md",
+        "catalog/crew/skills/kitt-run-crew/SKILL.md",
     )
     STALE_PHRASES = (
         "before each working-agent",

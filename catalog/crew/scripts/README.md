@@ -1,6 +1,6 @@
 # crew scripts
 
-Orchestration scripts for the crew pack. These are not agents or skills; they are deterministic infrastructure that does mechanical work the crew relies on. **Scripts cost zero tokens.** Whenever a step in `wopr-run-crew` is fully deterministic given known inputs and produces a known output shape, it belongs here rather than as an agent dispatch. See "Scripts vs agents" in the crew pack README for the heuristic.
+Orchestration scripts for the crew pack. These are not agents or skills; they are deterministic infrastructure that does mechanical work the crew relies on. **Scripts cost zero tokens.** Whenever a step in `kitt-run-crew` is fully deterministic given known inputs and produces a known output shape, it belongs here rather than as an agent dispatch. See "Scripts vs agents" in the crew pack README for the heuristic.
 
 ## Inventory
 

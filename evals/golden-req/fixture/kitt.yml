@@ -1,15 +1,15 @@
-# wopr.yml for the WOPR golden-REQ evaluation fixture.
+# kitt.yml for the KITT golden-REQ evaluation fixture.
 #
 # This is a deterministic, minimal FastAPI project. Its only purpose is to
-# give the WOPR crew skill (scout, coder, tester, auditor) a fast, cheap,
+# give the KITT crew skill (scout, coder, tester, auditor) a fast, cheap,
 # repeatable target to run REQ-GOLD-1 against, so results can be compared
 # across crew-skill versions. See README.md for the run procedure.
 #
-# Schema reference: wopr-yml-schema.md (WOPR crew pack; mcp get_pack_template)
+# Schema reference: kitt-yml-schema.md (KITT crew pack; mcp get_pack_template)
 
 project:
-  slug: wopr-golden-fixture
-  name: WOPR Golden Fixture
+  slug: kitt-golden-fixture
+  name: KITT Golden Fixture
   target_source_root: app
   test_root: tests
   build_file: pyproject.toml

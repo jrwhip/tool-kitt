@@ -1,6 +1,6 @@
 ---
-name: wopr-run-crew
-description: "Orchestrate the four-role agent crew (scout, coder, tester, auditor) end to end against a single REQ. Use for disciplined dev work on any project with a wopr.yml: net-new feature implementation, ongoing iteration on an existing project, addressing auditor blockers, handing off a backend change to a frontend track, or running a legacy migration."
+name: kitt-run-crew
+description: "Orchestrate the four-role agent crew (scout, coder, tester, auditor) end to end against a single REQ. Use for disciplined dev work on any project with a kitt.yml: net-new feature implementation, ongoing iteration on an existing project, addressing auditor blockers, handing off a backend change to a frontend track, or running a legacy migration."
 ---
 
 <essential_principles>
@@ -14,18 +14,18 @@ scout  ->  coder  ->  tester  ->  auditor
 - **One REQ per crew run.** The caller picks the sequence; the crew executes one at a time.
 - **Models per role** (keep in sync with the `model:` frontmatter in `agents/`): scout **haiku**; coder, tester, auditor, evaluator, designer **sonnet**. The designer exists only on projects declaring `specs.design_spec`. The auditor is a gate, not a per-change reviewer; do not invoke it during coder iteration.
 - **Every agent runs via the Task tool** (`subagent_type=<agent-name>`, fresh isolated context). Never role-play an agent in the parent conversation. Orchestrator work stays in the parent: pre-steps, gates, tracking-doc status updates.
-- **Spec files are the authority.** Agents follow the project's coder and tester specs resolved from `wopr.yml`. With `specs.spec_writes: true` in `wopr.yml`, the owning agent amends its spec when a new pattern emerges; OFF (the default), agents flag proposals in their reports and the operator decides what lands. The orchestrator reads the field once at run start and passes it to every crew agent.
+- **Spec files are the authority.** Agents follow the project's coder and tester specs resolved from `kitt.yml`. With `specs.spec_writes: true` in `kitt.yml`, the owning agent amends its spec when a new pattern emerges; OFF (the default), agents flag proposals in their reports and the operator decides what lands. The orchestrator reads the field once at run start and passes it to every crew agent.
 - **Stop on failure.** Missing required input: stop and report, do not guess paths. Auditor BLOCKED: stop; the next step is a human decision, not a re-run.
 - **Two operator gates, and no sequence skips either.** The REQ review gate runs before the first dispatch and gates the requirement; the auditor's verdict runs after the code and gates the implementation. Neither one substitutes for the other: an approved REQ says nothing about the code, and an UNBLOCKED audit only certifies that the code matches whatever the REQ said.
-- **A machine-readable API contract is mandatory** (`api_contract` in `wopr.yml`: an OpenAPI document or a GraphQL schema, per `kind`). The backend owns the contract; the frontend consumes a generated client; agents cite contract items by **contract reference**: a JSON Pointer into the OpenAPI document, or the operation / type name in the GraphQL schema. Never hand-copied shapes. No contract, no crew run: stop at setup.
+- **A machine-readable API contract is mandatory** (`api_contract` in `kitt.yml`: an OpenAPI document or a GraphQL schema, per `kind`). The backend owns the contract; the frontend consumes a generated client; agents cite contract items by **contract reference**: a JSON Pointer into the OpenAPI document, or the operation / type name in the GraphQL schema. Never hand-copied shapes. No contract, no crew run: stop at setup.
 </essential_principles>
 
 <project_setup>
 ## Setup (once per project)
 
-`wopr.yml` must exist at project root and parse cleanly. Schema and worked example ship with the crew pack: fetch via `mcp__wopr__get_pack_template` (`pack="crew"`, `name="wopr-yml-schema.md"`) and `name="wopr.example.yml"`. Coder and tester specs are instantiated from the pack templates (landed by `/wopr-init-project` or the stub-writer tools) and operator-approved before the first run; agents maintain them thereafter.
+`kitt.yml` must exist at project root and parse cleanly. Schema and worked example ship with the crew pack: fetch via `mcp__kitt__get_pack_template` (`pack="crew"`, `name="kitt-yml-schema.md"`) and `name="kitt.example.yml"`. Coder and tester specs are instantiated from the pack templates (landed by `/kitt-init-project` or the stub-writer tools) and operator-approved before the first run; agents maintain them thereafter.
 
-Two opt-in project hooks exist: `/wopr-configure-prompt-log` (per-turn log to PROMPT_LOG.md) and `/wopr-configure-git-guard` (blocks commits off `feature/*`). Offer them once on a new project, record the operator's answer in the tracking doc, honor it thereafter.
+Two opt-in project hooks exist: `/kitt-configure-prompt-log` (per-turn log to PROMPT_LOG.md) and `/kitt-configure-git-guard` (blocks commits off `feature/*`). Offer them once on a new project, record the operator's answer in the tracking doc, honor it thereafter.
 </project_setup>
 
 <session_intake>
@@ -41,9 +41,9 @@ Greenfield project with no requirements source: skip 2 and 3; the first crew run
 <req_resolution>
 ## REQ resolution (re-fetch fresh before every agent dispatch)
 
-`wopr.yml` `requirements:` declares the source; re-read it per dispatch so operator edits land mid-run.
+`kitt.yml` `requirements:` declares the source; re-read it per dispatch so operator edits land mid-run.
 
-- `source: local` (default): REQ body is `<wopr.yml dir>/<requirements.local.path>/<REQ-ID>.md` (default path `requirements/`). Pre-flight once at start: the file exists and is non-empty, else stop.
+- `source: local` (default): REQ body is `<kitt.yml dir>/<requirements.local.path>/<REQ-ID>.md` (default path `requirements/`). Pre-flight once at start: the file exists and is non-empty, else stop.
 - `source: jira`: REQ body is the Jira issue description, fetched with `getJiraIssue` from the Atlassian MCP. Pre-flight once at start: (1) the Atlassian MCP tools are callable, else stop with a pointer to register the MCP or switch to `local`; (2) resolve the site via `getAccessibleAtlassianResources`: exactly one site, cache its id as cloud_id; zero or multiple sites, stop and say so; (3) smoke-test the configured REQ-ID fetch, surfacing the underlying error on failure; (4) if `requirements.jira.project_key` is set, soft-warn on prefix mismatch.
 </req_resolution>
 
@@ -56,7 +56,7 @@ Runs after REQ resolution pre-flight and before the CRAG pre-step, on every sequ
 2. Ask for one of four answers and wait. **Silence is not approval: no agent dispatch, and no CRAG call, before the answer lands.**
    - **Approve** — proceed to the CRAG pre-step.
    - **Edit** — the operator dictates the correction; the orchestrator rewrites the REQ at its source, re-shows it, and asks again. No round limit.
-   - **Rework** — the requirement is wrong in shape rather than in wording. Stop the run and hand the REQ back to the `wopr-draft-req` skill, which owns the format and the criteria quality bar; re-enter this gate on its output.
+   - **Rework** — the requirement is wrong in shape rather than in wording. Stop the run and hand the REQ back to the `kitt-draft-req` skill, which owns the format and the criteria quality bar; re-enter this gate on its output.
    - **Cancel** — the requirement is wrong at its root. Leave the REQ in place at `status: pending`, stop, and dispatch nothing. Do not delete it.
 3. Record the outcome on the REQ's Requirements Baseline row in the tracking document: `REQ review: approved <date>, <n> round(s)`, or `REQ review: cancelled <date> — <reason>`.
 
@@ -72,10 +72,10 @@ Runs after REQ resolution pre-flight and before the CRAG pre-step, on every sequ
 <crag_pre_step>
 ## CRAG pre-step (once per crew run, before Step 1)
 
-1. Call `learnings_search`: `req_id` = target REQ, `stack_tags` derived from `wopr.yml` (dominant stack first: build file and package layout imply spring-boot, angular, fastapi, etc.; add `openapi-generator` when `api_contract.kind` is `openapi` and a generator version is pinned, `graphql` when it is `graphql`; add `legacy-migration` when `legacy-migration.legacy_source_root` is set), `req_summary` = the REQ description from the tracking document, defaults for age and limit.
+1. Call `learnings_search`: `req_id` = target REQ, `stack_tags` derived from `kitt.yml` (dominant stack first: build file and package layout imply spring-boot, angular, fastapi, etc.; add `openapi-generator` when `api_contract.kind` is `openapi` and a generator version is pinned, `graphql` when it is `graphql`; add `legacy-migration` when `legacy-migration.legacy_source_root` is set), `req_summary` = the REQ description from the tracking document, defaults for age and limit.
 2. **Empty result: pass an empty `relevant_learnings` block to every agent.** No evaluator.
 3. **Five or fewer candidates: inject them all, marked advisory, to every agent.** No evaluator; at this corpus size every agent sees everything anyway and selection adds nothing.
-4. **More than five: dispatch `crew-evaluator`** (Task tool) with the `wopr.yml` path, the REQ context block, the candidate block verbatim, and this combined hint: `discovery and file-layout gotchas; implementation patterns and anti-patterns; flaky-test and coverage-gap shapes; checklist gaps and cross-stack lockstep concerns`. Parse anchored on the literal `## Evaluator Verdict` header (discard anything before it; if absent, log the raw response and fall back to an empty block). Take `### HIGH` and `### MEDIUM` entries verbatim as the `relevant_learnings` block; drop LOW. If the header counts disagree with the actual entries, warn once and trust the entries.
+4. **More than five: dispatch `crew-evaluator`** (Task tool) with the `kitt.yml` path, the REQ context block, the candidate block verbatim, and this combined hint: `discovery and file-layout gotchas; implementation patterns and anti-patterns; flaky-test and coverage-gap shapes; checklist gaps and cross-stack lockstep concerns`. Parse anchored on the literal `## Evaluator Verdict` header (discard anything before it; if absent, log the raw response and fall back to an empty block). Take `### HIGH` and `### MEDIUM` entries verbatim as the `relevant_learnings` block; drop LOW. If the header counts disagree with the actual entries, warn once and trust the entries.
 
 The same `relevant_learnings` block goes to all four agents. Specs win over learnings on any conflict. The evaluator exists as an independent circuit-breaker against the corpus feeding its own biases back; below the threshold there is no selection pressure for it to break.
 </crag_pre_step>
@@ -83,21 +83,21 @@ The same `relevant_learnings` block goes to all four agents. Specs win over lear
 <crew_sequence>
 ## Crew run: one REQ, four roles
 
-Preconditions: setup complete (`wopr.yml`, specs, reachable API contract per `api_contract.spec_url`), session intake done, REQ resolution pre-flight passed, REQ review gate approved.
+Preconditions: setup complete (`kitt.yml`, specs, reachable API contract per `api_contract.spec_url`), session intake done, REQ resolution pre-flight passed, REQ review gate approved.
 
-**Step 1: Scout** (Task `subagent_type=crew-scout`). One dispatch does discovery and alignment: verify the tracking document's baseline against reality (record ALIGNED / DRIFTED / STALE in the Gap Analysis table; on STALE, stop and let the operator decide), then produce the five-section report and write the scout contract to `<target_dir>/crew-contracts/<REQ-ID>/scout.md`. Inputs: `wopr.yml` path, `mode` (pass explicitly: `gap_analysis` unless this is a migration project with an empty/skeleton tracking document AND `legacy-migration.legacy_source_root` is set, in which case `deep_analysis`), target REQ ID, fresh REQ body, session structural context (from the tracking doc), `relevant_learnings`.
+**Step 1: Scout** (Task `subagent_type=crew-scout`). One dispatch does discovery and alignment: verify the tracking document's baseline against reality (record ALIGNED / DRIFTED / STALE in the Gap Analysis table; on STALE, stop and let the operator decide), then produce the five-section report and write the scout contract to `<target_dir>/crew-contracts/<REQ-ID>/scout.md`. Inputs: `kitt.yml` path, `mode` (pass explicitly: `gap_analysis` unless this is a migration project with an empty/skeleton tracking document AND `legacy-migration.legacy_source_root` is set, in which case `deep_analysis`), target REQ ID, fresh REQ body, session structural context (from the tracking doc), `relevant_learnings`.
 
 **Gate: contract validation.** Call `validate_scout_contract` with the contract's absolute path. It checks shape AND consistency: workspace-escaping paths are errors; absent files, frontmatter/body path drift, and inventory entries outside `files_touched` are warnings. `ok: false`: stop and surface the errors verbatim; a malformed contract is a scout failure to fix, not something to work around. Warnings are advisory. When the orchestrator later overrides any contract content on evidence, it edits the contract to match the decision and notes the override inline, so downstream agents and the auditor cross-check against current truth rather than a stale plan. This gate exists because un-contracted discovery gets re-done downstream at higher model prices.
 
-**Step 1.5: Designer** (Task `subagent_type=crew-designer`) — **only when `wopr.yml` declares `specs.design_spec`**; skip otherwise, backend-only projects pay nothing. Inputs: `wopr.yml` path, scout contract, target REQ ID, fresh REQ body, `relevant_learnings`. Derives the REQ's appearance acceptance criteria from the design spec, writes/updates the `@visual` regression tests, and generates candidate baselines it never commits. **Baseline approval is operator-only:** the orchestrator surfaces the designer's candidate list and stops for the operator to review and commit before proceeding. The auditor runs `specs.visual_check` at the gate (checklist item 11).
+**Step 1.5: Designer** (Task `subagent_type=crew-designer`) — **only when `kitt.yml` declares `specs.design_spec`**; skip otherwise, backend-only projects pay nothing. Inputs: `kitt.yml` path, scout contract, target REQ ID, fresh REQ body, `relevant_learnings`. Derives the REQ's appearance acceptance criteria from the design spec, writes/updates the `@visual` regression tests, and generates candidate baselines it never commits. **Baseline approval is operator-only:** the orchestrator surfaces the designer's candidate list and stops for the operator to review and commit before proceeding. The auditor runs `specs.visual_check` at the gate (checklist item 11).
 
-**Step 2: Coder** (Task `subagent_type=crew-coder`). Inputs: `wopr.yml` path, scout contract (validated), target REQ ID, fresh REQ body, `spec_writes`, `relevant_learnings`. Marks the REQ In Progress, implements production code only, keeps the API contract (OpenAPI annotations or GraphQL schema) or generated-client consumption current, updates the frontend handoff contract when the REQ touches the API surface, records `spec_version` on the log entry. Does not mark Implemented.
+**Step 2: Coder** (Task `subagent_type=crew-coder`). Inputs: `kitt.yml` path, scout contract (validated), target REQ ID, fresh REQ body, `spec_writes`, `relevant_learnings`. Marks the REQ In Progress, implements production code only, keeps the API contract (OpenAPI annotations or GraphQL schema) or generated-client consumption current, updates the frontend handoff contract when the REQ touches the API surface, records `spec_version` on the log entry. Does not mark Implemented.
 
 **Step 3: Tester** (Task `subagent_type=crew-tester`). Inputs: as coder, plus the coder's changed-file list. Tests only, fixtures and mocks from generated types, full suite run, line and branch coverage measured, `coverage_status` recorded.
 
 **Gate: coverage (five conditions).** This is the gate's single authoritative statement; the specs and agent files reference it and supply stack parameters, they do not redefine it. The orchestrator owns it. (1) Build passes. (2) Full suite passes, zero new failures. (3) **Traceability:** every acceptance criterion of the REQ maps to at least one named test in the tester's criterion→test map; a zero-test criterion fails the gate. Line/branch coverage is measured and recorded alongside the map as a **diagnostic** — a number the auditor cross-checks for honesty, not a pass metric; percentage certified 902 assertions and a wireframe as done once, and will again. (4) If the REQ touched the API surface, the handoff contract covers the change with a contract reference that resolves against the API contract. (5) Static analysis reports clean for this REQ's changes (the tester triggers the scan and records the verdict in `coverage_status`). Any failure: run the **gate-failure fix** — route the failing condition to its owner (build or production-code failure → coder; test, coverage, or static-analysis failure → tester; handoff-contract gap → coder), dispatch that one agent with the failing condition, then re-check the gate. Loop until it passes; do not dispatch the auditor to rediscover a known-failing gate, and do not use the blocker-fix sequence (that sequence exists for audit verdicts and re-dispatches the auditor). All pass: **the orchestrator** marks the REQ Implemented in the tracking document and closes out its Gap Analysis row in the same edit, updating every cell of the row including its narrative notes (a stale "pending" note beside an Implemented status, in either table or within one row, is a contradiction the next reader trips over).
 
-**Step 4: Auditor** (Task `subagent_type=crew-auditor`). Inputs: `wopr.yml` path, scout contract, fresh REQ body, prior audit report path (empty on first run), `spec_writes`, `relevant_learnings`. Runs its checklist, independently re-verifying rather than trusting recorded values; writes the audit report; distills 0 to 3 learnings entries (the auditor is the sole distiller); returns BLOCKED or UNBLOCKED. **After the auditor returns, check its report for a `### Learnings (not persisted)` section** — it appears when `append_learnings` was unavailable in the auditor's session. If present, the orchestrator calls `append_learnings` itself with those entries verbatim (`target_workspace_path` = the wopr.yml directory), so distilled learnings are never silently dropped.
+**Step 4: Auditor** (Task `subagent_type=crew-auditor`). Inputs: `kitt.yml` path, scout contract, fresh REQ body, prior audit report path (empty on first run), `spec_writes`, `relevant_learnings`. Runs its checklist, independently re-verifying rather than trusting recorded values; writes the audit report; distills 0 to 3 learnings entries (the auditor is the sole distiller); returns BLOCKED or UNBLOCKED. **After the auditor returns, check its report for a `### Learnings (not persisted)` section** — it appears when `append_learnings` was unavailable in the auditor's session. If present, the orchestrator calls `append_learnings` itself with those entries verbatim (`target_workspace_path` = the kitt.yml directory), so distilled learnings are never silently dropped.
 
 **Gate: verdict.** BLOCKED: route to the blocker-fix sequence. UNBLOCKED: the REQ is done. Repeat for the next REQ.
 </crew_sequence>
@@ -108,7 +108,7 @@ Preconditions: setup complete (`wopr.yml`, specs, reachable API contract per `ap
 Do not re-run the full crew. Route each BLOCKER to its owner: production code findings to the coder; test findings to the tester; handoff-contract findings to the coder; tracking-document drift to the scout; spec findings to the owning agent when `spec_writes` is ON, escalating to the operator when the spec itself looks wrong.
 
 1. Operator classifies each BLOCKER by owner.
-2. Dispatch the owning agent (Task tool) with the target REQ, the specific findings, `wopr.yml` path, and the audit report path.
+2. Dispatch the owning agent (Task tool) with the target REQ, the specific findings, `kitt.yml` path, and the audit report path.
 3. Re-dispatch downstream agents only if the fix touched their output (an API-surface change re-runs the tester; a test-only change does not re-run the coder).
 4. Re-dispatch the auditor with the prior report path; it writes a new report with each prior finding RESOLVED, STILL OPEN, or NEW.
 5. UNBLOCKED: done. BLOCKED: loop.
@@ -125,7 +125,7 @@ For styling, copy, and other small well-scoped changes: **coder → auditor**. N
 
 **The REQ review gate still applies when a REQ is in scope**, and runs before step 1 below. It is skipped only for a change the operator described in session with no requirement document behind it.
 
-1. Dispatch the coder (Task `subagent_type=crew-coder`) with `wopr.yml` path, the change description, `spec_writes`, and an explicit note that this is a light run: no scout contract exists, so its own reading replaces the contract, and the no-tests boundary holds as usual.
+1. Dispatch the coder (Task `subagent_type=crew-coder`) with `kitt.yml` path, the change description, `spec_writes`, and an explicit note that this is a light run: no scout contract exists, so its own reading replaces the contract, and the no-tests boundary holds as usual.
 2. Run the full suite and the static-analysis check; any failure routes back to the coder.
 3. Dispatch the auditor as in Step 4 of the crew sequence (prior report path, `spec_writes`, `relevant_learnings` optional). It runs its checklist against the change; BLOCKED routes to the blocker-fix sequence.
 4. UNBLOCKED: done. Log the change in the tracking document's implementation log (no REQ status transition unless a REQ was in scope).
@@ -134,7 +134,7 @@ For styling, copy, and other small well-scoped changes: **coder → auditor**. N
 <frontend_handoff_sequence>
 ## Frontend handoff: backend crew finished, frontend crew consumes
 
-The frontend run is its own crew run with its own `wopr.yml`; the two runs share exactly two artifacts: the handoff contract (the frontend's `legacy-migration.handoff_contract` points at the backend's contract by absolute path) and the pinned API contract (frontend `generator_version` must match backend `spec_version`).
+The frontend run is its own crew run with its own `kitt.yml`; the two runs share exactly two artifacts: the handoff contract (the frontend's `legacy-migration.handoff_contract` points at the backend's contract by absolute path) and the pinned API contract (frontend `generator_version` must match backend `spec_version`).
 
 Run the standard sequence against the frontend project with two differences: the scout additionally resolves every contract entry's contract reference against the API contract (unresolvable references are BLOCKER-class) and maps entries to consuming frontend REQs; and the auditor's handoff rule inverts, verifying the frontend CONSUMES every contract entry (operation, status or result, UI action, contract reference) with unconsumed, non-deferred entries as BLOCKERs, plus generator/spec version lockstep. The coder imports from the generated client and never hand-edits generated files (generator output problems are fixed via custom templates per the coder spec).
 </frontend_handoff_sequence>
@@ -152,9 +152,9 @@ Run the standard sequence against the frontend project with two differences: the
 <reference_index>
 ## References
 
-- Config: schema `wopr-yml-schema.md` and worked example `wopr.example.yml`, both via `mcp__wopr__get_pack_template` (`pack="crew"`)
+- Config: schema `kitt-yml-schema.md` and worked example `kitt.example.yml`, both via `mcp__kitt__get_pack_template` (`pack="crew"`)
 - Agents: dispatched by name — `crew-scout`, `crew-designer` (conditional), `crew-coder`, `crew-tester`, `crew-auditor`, `crew-evaluator` (definitions ship with this plugin)
-- Templates: enumerate via `mcp__wopr__list_pack_templates` (`pack="crew"`); fetch via `mcp__wopr__get_pack_template`
-- Scripts and hooks: `scripts/autorun.sh` in this plugin's root; the prompt-log and git-branch-guard hooks ship with the wopr-core plugin and are registered via `/wopr-configure-prompt-log` and `/wopr-configure-git-guard`
+- Templates: enumerate via `mcp__kitt__list_pack_templates` (`pack="crew"`); fetch via `mcp__kitt__get_pack_template`
+- Scripts and hooks: `scripts/autorun.sh` in this plugin's root; the prompt-log and git-branch-guard hooks ship with the kitt-core plugin and are registered via `/kitt-configure-prompt-log` and `/kitt-configure-git-guard`
 - Pack overview: the crew pack README (repo checkout only; not shipped in the plugin)
 </reference_index>

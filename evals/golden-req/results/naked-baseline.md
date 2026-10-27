@@ -1,7 +1,7 @@
 # Naked-Claude baseline (no harness)
 
 - Date: 2026-08-21
-- Condition: single sonnet agent per run (same tier as the crew's working agents), fixture stripped of all harness artifacts (wopr.yml, specs/, implementation-tracking.md, README removed; only app/, tests/, pyproject, uv.lock, requirements/REQ-GOLD-1.md remain). Prompt: implement the requirement, production quality, tests, suite green, lint clean, strong coverage.
+- Condition: single sonnet agent per run (same tier as the crew's working agents), fixture stripped of all harness artifacts (kitt.yml, specs/, implementation-tracking.md, README removed; only app/, tests/, pyproject, uv.lock, requirements/REQ-GOLD-1.md remain). Prompt: implement the requirement, production quality, tests, suite green, lint clean, strong coverage.
 - Purpose: third point on the harness curve (no harness / heavy harness / right-sized harness) for docs/harness-thesis.md.
 
 ## Runs

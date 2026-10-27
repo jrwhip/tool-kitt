@@ -9,7 +9,7 @@
 name: token-usage
 description: >-
   Record per-tool token attribution for the session into
-  ~/.wopr/token-usage.json on every Stop (names, counts, and token
+  ~/.kitt/token-usage.json on every Stop (names, counts, and token
   figures only; no prompt text, inputs, or file paths).
 handler: token-usage-hook.py
 targets:

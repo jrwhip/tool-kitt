@@ -1,4 +1,4 @@
-"""Tests for ``wopr.tools._routing_eval``.
+"""Tests for ``kitt.tools._routing_eval``.
 
 Two tiers, matching gbrain's own ``routing-eval.test.ts`` structure:
 
@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from wopr.tools._routing_eval import (
+from kitt.tools._routing_eval import (
     CatalogSkill,
     RoutingFixture,
     build_trigger_index,

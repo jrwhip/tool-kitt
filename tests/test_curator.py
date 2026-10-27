@@ -1,4 +1,4 @@
-"""Tests for ``wopr.tools._curator`` — pure staleness-classification logic.
+"""Tests for ``kitt.tools._curator`` — pure staleness-classification logic.
 
 No file I/O here; the file I/O + dry-run gating lives in
 ``learnings.curate_learnings``, covered separately in
@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from wopr.tools._curator import DEFAULT_STALE_AFTER_DAYS, plan_curation, render_entries
-from wopr.tools._learnings_format import LearningEntry
+from kitt.tools._curator import DEFAULT_STALE_AFTER_DAYS, plan_curation, render_entries
+from kitt.tools._learnings_format import LearningEntry
 
 
 def _entry(

@@ -25,8 +25,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from wopr.tools import crew_contracts
-from wopr.tools.crew_contracts import validate_scout_contract
+from kitt.tools import crew_contracts
+from kitt.tools.crew_contracts import validate_scout_contract
 
 # ``fake_mcp`` fixture lives in tests/conftest.py.
 
@@ -591,14 +591,14 @@ class TestInventoryScope:
 def _golden_shaped_workspace(tmp_path: Path) -> Path:
     """A tmp tree shaped like ``evals/golden-req-2/fixture``.
 
-    Same layout the golden REQ runs against (``wopr.yml`` at the root,
+    Same layout the golden REQ runs against (``kitt.yml`` at the root,
     ``app/`` and ``tests/`` packages), built in tmp so the checked-in
     fixture is never read from or written to by this test.
     """
     root = tmp_path / "golden-shaped"
     (root / "app").mkdir(parents=True)
     (root / "tests").mkdir()
-    (root / "wopr.yml").write_text("project: golden\n", encoding="utf-8")
+    (root / "kitt.yml").write_text("project: golden\n", encoding="utf-8")
     for relative in (
         "app/__init__.py",
         "app/main.py",

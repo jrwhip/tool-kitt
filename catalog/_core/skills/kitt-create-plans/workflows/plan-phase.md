@@ -224,10 +224,10 @@ Output: [What artifacts will be created by this plan]
 </objective>
 
 <execution_context>
-@~/.claude/skills/wopr-create-plans/workflows/execute-phase.md
-@~/.claude/skills/wopr-create-plans/templates/summary.md
+@~/.claude/skills/kitt-create-plans/workflows/execute-phase.md
+@~/.claude/skills/kitt-create-plans/templates/summary.md
 [If plan has ANY checkpoint tasks (type="checkpoint:*"), add:]
-@~/.claude/skills/wopr-create-plans/references/checkpoints.md
+@~/.claude/skills/kitt-create-plans/references/checkpoints.md
 </execution_context>
 
 <context>

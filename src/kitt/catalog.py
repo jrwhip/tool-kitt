@@ -1,9 +1,9 @@
 """
-Catalog and pack resolution for WOPR.
+Catalog and pack resolution for KITT.
 
 Handles:
 - Loading catalog.yaml (pack and profile definitions)
-- Reading .wopr.yaml per-project config
+- Reading .kitt.yaml per-project config
 - Resolving which packs to install from CLI flags, config, or interactive selection
 - Locating resources across bundled and external catalog sources
 """
@@ -62,11 +62,11 @@ def load_catalog(catalog_path: Path | None = None) -> dict[str, Any]:
         candidates.append(catalog_path / "catalog.yaml")
         candidates.append(catalog_path.parent / "catalog.yaml")
 
-    # Plugin install: `wopr build-plugins` copies catalog.yaml into the
+    # Plugin install: `kitt build-plugins` copies catalog.yaml into the
     # bundled server's resources dir, which neither of the two
     # path-arithmetic candidates below can reach (the server package
-    # sits at <plugin>/server/src/wopr/, its resources one level up
-    # and outside the package). Set only when WOPR_PLUGIN_ROOT is.
+    # sits at <plugin>/server/src/kitt/, its resources one level up
+    # and outside the package). Set only when KITT_PLUGIN_ROOT is.
     plugin_resources = plugin_resources_root()
     if plugin_resources is not None:
         candidates.append(plugin_resources / "catalog.yaml")
@@ -87,8 +87,8 @@ def load_catalog(catalog_path: Path | None = None) -> dict[str, Any]:
     return {"packs": {}, "profiles": {}}
 
 
-def read_wopr_config(workspace: Path) -> dict[str, Any] | None:
-    """Read .wopr.yaml from the workspace root.
+def read_kitt_config(workspace: Path) -> dict[str, Any] | None:
+    """Read .kitt.yaml from the workspace root.
 
     Returns:
         Parsed config dict, or None if no config file exists.
@@ -112,8 +112,8 @@ def get_catalog_path(
 
     Resolution order:
     1. --catalog CLI flag
-    2. WOPR_CATALOG environment variable
-    3. 'catalog' key in .wopr.yaml config
+    2. KITT_CATALOG environment variable
+    3. 'catalog' key in .kitt.yaml config
     4. None (use bundled only)
     """
     if cli_catalog:
@@ -127,9 +127,9 @@ def get_catalog_path(
     # the value of doing it now is small (the env var resolution is
     # the same either way) and the cost is touching every CLI
     # subcommand entry point.
-    from .config import ENV_WOPR_CATALOG
+    from .config import ENV_KITT_CATALOG
 
-    env_catalog = os.environ.get(ENV_WOPR_CATALOG)
+    env_catalog = os.environ.get(ENV_KITT_CATALOG)
     if env_catalog:
         return Path(env_catalog).expanduser().resolve()
 
@@ -157,7 +157,7 @@ def resolve_packs(
     Resolution order:
     1. --packs CLI flag (explicit list)
     2. --profile CLI flag (named profile from catalog)
-    3. .wopr.yaml 'packs' list
+    3. .kitt.yaml 'packs' list
     4. Interactive selection (if interactive=True and no config)
     5. Empty list (only _core will be installed)
 
@@ -166,7 +166,7 @@ def resolve_packs(
     Args:
         cli_packs: Explicit pack list from CLI (e.g., ["angular", "security"])
         cli_profile: Profile name from CLI (e.g., "angular-team")
-        config: Parsed .wopr.yaml config dict
+        config: Parsed .kitt.yaml config dict
         catalog: Parsed catalog.yaml dict
         interactive: Whether to run interactive selection as fallback
 
@@ -243,18 +243,18 @@ def find_pack_resources(
 
 
 def get_global_home() -> Path:
-    """Get the global WOPR home directory.
+    """Get the global KITT home directory.
 
     Resolution order:
 
-    1. ``ServerContext.get().config.wopr_home`` when the server context
+    1. ``ServerContext.get().config.kitt_home`` when the server context
        is initialized AND the field is set. This is the configured-once
        value MCP tool paths read at every call.
-    2. ``WOPR_HOME`` env var (read directly here). Covers CLI paths
-       (``wopr add/remove/init``) where the server context is not yet
+    2. ``KITT_HOME`` env var (read directly here). Covers CLI paths
+       (``kitt add/remove/init``) where the server context is not yet
        initialized, and covers test fixtures that monkeypatch the env
        var without rebuilding the config.
-    3. ``~/.wopr`` as the final default.
+    3. ``~/.kitt`` as the final default.
 
     The env-var fallback is deliberate; making this pure-config-only
     would force CLI subcommands to construct a config and force the
@@ -266,16 +266,16 @@ def get_global_home() -> Path:
         from .context import ServerContext
 
         ctx = ServerContext.get()
-        if ctx.config.wopr_home:
-            return Path(ctx.config.wopr_home).expanduser().resolve()
+        if ctx.config.kitt_home:
+            return Path(ctx.config.kitt_home).expanduser().resolve()
     except RuntimeError:
         # No server context (CLI subcommand path). Fall through to env.
         pass
 
-    from .config import ENV_WOPR_HOME
+    from .config import ENV_KITT_HOME
 
     return Path(
-        os.environ.get(ENV_WOPR_HOME, str(Path.home() / HOME_DIRNAME))
+        os.environ.get(ENV_KITT_HOME, str(Path.home() / HOME_DIRNAME))
     ).expanduser().resolve()
 
 
@@ -284,15 +284,15 @@ def resolve_install_target(
 ) -> tuple[Path, Path, str]:
     """Resolve ``(shared_dir, lock_dir, label)`` for an install target.
 
-    Used by the read-only ``wopr list`` subcommand so the
+    Used by the read-only ``kitt list`` subcommand so the
     workspace-vs-global split lives in one place: a global install is
-    read from ``~/.wopr`` (:func:`get_global_home`), a workspace
+    read from ``~/.kitt`` (:func:`get_global_home`), a workspace
     install from the project's ``.ai-cli/`` directory.
 
     Returns:
         ``(shared_dir, lock_dir, label)`` where ``shared_dir`` is the
         resource copy the MCP resolves from, ``lock_dir`` holds
-        ``wopr.lock.yaml``, and ``label`` is a human-facing description
+        ``kitt.lock.yaml``, and ``label`` is a human-facing description
         for logs.
     """
     if is_global:
@@ -309,7 +309,7 @@ def read_lock_file(lock_dir: Path) -> LockFileData | None:
     """Read the lock file from a directory.
 
     Args:
-        lock_dir: Directory containing ``wopr.lock.yaml``.
+        lock_dir: Directory containing ``kitt.lock.yaml``.
                   For workspace installs, pass ``workspace / ".ai-cli"``.
                   For global installs, pass ``get_global_home()``.
 
@@ -344,12 +344,12 @@ def write_lock_file(
     """Write the lock file to a directory.
 
     Args:
-        lock_dir: Directory to write ``wopr.lock.yaml`` into.
+        lock_dir: Directory to write ``kitt.lock.yaml`` into.
                   For workspace installs, pass ``workspace / ".ai-cli"``.
                   For global installs, pass ``get_global_home()``.
         installed_packs: List of installed pack names
         catalog_source: Path to external catalog (if used)
-        version: WOPR version
+        version: KITT version
     """
     lock_dir.mkdir(parents=True, exist_ok=True)
 

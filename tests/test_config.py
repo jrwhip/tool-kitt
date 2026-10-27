@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from wopr.config import ServerConfig, _detect_cli_type
+from kitt.config import ServerConfig, _detect_cli_type
 
 
 class TestDetectCliType:
@@ -51,7 +51,7 @@ class TestServerConfig:
     def test_defaults(self):
         config = ServerConfig()
         assert config.ai_cli_workspace is None
-        assert config.wopr_workspace is None
+        assert config.kitt_workspace is None
         assert config.cli_type == "unknown"
         assert config.catalog_path is None
         assert config.toggl_api_key is None
@@ -59,25 +59,25 @@ class TestServerConfig:
     def test_from_env_reads_environment(self):
         env = {
             "AI_CLI_WORKSPACE": "/test/workspace",
-            "WOPR_WORKSPACE": "/test/wopr",
+            "KITT_WORKSPACE": "/test/kitt",
             "AI_CLI_TYPE": "claude",
-            "WOPR_CATALOG": "/test/catalog",
+            "KITT_CATALOG": "/test/catalog",
             "TOGGL_API_KEY": "test-key",
         }
         with patch.dict(os.environ, env, clear=False):
             config = ServerConfig.from_env()
 
         assert config.ai_cli_workspace == "/test/workspace"
-        assert config.wopr_workspace == "/test/wopr"
+        assert config.kitt_workspace == "/test/kitt"
         assert config.cli_type == "claude"
         assert config.catalog_path == "/test/catalog"
         assert config.toggl_api_key == "test-key"
 
     def test_from_env_empty_environment(self):
         env_keys = [
-            "AI_CLI_WORKSPACE", "WOPR_WORKSPACE", "TOOL_KITT_WORKSPACE",
+            "AI_CLI_WORKSPACE", "KITT_WORKSPACE", "TOOL_KITT_WORKSPACE",
             "AI_CLI_TYPE", "CLAUDE_CODE_ENTRYPOINT", "GITHUB_COPILOT_TOKEN",
-            "GH_COPILOT_TOKEN", "GEMINI_API_KEY", "WOPR_CATALOG", "TOGGL_API_KEY",
+            "GH_COPILOT_TOKEN", "GEMINI_API_KEY", "KITT_CATALOG", "TOGGL_API_KEY",
         ]
         clean_env = {k: v for k, v in os.environ.items() if k not in env_keys}
         with patch.dict(os.environ, clean_env, clear=True):
@@ -88,10 +88,10 @@ class TestServerConfig:
 
     def test_legacy_tool_kitt_workspace(self):
         env = {"TOOL_KITT_WORKSPACE": "/old/path"}
-        env_keys = ["WOPR_WORKSPACE"]
+        env_keys = ["KITT_WORKSPACE"]
         clean = {k: v for k, v in os.environ.items() if k not in env_keys}
         clean.update(env)
         with patch.dict(os.environ, clean, clear=True):
             config = ServerConfig.from_env()
 
-        assert config.wopr_workspace == "/old/path"
+        assert config.kitt_workspace == "/old/path"

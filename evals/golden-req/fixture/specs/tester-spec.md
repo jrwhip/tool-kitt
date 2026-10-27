@@ -1,4 +1,4 @@
-# Tester Spec - WOPR Golden Fixture
+# Tester Spec - KITT Golden Fixture
 
 > **Target stack:** Python 3.11 + FastAPI
 > **Test framework:** pytest + `fastapi.testclient.TestClient` (backed by `httpx`)

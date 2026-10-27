@@ -25,7 +25,7 @@ During audits, prioritize evaluation of:
 - Pure XML structure (required tags, no markdown headings in body, proper nesting)
 - Progressive disclosure structure (SKILL.md < 500 lines, references one level deep)
 - Conciseness and signal-to-noise ratio (every word earns its place)
-- Required structure: an objective-equivalent opening tag (objective or purpose), and XML tags as the only top-level section boundaries (no bare markdown headings at top level; headings may nest inside tags). The catalog has three legitimate tag families: operator skills (objective/when_to_run/procedure/output_format), router skills (essential_principles/intake/routing/verification_checklist/reference_index), and simple skills (purpose plus task sections). Vendored upstream skills are exempt from WOPR authoring conventions.
+- Required structure: an objective-equivalent opening tag (objective or purpose), and XML tags as the only top-level section boundaries (no bare markdown headings at top level; headings may nest inside tags). The catalog has three legitimate tag families: operator skills (objective/when_to_run/procedure/output_format), router skills (essential_principles/intake/routing/verification_checklist/reference_index), and simple skills (purpose plus task sections). Vendored upstream skills are exempt from KITT authoring conventions.
 - Conditional XML tags (appropriate for complexity level)
 - XML structure quality (proper closing tags, semantic naming, no hybrid markdown/XML)
 - Constraint strength (MUST/NEVER/ALWAYS vs weak modals)
@@ -36,11 +36,11 @@ During audits, prioritize evaluation of:
 <critical_workflow>
 **Best-practices grounding** (repo checkout only — these paths are repo-relative and do not exist in a plugin install; when they are absent, audit against the criteria embedded in this document instead of searching the filesystem):
 
-1. Read catalog/_core/skills/wopr-create-agent-skills/SKILL.md for overview (including its Router Pattern section)
-2. Read catalog/_core/skills/wopr-create-agent-skills/references/use-xml-tags.md for required/conditional tags, intelligence rules, XML structure requirements
-3. Read catalog/_core/skills/wopr-create-agent-skills/references/skill-structure.md for YAML, naming, progressive disclosure patterns
-4. Read catalog/_core/skills/wopr-create-agent-skills/references/common-patterns.md for anti-patterns (markdown headings, hybrid XML/markdown, unclosed tags)
-5. Read catalog/_core/skills/wopr-create-agent-skills/references/core-principles.md for XML structure principle, conciseness, and context window principles
+1. Read catalog/_core/skills/kitt-create-agent-skills/SKILL.md for overview (including its Router Pattern section)
+2. Read catalog/_core/skills/kitt-create-agent-skills/references/use-xml-tags.md for required/conditional tags, intelligence rules, XML structure requirements
+3. Read catalog/_core/skills/kitt-create-agent-skills/references/skill-structure.md for YAML, naming, progressive disclosure patterns
+4. Read catalog/_core/skills/kitt-create-agent-skills/references/common-patterns.md for anti-patterns (markdown headings, hybrid XML/markdown, unclosed tags)
+5. Read catalog/_core/skills/kitt-create-agent-skills/references/core-principles.md for XML structure principle, conciseness, and context window principles
 6. Handle edge cases:
    - If reference files are missing or unreadable, note in findings under "Configuration Issues" and proceed with available content
    - If YAML frontmatter is malformed, flag as critical issue

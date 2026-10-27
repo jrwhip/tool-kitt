@@ -20,10 +20,10 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from wopr.tools import learnings
-from wopr.tools._curator import plan_curation
-from wopr.tools._learnings_format import LearningEntry, parse_entries
-from wopr.tools.learnings import append_learnings, curate_learnings
+from kitt.tools import learnings
+from kitt.tools._curator import plan_curation
+from kitt.tools._learnings_format import LearningEntry, parse_entries
+from kitt.tools.learnings import append_learnings, curate_learnings
 
 
 def _entry_markdown(
@@ -75,7 +75,7 @@ def _curator_entry(
 
 
 def _mark_in_workspace(workspace: Path) -> None:
-    (workspace / "wopr.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
+    (workspace / "kitt.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
 
 
 class TestParseOrigin:

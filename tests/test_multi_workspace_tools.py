@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from wopr.config import ServerConfig
-from wopr.context import ServerContext
+from kitt.config import ServerConfig
+from kitt.context import ServerContext
 
 
 def test_project_name_cannot_escape_selected_workspace(tmp_path: Path) -> None:

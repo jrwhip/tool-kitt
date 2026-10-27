@@ -1,15 +1,15 @@
-# wopr-core hooks
+# kitt-core hooks
 
 Hooks that run on lifecycle events during an AI CLI session. This
-infrastructure ships in the `wopr-core` plugin, alongside the MCP server,
+infrastructure ships in the `kitt-core` plugin, alongside the MCP server,
 rather than in `meta-authoring`: `configure_hook.py` needs the bundled
-`wopr` package to render registrations, and `wopr-core` is the one plugin
+`kitt` package to render registrations, and `kitt-core` is the one plugin
 guaranteed to carry a server bundle for it to run inside via `uv run
---project`. `meta-authoring` keeps the authoring-side `wopr-create-hook`
-command and `wopr-create-hooks` skill; this directory is the machinery
+--project`. `meta-authoring` keeps the authoring-side `kitt-create-hook`
+command and `kitt-create-hooks` skill; this directory is the machinery
 those author *for*.
 
-**Scope:** `[CLAUDE]` only. Copilot CLI and Gemini CLI both have real hook systems, and a Copilot port of the capture-skill trigger existed here until P2; it was removed with the rest of WOPR's Copilot surface and remains in the quarry if Copilot support returns.
+**Scope:** `[CLAUDE]` only. Copilot CLI and Gemini CLI both have real hook systems, and a Copilot port of the capture-skill trigger existed here until P2; it was removed with the rest of KITT's Copilot surface and remains in the quarry if Copilot support returns.
 
 Porting a Claude hook to another CLI is not a config change: the event name, config file, input field casing, output schema, and (for anything that reads the transcript) the transcript format all differ, and none of them are things another CLI's own comments should be trusted to describe accurately. Budget a port as a second program, not a rename.
 
@@ -19,17 +19,17 @@ Porting a Claude hook to another CLI is not a config change: the event name, con
 |---|---|---|---|
 | [`prompt-log-hook.py`](#prompt-log-hookpy) | Claude | Stop | Append a one-line per-turn summary to the project's `PROMPT_LOG.md` |
 | [`git-branch-guard.sh`](#git-branch-guardsh) | Claude | PreToolUse | Block `git commit` and `git push` when the current branch does not match an allowed pattern |
-| [`capture-skill-trigger-hook.py`](#capture-skill-trigger-hookpy) | Claude | Stop | Nudge the agent to consider running `wopr-capture-skill` once a session crosses a tool-call threshold |
-| [`skill-usage-hook.py`](#skill-usage-hookpy) | Claude | Stop | Count native `Skill` tool invocations into WOPR's usage sidecar (names and counts only) |
-| [`token-usage-hook.py`](#token-usage-hookpy) | Claude | Stop | Recompute the session's per-tool token attribution into `~/.wopr/token-usage.json` (names, counts, token figures only) |
+| [`capture-skill-trigger-hook.py`](#capture-skill-trigger-hookpy) | Claude | Stop | Nudge the agent to consider running `kitt-capture-skill` once a session crosses a tool-call threshold |
+| [`skill-usage-hook.py`](#skill-usage-hookpy) | Claude | Stop | Count native `Skill` tool invocations into KITT's usage sidecar (names and counts only) |
+| [`token-usage-hook.py`](#token-usage-hookpy) | Claude | Stop | Recompute the session's per-tool token attribution into `~/.kitt/token-usage.json` (names, counts, token figures only) |
 
 Each ships a parameterized standalone configure command that idempotently registers the hook:
 
-- `/wopr-configure-prompt-log` (markdown source: `commands/wopr-configure-prompt-log.md`, registration script: `scripts/configure_prompt_log.py`) → `.claude/settings.json`
-- `/wopr-configure-git-guard` (markdown source: `commands/wopr-configure-git-guard.md`, registration script: `scripts/configure_git_guard.py`) → `.claude/settings.json`
-- `/wopr-configure-capture-skill-hook` (markdown source: `commands/wopr-configure-capture-skill-hook.md`) → `.claude/settings.json`
-- `/wopr-configure-skill-usage-hook` (markdown source: `commands/wopr-configure-skill-usage-hook.md`) → `.claude/settings.json`
-- `/wopr-configure-token-usage-hook` (markdown source: `commands/wopr-configure-token-usage-hook.md`) → `.claude/settings.json`
+- `/kitt-configure-prompt-log` (markdown source: `commands/kitt-configure-prompt-log.md`, registration script: `scripts/configure_prompt_log.py`) → `.claude/settings.json`
+- `/kitt-configure-git-guard` (markdown source: `commands/kitt-configure-git-guard.md`, registration script: `scripts/configure_git_guard.py`) → `.claude/settings.json`
+- `/kitt-configure-capture-skill-hook` (markdown source: `commands/kitt-configure-capture-skill-hook.md`) → `.claude/settings.json`
+- `/kitt-configure-skill-usage-hook` (markdown source: `commands/kitt-configure-skill-usage-hook.md`) → `.claude/settings.json`
+- `/kitt-configure-token-usage-hook` (markdown source: `commands/kitt-configure-token-usage-hook.md`) → `.claude/settings.json`
 
 The capture-skill, skill-usage, and token-usage commands shell out to the **one** generic registration script, `scripts/configure_hook.py`, which reads the declarative manifest described below. `configure_prompt_log.py` and `configure_git_guard.py` remain bespoke because they do more than register a hook (rewriting `permissions` entries, seeding `PROMPT_LOG.md`); their wiring is still declared in a `HOOK.yaml` so the entry shape has a single definition.
 
@@ -39,7 +39,7 @@ Each hook declares its wiring once, beside its handler:
 
 ```yaml
 name: capture-skill-trigger
-description: Nudge the agent to consider running wopr-capture-skill ...
+description: Nudge the agent to consider running kitt-capture-skill ...
 handler: capture-skill-trigger-hook.py
 targets:
   claude:
@@ -47,13 +47,13 @@ targets:
     matcher: ""
 ```
 
-`src/wopr/hook_manifest.py` renders each target into the exact entry its CLI expects (Claude's nested `{matcher, hooks: [{type, command}]}` in `.claude/settings.json`), the same author-once pattern `conversion_manifest.py` already applies to commands and agents. `scripts/configure_hook.py` imports it directly; the manual-fallback JSON below remains as a wire-it-up-by-hand option, not a workaround for a missing module.
+`src/kitt/hook_manifest.py` renders each target into the exact entry its CLI expects (Claude's nested `{matcher, hooks: [{type, command}]}` in `.claude/settings.json`), the same author-once pattern `conversion_manifest.py` already applies to commands and agents. `scripts/configure_hook.py` imports it directly; the manual-fallback JSON below remains as a wire-it-up-by-hand option, not a workaround for a missing module.
 
 Registration is an **upsert by identity**: an existing entry is located by the handler *filename* appearing in its command string, not by exact command text. A hook whose absolute path changed (pipx reinstall, editable → wheel, moved catalog) is reconciled in place rather than appended next to its own stale twin, so re-running `--init` can never duplicate a registration.
 
 Use `python3 scripts/configure_hook.py --list` to see every declared hook and its targets.
 
-The crew pack's `wopr-run-crew` skill optionally invokes both during project setup. See the crew pack's `wopr-run-crew` skill, `<project_setup>` section, for how the crew integrates them.
+The crew pack's `kitt-run-crew` skill optionally invokes both during project setup. See the crew pack's `kitt-run-crew` skill, `<project_setup>` section, for how the crew integrates them.
 
 ### `prompt-log-hook.py`
 
@@ -91,7 +91,7 @@ This is what differentiates the prompt-log from a plain summary: every line is a
 
 #### Install
 
-**Recommended: slash command.** Run `/wopr-configure-prompt-log` (markdown source: `commands/wopr-configure-prompt-log.md`). The command shells out to `scripts/configure_prompt_log.py`, which creates `PROMPT_LOG.md`, registers the Stop hook in `.claude/settings.json`, and is idempotent on re-run. Restart Claude Code afterward for the hook to fire.
+**Recommended: slash command.** Run `/kitt-configure-prompt-log` (markdown source: `commands/kitt-configure-prompt-log.md`). The command shells out to `scripts/configure_prompt_log.py`, which creates `PROMPT_LOG.md`, registers the Stop hook in `.claude/settings.json`, and is idempotent on re-run. Restart Claude Code afterward for the hook to fire.
 
 **Manual fallback.** If you need to wire it up without the slash command, add to `.claude/settings.json` (or `~/.claude/settings.json` for global):
 
@@ -104,7 +104,7 @@ This is what differentiates the prompt-log from a plain summary: every line is a
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /absolute/path/to/wopr-core/hooks/prompt-log-hook.py"
+            "command": "python3 /absolute/path/to/kitt-core/hooks/prompt-log-hook.py"
           }
         ]
       }
@@ -147,7 +147,7 @@ git commit/push blocked: branch main does not match pattern feature/*
 
 #### Install
 
-**Recommended: slash command.** Run `/wopr-configure-git-guard` (markdown source: `commands/wopr-configure-git-guard.md`). The command shells out to `scripts/configure_git_guard.py`, which makes the guard executable, strips conflicting `Bash(git commit *)` / `Bash(git push *)` entries from `permissions.allow` and `permissions.deny` (the hook supersedes them with branch-conditional logic), and registers the PreToolUse hook in `.claude/settings.json`. Idempotent on re-run. Restart Claude Code afterward for the hook to fire.
+**Recommended: slash command.** Run `/kitt-configure-git-guard` (markdown source: `commands/kitt-configure-git-guard.md`). The command shells out to `scripts/configure_git_guard.py`, which makes the guard executable, strips conflicting `Bash(git commit *)` / `Bash(git push *)` entries from `permissions.allow` and `permissions.deny` (the hook supersedes them with branch-conditional logic), and registers the PreToolUse hook in `.claude/settings.json`. Idempotent on re-run. Restart Claude Code afterward for the hook to fire.
 
 **Manual fallback.** If you need to wire it up without the slash command, add to `.claude/settings.json`:
 
@@ -160,7 +160,7 @@ git commit/push blocked: branch main does not match pattern feature/*
         "hooks": [
           {
             "type": "command",
-            "command": "bash /absolute/path/to/wopr-core/hooks/git-branch-guard.sh"
+            "command": "bash /absolute/path/to/kitt-core/hooks/git-branch-guard.sh"
           }
         ]
       }
@@ -189,17 +189,17 @@ The script uses `jq` to parse the hook payload. Install with `brew install jq` o
 
 ### `capture-skill-trigger-hook.py`
 
-Makes `wopr-capture-skill` fire automatically instead of depending on a trigger phrase or the agent happening to offer proactively. The hook itself does not decide what's worth capturing — that judgment stays in the skill, which is the only thing that can actually read the conversation and weigh it. What the hook adds is unconditional asking: once a session crosses a tool-call threshold since the last check (default 8), it injects a nudge for the agent to run the evaluation now, while the context is still fresh.
+Makes `kitt-capture-skill` fire automatically instead of depending on a trigger phrase or the agent happening to offer proactively. The hook itself does not decide what's worth capturing — that judgment stays in the skill, which is the only thing that can actually read the conversation and weigh it. What the hook adds is unconditional asking: once a session crosses a tool-call threshold since the last check (default 8), it injects a nudge for the agent to run the evaluation now, while the context is still fresh.
 
 The nudge is delivered via `hookSpecificOutput.additionalContext`, not `decision: "block"`. A block would force the agent to resolve the hook's objection before the turn can end, which would immediately re-fire on the next Stop if the agent declined (the same tool calls are still in the transcript). `additionalContext` surfaces the same information without needing to be resolved, so the agent can act on it, defer it, or ignore it without the hook fighting the conversation.
 
 State (how much of the transcript has already been counted toward the threshold) is tracked per session in `.claude/.capture-skill-hook-state.json` — add that path to `.gitignore`, it is ephemeral machine state, not durable content.
 
-The hook is a silent no-op wherever no capture-skill is installed — checked at project-local and user-level `.claude/skills/`, under both the WOPR-pack name (`wopr-capture-skill`) and the unprefixed `capture-skill` name a real install can carry (confirmed against a live machine still running an install old enough that the skill predates the `wopr-` rename — a name-only check would have made this hook a silent, permanent no-op there). Safe to register globally either way: it never spams a project that has neither name installed.
+The hook is a silent no-op wherever no capture-skill is installed — checked at project-local and user-level `.claude/skills/`, under both the KITT-pack name (`kitt-capture-skill`) and the unprefixed `capture-skill` name a real install can carry (confirmed against a live machine still running an install old enough that the skill predates the `kitt-` rename — a name-only check would have made this hook a silent, permanent no-op there). Safe to register globally either way: it never spams a project that has neither name installed.
 
 #### Install
 
-**Recommended: slash command.** Run `/wopr-configure-capture-skill-hook` (markdown source: `commands/wopr-configure-capture-skill-hook.md`). The command shells out to `scripts/configure_hook.py --hook capture-skill-trigger --cli claude`, which registers the Stop hook in `.claude/settings.json` and is idempotent on re-run. Restart Claude Code afterward for the hook to fire.
+**Recommended: slash command.** Run `/kitt-configure-capture-skill-hook` (markdown source: `commands/kitt-configure-capture-skill-hook.md`). The command shells out to `scripts/configure_hook.py --hook capture-skill-trigger --cli claude`, which registers the Stop hook in `.claude/settings.json` and is idempotent on re-run. Restart Claude Code afterward for the hook to fire.
 
 **Manual fallback.** If you need to wire it up without the slash command, add to `.claude/settings.json` (or `~/.claude/settings.json` for global):
 
@@ -212,7 +212,7 @@ The hook is a silent no-op wherever no capture-skill is installed — checked at
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /absolute/path/to/wopr-core/hooks/capture-skill-trigger-hook.py"
+            "command": "python3 /absolute/path/to/kitt-core/hooks/capture-skill-trigger-hook.py"
           }
         ]
       }
@@ -232,22 +232,22 @@ All optional.
 
 #### Why not fully autonomous
 
-This hook stops one step short of writing anything itself: the threshold decides *when to ask*, not *when to write*. That keeps the actual capture gated behind the same judgment `wopr-capture-skill` already applies (real effort, durable, likely to recur) rather than writing on every threshold crossing regardless of whether anything worth keeping happened. Whether a higher-trust project should let the threshold trigger the skill directly with no nudge step is an open design question, not a settled one — the hook is built so either direction is a small change (swap `additionalContext` for a direct invocation instruction, or leave it as-is).
+This hook stops one step short of writing anything itself: the threshold decides *when to ask*, not *when to write*. That keeps the actual capture gated behind the same judgment `kitt-capture-skill` already applies (real effort, durable, likely to recur) rather than writing on every threshold crossing regardless of whether anything worth keeping happened. Whether a higher-trust project should let the threshold trigger the skill directly with no nudge step is an open design question, not a settled one — the hook is built so either direction is a small change (swap `additionalContext` for a direct invocation instruction, or leave it as-is).
 
 ### `skill-usage-hook.py`
 
-Counts native Claude Code skill invocations into WOPR's usage sidecar (`~/.wopr/skill-usage.json`, or `$WOPR_HOME/skill-usage.json`). It exists because of a specific blind spot: WOPR's MCP server only sees skills loaded through its own `run_skill` tool, while Claude Code invokes skills natively and never tells the server. Without this hook, a heavy Claude Code user's usage report is near-zero across the board — numbers that look authoritative and are wrong.
+Counts native Claude Code skill invocations into KITT's usage sidecar (`~/.kitt/skill-usage.json`, or `$KITT_HOME/skill-usage.json`). It exists because of a specific blind spot: KITT's MCP server only sees skills loaded through its own `run_skill` tool, while Claude Code invokes skills natively and never tells the server. Without this hook, a heavy Claude Code user's usage report is near-zero across the board — numbers that look authoritative and are wrong.
 
-What it records: skill **names and counts**, nothing else. It reads past `input.args` and never touches prompt text or file paths. Recording goes through `wopr skill-usage record hook:claude <name>...` rather than writing the JSON directly, so the sidecar schema has exactly one implementation.
+What it records: skill **names and counts**, nothing else. It reads past `input.args` and never touches prompt text or file paths. Recording goes through `kitt skill-usage record hook:claude <name>...` rather than writing the JSON directly, so the sidecar schema has exactly one implementation.
 
 **Two transcript facts, verified on real sessions rather than assumed:**
 
-1. A native skill invocation is an assistant `tool_use` block named `Skill` with the skill in `input.skill` (`{"skill": ...}` or `{"skill": ..., "args": ...}`). Plugin-namespaced names (`superpowers:brainstorming`) are skipped — they are not WOPR skills.
+1. A native skill invocation is an assistant `tool_use` block named `Skill` with the skill in `input.skill` (`{"skill": ...}` or `{"skill": ..., "args": ...}`). Plugin-namespaced names (`superpowers:brainstorming`) are skipped — they are not KITT skills.
 2. **`role` and `content` are nested under `message`, not at the top level of a transcript line.** Across 40 recent transcripts on a live machine: 9931 lines carrying `message.role`, zero carrying a top-level `role`. A hook that reads `line["role"]` counts nothing forever and reports no error. `skill-usage-hook.py` accepts both shapes.
 
 State (how far into the transcript has already been counted) lives per session in `.claude/.skill-usage-hook-state.json`; add it to `.gitignore`. The checkpoint advances even when nothing was recorded, so a Stop event never re-counts a span. Losing the state file causes a bounded **over**count of one session — the only error in this system that biases upward, which is why the checkpoint write is unconditional.
 
-The hook is a silent no-op when `wopr` is not on PATH, so it is safe to register globally.
+The hook is a silent no-op when `kitt` is not on PATH, so it is safe to register globally.
 
 #### Coverage boundary
 
@@ -255,7 +255,7 @@ This hook covers **Claude Code only**, and only on projects where it is register
 
 #### Install
 
-**Recommended: slash command.** Run `/wopr-configure-skill-usage-hook` (markdown source: `commands/wopr-configure-skill-usage-hook.md`). The command shells out to `scripts/configure_hook.py --hook skill-usage --cli claude`, which registers the Stop hook in `.claude/settings.json` and is idempotent on re-run. Restart Claude Code afterward.
+**Recommended: slash command.** Run `/kitt-configure-skill-usage-hook` (markdown source: `commands/kitt-configure-skill-usage-hook.md`). The command shells out to `scripts/configure_hook.py --hook skill-usage --cli claude`, which registers the Stop hook in `.claude/settings.json` and is idempotent on re-run. Restart Claude Code afterward.
 
 `skill-usage.HOOK.yaml` declares a `claude` target only. That is a deliberate assertion, not a to-do: see the coverage boundary above. Declaring a `copilot` target would make `configure_hook.py --cli copilot` succeed and register a counter nobody has watched fire, which is how a report full of zeros starts looking authoritative.
 
@@ -286,15 +286,15 @@ All optional.
 | Variable | Default | Purpose |
 |---|---|---|
 | `SKILL_USAGE_HOOK_STATE_PATH` | `$cwd/.claude/.skill-usage-hook-state.json` | Where per-session counting checkpoints are stored. |
-| `SKILL_USAGE_HOOK_WOPR_BIN` | `wopr` | The executable used to record counts. |
+| `SKILL_USAGE_HOOK_KITT_BIN` | `kitt` | The executable used to record counts. |
 
 #### Reading the data
 
-`wopr skill-usage report` from a terminal, or the `skill_usage_report` MCP tool in a session. `wopr skill-usage pin <name>` (or the `pin_skill` tool) marks a deliberately-rare skill so it is never labelled stale.
+`kitt skill-usage report` from a terminal, or the `skill_usage_report` MCP tool in a session. `kitt skill-usage pin <name>` (or the `pin_skill` tool) marks a deliberately-rare skill so it is never labelled stale.
 
 ### `token-usage-hook.py`
 
-**Claude Code, `Stop` event.** On every turn boundary it re-reads the session transcript and recomputes the whole session's per-tool token attribution into `~/.wopr/token-usage.json` (override with `TOKEN_USAGE_SIDECAR`). Overwrite-on-Stop, so repeated Stop events and resumed sessions never double-count.
+**Claude Code, `Stop` event.** On every turn boundary it re-reads the session transcript and recomputes the whole session's per-tool token attribution into `~/.kitt/token-usage.json` (override with `TOKEN_USAGE_SIDECAR`). Overwrite-on-Stop, so repeated Stop events and resumed sessions never double-count.
 
 What the numbers mean (the handler's docstring is the authority): per-turn `usage` totals are exact; per-tool figures are an attribution — `calls` and `result_chars` are exact, `gen_output_tokens` splits a turn's output across the tools it called, `result_tokens_est` estimates injected context at chars/4. Turns without tool calls land in the `(assistant text)` bucket so per-tool numbers reconcile against the session total.
 
@@ -310,6 +310,6 @@ It stores tool names, counts, and token figures only — never prompt text, tool
 
 `git-branch-guard.sh` was adapted from `webteam-ai-scaffolding/ai/scripts/sh/git-branch-guard.sh`. The scaffolding version hardcoded the `feature/*` pattern; this version reads it from `BRANCH_GUARD_PATTERN`.
 
-`capture-skill-trigger-hook.py` is original WOPR code, not ported from anywhere and not based on a verified Hermes design precedent — an earlier draft of this doc claimed Hermes triggers autonomous skill-writing on "any run with 5+ tool calls" and that number could not be located in the cloned Hermes source (`hermes-agent/agent/curator.py`, `learn_prompt.py`, or elsewhere) when checked directly. See the perpetual-learning doc (docs/perpetual-learning.md in a repo checkout) and `src/wopr/tools/_curator.py` for WOPR's other Hermes ports, which credit specific files rather than a paraphrased number.
+`capture-skill-trigger-hook.py` is original KITT code, not ported from anywhere and not based on a verified Hermes design precedent — an earlier draft of this doc claimed Hermes triggers autonomous skill-writing on "any run with 5+ tool calls" and that number could not be located in the cloned Hermes source (`hermes-agent/agent/curator.py`, `learn_prompt.py`, or elsewhere) when checked directly. See the perpetual-learning doc (docs/perpetual-learning.md in a repo checkout) and `src/kitt/tools/_curator.py` for KITT's other Hermes ports, which credit specific files rather than a paraphrased number.
 
-`skill-usage-hook.py` is original WOPR code. The sidecar it feeds is a port of hermes-agent's `tools/skill_usage.py` semantics (see `src/wopr/tools/_skill_usage.py` for what was and was not carried over); the hook itself has no upstream — Hermes bumps its counters from its own in-process skill tools and never needed to read a CLI's transcript.
+`skill-usage-hook.py` is original KITT code. The sidecar it feeds is a port of hermes-agent's `tools/skill_usage.py` semantics (see `src/kitt/tools/_skill_usage.py` for what was and was not carried over); the hook itself has no upstream — Hermes bumps its counters from its own in-process skill tools and never needed to read a CLI's transcript.

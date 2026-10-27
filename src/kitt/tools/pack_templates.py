@@ -1,4 +1,4 @@
-"""Pack-template read tools for the WOPR MCP server.
+"""Pack-template read tools for the KITT MCP server.
 
 Crew-role agents (and any future pack consumer) need access to
 shipped templates at runtime: ``implementation-tracking.template.md``,
@@ -12,7 +12,7 @@ in extreme cases. Hundreds of thousands of stat calls per crew run
 in the worst case, all to locate a file at a path the MCP server
 already knows.
 
-This module exposes pack templates the way the rest of WOPR exposes
+This module exposes pack templates the way the rest of KITT exposes
 shared resources. ``get_shared_skill`` / ``get_shared_command`` /
 ``get_shared_context`` already follow this pattern for the workspace-
 visible catalog; ``get_pack_template`` mirrors it for the catalog's
@@ -24,13 +24,13 @@ Two MCP tools:
   paths server-side via :func:`resolve_data_path`, which checks the
   repo's ``catalog/<pack>/templates/`` first and the installed
   package's ``resources/<pack>/templates/`` as fallback. The agent
-  never needs to know the WOPR install root.
+  never needs to know the KITT install root.
 * ``list_pack_templates(pack)`` returns the inventory of template
   files each pack ships. Useful for diagnostics and for agents that
   want to enumerate before reading.
 
 Read-only by design. The write-side stub generators live alongside
-``write_spec_stubs`` in :mod:`.wopr_yml` because they need the same
+``write_spec_stubs`` in :mod:`.kitt_yml` because they need the same
 detection-aware path resolution.
 """
 
@@ -181,6 +181,6 @@ def list_pack_templates(pack: str) -> str:
 
 
 def register(mcp: FastMCP) -> None:
-    """Register the pack-template MCP tools with the WOPR server."""
+    """Register the pack-template MCP tools with the KITT server."""
     mcp.tool()(get_pack_template)
     mcp.tool()(list_pack_templates)

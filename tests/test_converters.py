@@ -1,6 +1,6 @@
 """Tests for format converters."""
 
-from wopr.converters import (
+from kitt.converters import (
     COPILOT_ARGUMENTS_PHRASE,
     parse_claude,
     to_copilot_agent,
@@ -93,9 +93,9 @@ class TestToCopilotAgent:
         assert "- todo" in result
 
     def test_mcp_tool_names_pass_through_unchanged(self):
-        content = "---\ntools:\n  - Read\n  - mcp__wopr__append_learnings\n---\nBody"
+        content = "---\ntools:\n  - Read\n  - mcp__kitt__append_learnings\n---\nBody"
         result = to_copilot_agent(content)
-        assert "mcp__wopr__append_learnings" in result
+        assert "mcp__kitt__append_learnings" in result
 
     def test_no_frontmatter(self):
         result = to_copilot_agent("Just instructions")
@@ -115,13 +115,13 @@ class TestToCopilotAgent:
         assert "Task" not in result  # original Claude name must be gone
 
     def test_crew_orchestrator_converts_cleanly(self):
-        """The wopr-crew orchestrator agent dispatches the four
+        """The kitt-crew orchestrator agent dispatches the four
         role agents. It must survive Copilot conversion with the
         Task -> agent mapping in place and the body intact.
         """
         content = (
             "---\n"
-            "name: wopr-crew\n"
+            "name: kitt-crew\n"
             "description: Orchestrate the four-role crew\n"
             "tools:\n"
             "  - Read\n"
@@ -134,8 +134,8 @@ class TestToCopilotAgent:
             "\n"
             "You are the Crew Orchestrator.\n"
         )
-        result = to_copilot_agent(content, "wopr-crew")
-        assert "name: wopr-crew" in result
+        result = to_copilot_agent(content, "kitt-crew")
+        assert "name: kitt-crew" in result
         assert "- agent" in result
         assert "Crew Orchestrator" in result
 
@@ -146,9 +146,9 @@ class TestToCopilotSkill:
             "---\ndescription: Apply the lens\nargument-hint: [topic]\n---\n"
             "Apply the model to $ARGUMENTS now."
         )
-        result = to_copilot_skill(content, "wopr-example")
+        result = to_copilot_skill(content, "kitt-example")
         parsed = parse_claude(result)
-        assert parsed.frontmatter["name"] == "wopr-example"
+        assert parsed.frontmatter["name"] == "kitt-example"
         assert parsed.frontmatter["description"] == "Apply the lens"
         assert parsed.frontmatter["argument-hint"] == "[topic]"
         assert "$ARGUMENTS" not in result
@@ -156,52 +156,52 @@ class TestToCopilotSkill:
 
     def test_description_derived_from_heading_when_absent(self):
         content = "# Check Todos\n\nDo the thing."
-        result = to_copilot_skill(content, "wopr-x")
+        result = to_copilot_skill(content, "kitt-x")
         parsed = parse_claude(result)
         assert parsed.frontmatter["description"] == "Check Todos"
 
     def test_description_derived_from_first_sentence_when_no_heading(self):
         content = "List outstanding todos and pick one. Then work it."
-        result = to_copilot_skill(content, "wopr-x")
+        result = to_copilot_skill(content, "kitt-x")
         parsed = parse_claude(result)
         assert parsed.frontmatter["description"] == "List outstanding todos and pick one."
 
     def test_description_never_empty(self):
-        result = to_copilot_skill("", "wopr-mystery")
+        result = to_copilot_skill("", "kitt-mystery")
         parsed = parse_claude(result)
         assert parsed.frontmatter["description"].strip()
 
     def test_argument_hint_omitted_when_absent(self):
         content = "---\ndescription: d\n---\nBody"
-        parsed = parse_claude(to_copilot_skill(content, "wopr-x"))
+        parsed = parse_claude(to_copilot_skill(content, "kitt-x"))
         assert "argument-hint" not in parsed.frontmatter
 
     def test_allowed_tools_dropped(self):
         content = "---\ndescription: d\nallowed-tools: Skill(x)\n---\nBody"
-        result = to_copilot_skill(content, "wopr-x")
+        result = to_copilot_skill(content, "kitt-x")
         assert "allowed-tools" not in result
 
     def test_path_replacements_applied_to_body(self):
         content = "---\ndescription: d\n---\nSee ~/.claude/skills/foo/ for details."
-        result = to_copilot_skill(content, "wopr-x")
+        result = to_copilot_skill(content, "kitt-x")
         assert "~/.copilot/skills/foo/" in result
         assert "~/.claude/" not in result
 
     def test_consider_command_gets_disable_model_invocation(self):
         content = "---\ndescription: d\n---\nBody"
-        parsed = parse_claude(to_copilot_skill(content, "wopr-consider"))
+        parsed = parse_claude(to_copilot_skill(content, "kitt-consider"))
         assert parsed.frontmatter["disable-model-invocation"] is True
 
     def test_wrapper_body_rewritten_to_native_skill_invocation(self):
         content = (
             "---\ndescription: Create or edit Claude Code skills\n"
-            "allowed-tools: Skill(wopr-create-agent-skills)\n"
+            "allowed-tools: Skill(kitt-create-agent-skills)\n"
             "argument-hint: [skill description or requirements]\n---\n"
             "Invoke the create-agent-skills skill for: $ARGUMENTS"
         )
-        result = to_copilot_skill(content, "wopr-create-agent-skill")
+        result = to_copilot_skill(content, "kitt-create-agent-skill")
         parsed = parse_claude(result)
-        assert "/wopr-create-agent-skills" in parsed.body
+        assert "/kitt-create-agent-skills" in parsed.body
         assert "$ARGUMENTS" not in result
         assert "Skill(" not in result
         assert "Claude Code" not in result
@@ -211,9 +211,9 @@ class TestToCopilotSkill:
 
     def test_wrapper_without_arguments_has_no_argument_phrase(self):
         content = (
-            "---\ndescription: d\nallowed-tools: Skill(wopr-create-hooks)\n---\n"
+            "---\ndescription: d\nallowed-tools: Skill(kitt-create-hooks)\n---\n"
             "Invoke the create-hooks skill."
         )
-        result = to_copilot_skill(content, "wopr-create-hook")
-        assert "/wopr-create-hooks" in result
+        result = to_copilot_skill(content, "kitt-create-hook")
+        assert "/kitt-create-hooks" in result
         assert COPILOT_ARGUMENTS_PHRASE not in result

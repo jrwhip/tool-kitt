@@ -2,10 +2,10 @@
 """
 skill-usage-hook.py
 
-Counts NATIVE Claude Code skill invocations into WOPR's skill-usage
+Counts NATIVE Claude Code skill invocations into KITT's skill-usage
 sidecar. Designed as a Stop hook for Claude Code.
 
-Why this hook exists at all: WOPR's MCP server can only observe skills
+Why this hook exists at all: KITT's MCP server can only observe skills
 loaded through its own ``run_skill`` tool. On Claude Code the model
 invokes skills natively -- the CLI loads ``~/.claude/skills/<name>/
 SKILL.md`` itself and the MCP server never hears about it. Without this
@@ -24,7 +24,7 @@ assistant message::
      "message": {"role": "assistant",
                  "content": [{"type": "tool_use",
                               "name": "Skill",
-                              "input": {"skill": "wopr-whats-next",
+                              "input": {"skill": "kitt-whats-next",
                                         "args": "..."},
                               "caller": {"type": "direct"}}]}}
 
@@ -40,24 +40,24 @@ rather than inferred from documentation:
 2. The invoked skill name is ``input.skill``. Observed shapes were
    ``{"skill"}`` and ``{"skill", "args"}``. Plugin-provided skills carry
    a namespaced name (``superpowers:brainstorming``); those are skipped
-   here because they are not WOPR skills and the sidecar keys on a
+   here because they are not KITT skills and the sidecar keys on a
    single path component.
 
 WHAT IT WRITES
 --------------
 Skill NAMES and COUNTS only, by shelling out to::
 
-    wopr skill-usage record hook:claude <name> [<name> ...]
+    kitt skill-usage record hook:claude <name> [<name> ...]
 
 No prompt text, no arguments, no file paths -- ``args`` above is read
-past, never recorded. Writing through the ``wopr`` CLI (rather than
+past, never recorded. Writing through the ``kitt`` CLI (rather than
 touching the JSON directly) keeps one implementation of the sidecar
-schema. Note that a plugin install does NOT put ``wopr`` on PATH: the
-plugin bundle exposes only ``wopr-serve``, and the MCP registration
+schema. Note that a plugin install does NOT put ``kitt`` on PATH: the
+plugin bundle exposes only ``kitt-serve``, and the MCP registration
 launches the server through a ``${CLAUDE_PLUGIN_ROOT}`` bootstrap
-script rather than a bare ``wopr``. When ``wopr`` cannot be found the
-hook warns and skips recording; set ``SKILL_USAGE_HOOK_WOPR_BIN`` to
-the path of a real ``wopr`` executable (e.g. from a uv or pipx
+script rather than a bare ``kitt``. When ``kitt`` cannot be found the
+hook warns and skips recording; set ``SKILL_USAGE_HOOK_KITT_BIN`` to
+the path of a real ``kitt`` executable (e.g. from a uv or pipx
 install) to enable recording.
 
 State: a per-session checkpoint in
@@ -69,10 +69,10 @@ session) -- the opposite direction from every other error in this
 system, and the reason the checkpoint is written even on a no-op run.
 
 Silent no-op when: the payload is unparseable, the transcript is
-missing, no new Skill calls appeared, or ``wopr`` is not on PATH.
+missing, no new Skill calls appeared, or ``kitt`` is not on PATH.
 
 Install by adding to your settings.json (or run
-``/wopr-configure-skill-usage-hook``):
+``/kitt-configure-skill-usage-hook``):
 
   {
     "hooks": {
@@ -93,9 +93,9 @@ Install by adding to your settings.json (or run
 Environment variables (all optional):
   SKILL_USAGE_HOOK_STATE_PATH  Override the checkpoint file location.
                                Default: $cwd/.claude/.skill-usage-hook-state.json
-  SKILL_USAGE_HOOK_WOPR_BIN    Path to the wopr executable to record
-                               through. Default: "wopr", which only
-                               resolves when wopr was installed onto
+  SKILL_USAGE_HOOK_KITT_BIN    Path to the kitt executable to record
+                               through. Default: "kitt", which only
+                               resolves when kitt was installed onto
                                PATH separately from the plugin bundle.
 """
 
@@ -164,7 +164,7 @@ def is_recordable_name(name: Any) -> bool:
     """True when ``name`` is a plain skill directory name.
 
     Namespaced plugin skills (``superpowers:brainstorming``) fail on the
-    colon, which is the intended outcome: they are not WOPR skills and
+    colon, which is the intended outcome: they are not KITT skills and
     the sidecar has no key for them.
     """
     if not isinstance(name, str):
@@ -236,20 +236,20 @@ def save_state(state_path: Path, state: dict[str, Any]) -> None:
 
 
 def record(names: list[str]) -> bool:
-    """Hand the names to ``wopr skill-usage record``. True when recorded.
+    """Hand the names to ``kitt skill-usage record``. True when recorded.
 
-    A missing ``wopr`` on PATH is a silent no-op: the hook is safe to
-    register globally, including on machines where WOPR was uninstalled.
+    A missing ``kitt`` on PATH is a silent no-op: the hook is safe to
+    register globally, including on machines where KITT was uninstalled.
     """
     if not names:
         return False
-    wopr_bin = os.environ.get("SKILL_USAGE_HOOK_WOPR_BIN", "").strip() or "wopr"
-    if shutil.which(wopr_bin) is None:
-        logger.warning("%s is not on PATH; skipping usage recording", wopr_bin)
+    kitt_bin = os.environ.get("SKILL_USAGE_HOOK_KITT_BIN", "").strip() or "kitt"
+    if shutil.which(kitt_bin) is None:
+        logger.warning("%s is not on PATH; skipping usage recording", kitt_bin)
         return False
     try:
         subprocess.run(
-            [wopr_bin, "skill-usage", "record", "hook:claude", *names],
+            [kitt_bin, "skill-usage", "record", "hook:claude", *names],
             check=False,
             capture_output=True,
             timeout=30,

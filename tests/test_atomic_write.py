@@ -1,6 +1,6 @@
 """Tests for the shared atomic-write helpers.
 
-``wopr._atomic_write`` is the single source of truth for all
+``kitt._atomic_write`` is the single source of truth for all
 operator-state and config writes. The helpers' contract is:
 
 - ``atomic_write_text`` stages to a per-call temp file, optionally
@@ -23,8 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from wopr import _atomic_write
-from wopr._atomic_write import atomic_create_text, atomic_write_text
+from kitt import _atomic_write
+from kitt._atomic_write import atomic_create_text, atomic_write_text
 
 
 class TestAtomicWriteText:

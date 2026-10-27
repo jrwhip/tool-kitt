@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from wopr.conversion_manifest import (
+from kitt.conversion_manifest import (
     COMMAND_TIERS,
     EXPLICIT_INVOCATION_ONLY_COMMANDS,
     SKILL_WRAPPER_COMMANDS,
@@ -12,53 +12,53 @@ from wopr.conversion_manifest import (
     get_tier,
     get_tier3_reason,
 )
-from wopr.converters import is_convertible
+from kitt.converters import is_convertible
 
 CATALOG_DIR = Path(__file__).resolve().parents[1] / "catalog"
 
 
 def _catalog_command_names() -> set[str]:
-    return {p.stem for p in CATALOG_DIR.glob("*/commands/wopr-*.md")}
+    return {p.stem for p in CATALOG_DIR.glob("*/commands/kitt-*.md")}
 
 
 class TestGetTier:
     def test_tier1_command(self):
-        assert get_tier("wopr-debug", "command") == 1
+        assert get_tier("kitt-debug", "command") == 1
 
     def test_tier2_command(self):
-        assert get_tier("wopr-check-todos", "command") == 2
+        assert get_tier("kitt-check-todos", "command") == 2
 
     def test_tier3_command(self):
-        assert get_tier("wopr-create-hook", "command") == 3
+        assert get_tier("kitt-create-hook", "command") == 3
 
     def test_unknown_defaults_to_tier3(self):
         assert get_tier("nonexistent-command", "command") == 3
 
     def test_tier1_agent(self):
-        assert get_tier("wopr-architect", "agent") == 1
+        assert get_tier("kitt-architect", "agent") == 1
 
     def test_tier2_agent(self):
-        assert get_tier("wopr-angular-perfectionist-reviewer", "agent") == 2
+        assert get_tier("kitt-angular-perfectionist-reviewer", "agent") == 2
 
 
 class TestGetConvertible:
     def test_commands_include_tier1_and_tier2(self):
         commands = get_convertible_commands()
-        assert "wopr-debug" in commands
-        assert "wopr-check-todos" in commands
+        assert "kitt-debug" in commands
+        assert "kitt-check-todos" in commands
 
     def test_commands_exclude_tier3(self):
         commands = get_convertible_commands()
-        assert "wopr-create-hook" not in commands
+        assert "kitt-create-hook" not in commands
 
     def test_catalog_has_no_command_skill_name_collisions(self):
         commands = {
             path.stem: path
-            for path in CATALOG_DIR.glob("*/commands/wopr-*.md")
+            for path in CATALOG_DIR.glob("*/commands/kitt-*.md")
         }
         skills = {
             path.parent.name: path.parent
-            for path in CATALOG_DIR.glob("*/skills/wopr-*/SKILL.md")
+            for path in CATALOG_DIR.glob("*/skills/kitt-*/SKILL.md")
         }
 
         assert commands.keys().isdisjoint(skills.keys())
@@ -92,18 +92,18 @@ class TestManifestMatchesCatalog:
         assert classified - _catalog_command_names() == set()
 
     def test_explicit_invocation_only_commands_exist(self):
-        """The set was derived from a ``wopr-consider-`` prefix until the
+        """The set was derived from a ``kitt-consider-`` prefix until the
         12 framework commands collapsed into one. A prefix rule now
         matches nothing, so the names are listed literally and pinned
         here against the catalog."""
         assert EXPLICIT_INVOCATION_ONLY_COMMANDS - _catalog_command_names() == set()
-        assert "wopr-consider" in EXPLICIT_INVOCATION_ONLY_COMMANDS
-        assert "wopr-realign" in EXPLICIT_INVOCATION_ONLY_COMMANDS
+        assert "kitt-consider" in EXPLICIT_INVOCATION_ONLY_COMMANDS
+        assert "kitt-realign" in EXPLICIT_INVOCATION_ONLY_COMMANDS
 
     def test_agents_include_tier1_and_tier2(self):
         agents = get_convertible_agents()
-        assert "wopr-architect" in agents
-        assert "wopr-angular-perfectionist-reviewer" in agents
+        assert "kitt-architect" in agents
+        assert "kitt-angular-perfectionist-reviewer" in agents
 
     def test_crew_agents_are_tier1(self):
         """The five role agents must convert
@@ -114,22 +114,22 @@ class TestManifestMatchesCatalog:
         ``to_copilot_agent`` tool_map (Task -> custom-agent).
         """
         for name in (
-                        "wopr-crew-scout",
-            "wopr-crew-coder",
-            "wopr-crew-tester",
-            "wopr-crew-auditor",
-            "wopr-crew-evaluator",
+                        "kitt-crew-scout",
+            "kitt-crew-coder",
+            "kitt-crew-tester",
+            "kitt-crew-auditor",
+            "kitt-crew-evaluator",
         ):
             assert get_tier(name, "agent") == 1, (
                 f"expected {name} in agent tier1; got {get_tier(name, 'agent')}"
             )
         agents = get_convertible_agents()
         for name in (
-                        "wopr-crew-scout",
-            "wopr-crew-coder",
-            "wopr-crew-tester",
-            "wopr-crew-auditor",
-            "wopr-crew-evaluator",
+                        "kitt-crew-scout",
+            "kitt-crew-coder",
+            "kitt-crew-tester",
+            "kitt-crew-auditor",
+            "kitt-crew-evaluator",
         ):
             assert name in agents
 
@@ -146,17 +146,17 @@ class TestPerCliConvertibility:
             assert is_convertible(name, "command", cli="gemini") is False, name
 
     def test_tier1_convertible_for_every_cli(self):
-        assert is_convertible("wopr-debug", "command") is True
-        assert is_convertible("wopr-debug", "command", cli="copilot") is True
-        assert is_convertible("wopr-debug", "command", cli="gemini") is True
+        assert is_convertible("kitt-debug", "command") is True
+        assert is_convertible("kitt-debug", "command", cli="copilot") is True
+        assert is_convertible("kitt-debug", "command", cli="gemini") is True
 
     def test_unknown_names_not_convertible_anywhere(self):
         assert is_convertible("nonexistent", "command", cli="copilot") is False
 
     def test_tier3_reasons_available(self):
-        reason = get_tier3_reason("wopr-configure-git-guard", "command")
+        reason = get_tier3_reason("kitt-configure-git-guard", "command")
         assert reason and ".claude/settings.json" in reason
-        assert get_tier3_reason("wopr-debug", "command") is None
+        assert get_tier3_reason("kitt-debug", "command") is None
 
 
 class TestPathReplacements:
@@ -181,8 +181,8 @@ class TestPathReplacements:
         )
         # User-level commands install on Copilot as generated skills.
         assert (
-            apply_path_replacements("~/.claude/commands/wopr-x.md", "copilot")
-            == "~/.copilot/skills/wopr-x.md"
+            apply_path_replacements("~/.claude/commands/kitt-x.md", "copilot")
+            == "~/.copilot/skills/kitt-x.md"
         )
 
     def test_copilot_project_skills_map_to_github_skills(self):

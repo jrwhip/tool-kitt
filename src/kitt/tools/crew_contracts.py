@@ -1,4 +1,4 @@
-"""Crew-contract validators for the WOPR four-role crew.
+"""Crew-contract validators for the KITT four-role crew.
 
 The crew pack's reliability bottleneck identified in a colleague's
 7-REQ Spring Boot rewrite retrospective was that scout's discovery work
@@ -70,7 +70,7 @@ react to: ``ok`` (boolean gate result), ``errors`` (specific reasons
 the contract is unusable), ``warnings`` (gaps that do not block
 dispatch but the operator should know about).
 
-The orchestrator skill (``wopr-run-crew``) calls
+The orchestrator skill (``kitt-run-crew``) calls
 :func:`validate_scout_contract` after scout completes and before
 dispatching the coder. A non-ok result aborts the crew with the
 errors surfaced to the operator.
@@ -586,5 +586,5 @@ def validate_scout_contract(contract_path: str) -> str:
 
 
 def register(mcp: FastMCP) -> None:
-    """Register crew-contract tools with the WOPR MCP server."""
+    """Register crew-contract tools with the KITT MCP server."""
     mcp.tool()(validate_scout_contract)

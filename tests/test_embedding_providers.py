@@ -2,7 +2,7 @@
 
 Covers:
 
-1. Provider selection: env var beats ``wopr.yml`` beats the ``local``
+1. Provider selection: env var beats ``kitt.yml`` beats the ``local``
    default; ``none`` disables the semantic layer; unknown values fall
    through to the next source.
 2. The Bedrock Titan provider: soft boto3 import, credential probing,
@@ -26,8 +26,8 @@ import pytest
 
 numpy = pytest.importorskip("numpy")
 
-from wopr.tools import _embedding_providers, learnings  # noqa: E402
-from wopr.tools._embedding_providers import (  # noqa: E402
+from kitt.tools import _embedding_providers, learnings  # noqa: E402
+from kitt.tools._embedding_providers import (  # noqa: E402
     BEDROCK_MODEL_ID,
     BEDROCK_PROVIDER_NAME,
     LOCAL_PROVIDER_NAME,
@@ -37,7 +37,7 @@ from wopr.tools._embedding_providers import (  # noqa: E402
     get_active_provider,
     resolve_provider_name,
 )
-from wopr.tools._embeddings import EMBEDDINGS_SIDECAR_FILENAME  # noqa: E402
+from kitt.tools._embeddings import EMBEDDINGS_SIDECAR_FILENAME  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -53,26 +53,26 @@ def _clean_provider_state(monkeypatch):
 
 
 # -----------------------------------------------------------------------------
-# Selection: env -> wopr.yml -> default
+# Selection: env -> kitt.yml -> default
 # -----------------------------------------------------------------------------
 
 
 class TestProviderSelection:
     def test_default_is_local(self, tmp_path: Path):
         assert resolve_provider_name(None) == "local"
-        assert resolve_provider_name(tmp_path) == "local"  # no wopr.yml
+        assert resolve_provider_name(tmp_path) == "local"  # no kitt.yml
         assert isinstance(get_active_provider(None), LocalFastembedProvider)
 
-    def test_wopr_yml_provider_is_read(self, tmp_path: Path):
-        (tmp_path / "wopr.yml").write_text(
+    def test_kitt_yml_provider_is_read(self, tmp_path: Path):
+        (tmp_path / "kitt.yml").write_text(
             "learnings:\n  embeddings:\n    provider: bedrock\n",
             encoding="utf-8",
         )
         assert resolve_provider_name(tmp_path) == "bedrock"
         assert isinstance(get_active_provider(tmp_path), BedrockTitanProvider)
 
-    def test_env_overrides_wopr_yml(self, tmp_path: Path, monkeypatch):
-        (tmp_path / "wopr.yml").write_text(
+    def test_env_overrides_kitt_yml(self, tmp_path: Path, monkeypatch):
+        (tmp_path / "kitt.yml").write_text(
             "learnings:\n  embeddings:\n    provider: bedrock\n",
             encoding="utf-8",
         )
@@ -84,8 +84,8 @@ class TestProviderSelection:
         assert resolve_provider_name(None) == "none"
         assert get_active_provider(None) is None
 
-    def test_wopr_yml_none_disables_without_env(self, tmp_path: Path):
-        (tmp_path / "wopr.yml").write_text(
+    def test_kitt_yml_none_disables_without_env(self, tmp_path: Path):
+        (tmp_path / "kitt.yml").write_text(
             "learnings:\n  embeddings:\n    provider: none\n",
             encoding="utf-8",
         )
@@ -95,24 +95,24 @@ class TestProviderSelection:
         self, monkeypatch, caplog: pytest.LogCaptureFixture
     ):
         monkeypatch.setenv(PROVIDER_ENV_VAR, "gpu-cluster-9000")
-        with caplog.at_level("WARNING", logger="wopr"):
+        with caplog.at_level("WARNING", logger="kitt"):
             assert resolve_provider_name(None) == "local"
         assert any("not a known embedding provider" in r.message for r in caplog.records)
 
     def test_unknown_yml_value_falls_through_with_warning(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ):
-        (tmp_path / "wopr.yml").write_text(
+        (tmp_path / "kitt.yml").write_text(
             "learnings:\n  embeddings:\n    provider: whatever\n",
             encoding="utf-8",
         )
-        with caplog.at_level("WARNING", logger="wopr"):
+        with caplog.at_level("WARNING", logger="kitt"):
             assert resolve_provider_name(tmp_path) == "local"
         assert any("not a known provider" in r.message for r in caplog.records)
 
     def test_malformed_learnings_section_falls_through(self, tmp_path: Path):
         # ``learnings: just-a-string`` must not crash the resolver.
-        (tmp_path / "wopr.yml").write_text(
+        (tmp_path / "kitt.yml").write_text(
             "learnings: nonsense\n", encoding="utf-8"
         )
         assert resolve_provider_name(tmp_path) == "local"
@@ -231,7 +231,7 @@ class TestBedrockTitanProvider:
         fake = _FakeBoto3(client=client)
         monkeypatch.setattr(_embedding_providers, "_load_boto3", lambda: fake)
         provider = BedrockTitanProvider()
-        with caplog.at_level("WARNING", logger="wopr"):
+        with caplog.at_level("WARNING", logger="kitt"):
             assert provider.embed(["text"]) is None
         assert any("expected 1024" in r.message for r in caplog.records)
 
@@ -245,7 +245,7 @@ class TestBedrockTitanProvider:
         fake = _FakeBoto3(client=_RaisingClient())
         monkeypatch.setattr(_embedding_providers, "_load_boto3", lambda: fake)
         provider = BedrockTitanProvider()
-        with caplog.at_level("WARNING", logger="wopr"):
+        with caplog.at_level("WARNING", logger="kitt"):
             assert provider.embed(["text"]) is None
         assert any("invoke_model failed" in r.message for r in caplog.records)
 
@@ -299,16 +299,16 @@ def _make_entry(stack: str = "fastapi") -> str:
 
 @pytest.fixture
 def search_workspace(tmp_path: Path, monkeypatch):
-    """Workspace + isolated WOPR_HOME, mirroring test_embeddings.py."""
-    from wopr.config import ServerConfig
-    from wopr.context import ServerContext
+    """Workspace + isolated KITT_HOME, mirroring test_embeddings.py."""
+    from kitt.config import ServerConfig
+    from kitt.context import ServerContext
 
     workspace = tmp_path / "ws"
     workspace.mkdir()
-    (workspace / "wopr.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
-    home = tmp_path / "wopr-home"
+    (workspace / "kitt.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
+    home = tmp_path / "kitt-home"
     home.mkdir()
-    monkeypatch.setenv("WOPR_HOME", str(home))
+    monkeypatch.setenv("KITT_HOME", str(home))
     ServerContext.reset()
     ctx = ServerContext.init(ServerConfig(cli_type="claude"))
     ctx.workspace = workspace
@@ -369,7 +369,7 @@ class TestSearchDegradation:
         """Selecting bedrock must never break server startup: boto3 is
         soft-imported and only touched from inside an embed call."""
         monkeypatch.setenv(PROVIDER_ENV_VAR, "bedrock")
-        from wopr.server import create_app
+        from kitt.server import create_app
 
         app = create_app()
         assert app is not None

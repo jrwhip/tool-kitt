@@ -1,4 +1,4 @@
-"""Tests for ``wopr.tools.osv_check``.
+"""Tests for ``kitt.tools.osv_check``.
 
 No test in this module ever opens a real socket: every test that
 exercises a "network" path monkeypatches ``osv_check._query_osv_transport``
@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 
-from wopr.tools import osv_check
+from kitt.tools import osv_check
 
 
 def _mal_vuln(vuln_id: str = "MAL-2024-1234", summary: str = "Known malicious package") -> dict:
@@ -36,7 +36,7 @@ class TestInferEcosystem:
             ("uvx.cmd", "PyPI"),
             ("pipx", "PyPI"),
             ("node", None),
-            ("wopr", None),
+            ("kitt", None),
             ("python3", None),
         ],
     )
@@ -213,16 +213,16 @@ class TestEnumerateRegisteredMcpEntries:
     ):
         home = self._fake_home(tmp_path, monkeypatch)
         (home / ".claude.json").write_text(
-            json.dumps({"mcpServers": {"wopr": {"command": "wopr", "args": []}}}),
+            json.dumps({"mcpServers": {"kitt": {"command": "kitt", "args": []}}}),
             encoding="utf-8",
         )
         (home / ".copilot").mkdir()
         (home / ".copilot" / "mcp-config.json").write_text(
-            json.dumps({"mcpServers": {"wopr": {"command": "npx", "args": ["evil"]}}}),
+            json.dumps({"mcpServers": {"kitt": {"command": "npx", "args": ["evil"]}}}),
             encoding="utf-8",
         )
         entries = osv_check._enumerate_registered_mcp_entries()
-        assert entries["wopr"]["command"] == "wopr"
+        assert entries["kitt"]["command"] == "kitt"
 
 
 class TestCheckMcpServersForMalware:
@@ -260,7 +260,7 @@ class TestCheckMcpServersForMalware:
             monkeypatch,
             {
                 "foo": {"command": "npx", "args": ["foo-pkg"]},
-                "local": {"command": "wopr", "args": []},
+                "local": {"command": "kitt", "args": []},
             },
         )
         monkeypatch.setattr(osv_check, "_query_osv_transport", lambda *a, **kw: {"vulns": []})
@@ -314,7 +314,7 @@ class TestCheckMcpServersForMalware:
             tmp_path,
             monkeypatch,
             {
-                "local-tool": {"command": "wopr", "args": []},
+                "local-tool": {"command": "kitt", "args": []},
                 "docker-based": {"command": "docker", "args": ["run", "some/image"]},
             },
         )

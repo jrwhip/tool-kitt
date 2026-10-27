@@ -2,7 +2,7 @@
 description: Register the prompt-log Stop hook in this project's .claude/settings.json
 ---
 
-Register the WOPR prompt-log Stop hook in this project. Idempotent; safe to re-run.
+Register the KITT prompt-log Stop hook in this project. Idempotent; safe to re-run.
 
 The hook appends one entry to `PROMPT_LOG.md` after every Claude Code response. Each entry includes the date, an 8-character session ID, the message index in the JSONL transcript, the user prompt collapsed to one line, and a one-line summary of the response. See `hooks/README.md` for full hook documentation.
 

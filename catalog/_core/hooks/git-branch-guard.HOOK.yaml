@@ -3,7 +3,7 @@
 # Claude-only on purpose. A guard that fails OPEN is worse than no guard,
 # and Copilot's preToolUse decision schema has not been verified against a
 # live firing here, so no copilot target is declared. Declaring one would
-# advertise protection WOPR cannot demonstrate.
+# advertise protection KITT cannot demonstrate.
 name: git-branch-guard
 description: Deny git commit/push on branches the guard disallows (PreToolUse).
 handler: git-branch-guard.sh

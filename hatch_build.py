@@ -8,9 +8,9 @@ auto-discovers every immediate sub-directory of ``catalog/`` and
 adds it to the wheel's force-include map at build time.
 
 Each pack ``catalog/<pack>/`` lands at
-``wopr/resources/<pack>/`` inside the installed wheel, matching
+``kitt/resources/<pack>/`` inside the installed wheel, matching
 the prior explicit-list mapping. The standalone ``catalog.yaml``
-manifest also lands at ``wopr/catalog.yaml``.
+manifest also lands at ``kitt/catalog.yaml``.
 
 Hooks register via the ``[tool.hatch.build.targets.wheel.hooks.custom]``
 table in ``pyproject.toml``. Hatchling auto-discovers this file at
@@ -38,7 +38,7 @@ class CatalogForceIncludeHook(BuildHookInterface):
         ``<root>/catalog``; each immediate sub-directory under it is
         a pack. We map source paths to wheel-internal destinations
         the same way the prior explicit list did:
-        ``catalog/<pack>`` → ``wopr/resources/<pack>``.
+        ``catalog/<pack>`` → ``kitt/resources/<pack>``.
 
         Files (not directories) directly under ``catalog/`` are
         ignored. The standalone ``catalog.yaml`` manifest at the
@@ -54,7 +54,7 @@ class CatalogForceIncludeHook(BuildHookInterface):
             if not entry.is_dir():
                 continue
             src = str(entry.relative_to(self.root))
-            dst = f"wopr/resources/{entry.name}"
+            dst = f"kitt/resources/{entry.name}"
             force_include[src] = dst
 
         # The catalog manifest lives at the project root, alongside
@@ -63,4 +63,4 @@ class CatalogForceIncludeHook(BuildHookInterface):
         # finds it post-install.
         catalog_manifest = Path(self.root) / "catalog.yaml"
         if catalog_manifest.is_file():
-            force_include["catalog.yaml"] = "wopr/catalog.yaml"
+            force_include["catalog.yaml"] = "kitt/catalog.yaml"

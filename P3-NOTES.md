@@ -1,9 +1,9 @@
-# P3 notes: `wopr build-plugins`
+# P3 notes: `kitt build-plugins`
 
 Phase P3 of the redesign plan: emit a Claude Code plugin marketplace
-from the catalog, with the MCP server shipped inside `wopr-core`.
-Distribution is marketplace-only. There is no `wopr install` of any
-kind, no PyPI package to install first, and no `wopr --init`.
+from the catalog, with the MCP server shipped inside `kitt-core`.
+Distribution is marketplace-only. There is no `kitt install` of any
+kind, no PyPI package to install first, and no `kitt --init`.
 
 Everything below is a decision, a deviation, a documented fact I built
 against, or an ambiguity the docs left open. Written for whoever picks
@@ -13,18 +13,18 @@ this up next, including me.
 
 | File | Lines | What |
 |------|-------|------|
-| `src/wopr/build_plugins.py` | 815 | The generator |
-| `src/wopr/learnings_cli.py` | 99 | `wopr learnings append` / `search` |
-| `src/wopr/cli.py` | 317 | Rewritten onto argparse subparsers |
+| `src/kitt/build_plugins.py` | 815 | The generator |
+| `src/kitt/learnings_cli.py` | 99 | `kitt learnings append` / `search` |
+| `src/kitt/cli.py` | 317 | Rewritten onto argparse subparsers |
 | `tests/test_build_plugins.py` | 567 | 55 tests |
 | `tests/test_cli.py` | 312 | 23 tests |
 
-Touched for path resolution: `src/wopr/config.py`,
-`src/wopr/tools/_data_paths.py`, `src/wopr/catalog.py`,
-`pyproject.toml` (new `wopr-serve` console script).
+Touched for path resolution: `src/kitt/config.py`,
+`src/kitt/tools/_data_paths.py`, `src/kitt/catalog.py`,
+`pyproject.toml` (new `kitt-serve` console script).
 
 Suite: 673 passed, 1 skipped. `ruff check .` clean.
-`mypy src/wopr` clean (44 files). `mypy tests` is not part of the gate
+`mypy src/kitt` clean (44 files). `mypy tests` is not part of the gate
 and never has been; the existing test suite is untyped.
 
 ## Source of truth for the plugin format
@@ -48,10 +48,10 @@ Facts the generator depends on, quoted in substance:
    `plugin.json`.
 3. **`.mcp.json` at the plugin root is auto-detected.** Declaring
    `mcpServers` in `plugin.json` is an alternative, not a requirement,
-   so `wopr-core/plugin.json` stays metadata-only.
+   so `kitt-core/plugin.json` stays metadata-only.
 4. **`${CLAUDE_PLUGIN_ROOT}` expands in `command`, `args` and `env`
    for stdio MCP servers.** Both the command path and the
-   `WOPR_PLUGIN_ROOT` env value rely on this.
+   `KITT_PLUGIN_ROOT` env value rely on this.
 5. **`marketplace.json` lives at `.claude-plugin/marketplace.json`**
    with required `name`, `owner` (object, `name` required) and
    `plugins` (array). Each entry requires `name` and `source`. A
@@ -60,7 +60,7 @@ Facts the generator depends on, quoted in substance:
    Entries may carry any plugin-manifest field plus `source`,
    `category`, `tags`, `strict`, `relevance`.
 6. **Marketplace names are namespaced per user and some are
-   reserved.** `wopr-marketplace` is not on the reserved list
+   reserved.** `kitt-marketplace` is not on the reserved list
    (the list is all Anthropic-official names) and does not impersonate
    one.
 
@@ -69,7 +69,7 @@ Validated with the official validator, not by eyeball:
 ```
 $ claude plugin validate .            # marketplace
 ✔ Validation passed
-$ claude plugin validate wopr-core    # and each of the six plugins
+$ claude plugin validate kitt-core    # and each of the six plugins
 ✔ Validation passed
 ```
 
@@ -81,8 +81,8 @@ A pack ships a plugin when it has at least one command, agent or
 skill. Nothing else qualifies: an empty plugin is noise in `/plugin`
 and cannot do anything. All six current packs qualify.
 
-Name mapping is a table, not a guess: `_core` to `wopr-core`,
-`meta-authoring` to `wopr-meta`, everything else `wopr-<pack>`.
+Name mapping is a table, not a guess: `_core` to `kitt-core`,
+`meta-authoring` to `kitt-meta`, everything else `kitt-<pack>`.
 Two overrides, both from the plan.
 
 ### 2. Directory allowlist, not a blocklist
@@ -102,7 +102,7 @@ Deliberate exclusions, each with a test:
   catalog). They are evidence for the eval-gated slimming method, not
   runtime content.
 - **Pack-root `README.md`.** `catalog/crew/README.md` opens with
-  `wopr add crew` install instructions for machinery that no longer
+  `kitt add crew` install instructions for machinery that no longer
   exists. Shipping it would ship a lie. The marketplace gets its own
   generated README instead.
 - **`catalog/_core/context/`.** The `get_shared_context` shim that
@@ -115,7 +115,7 @@ Deliberate exclusions, each with a test:
 
 Known follow-up, not fixed here: `catalog/crew/templates/README.md`
 and `catalog/crew/scripts/README.md` ride along inside their
-directories and may contain the same stale `wopr add` phrasing as the
+directories and may contain the same stale `kitt add` phrasing as the
 pack README. They are catalog content, and rewriting catalog prose is
 not this generator's job.
 
@@ -130,23 +130,23 @@ not this generator's job.
   merges, so a file deleted from the catalog cannot survive in the
   emitted tree. A test plants a stale file and a stale directory and
   asserts both are gone after a regeneration.
-- **Guarded.** A `.wopr-generated` marker at the marketplace root is
+- **Guarded.** A `.kitt-generated` marker at the marketplace root is
   the only thing that authorizes the wipe. An existing non-empty
   directory without it is refused with the path in the message and
   nothing touched. This is the difference between a mistyped `--out`
   and a bad afternoon.
 
-### 4. The server ships inside `wopr-core`
+### 4. The server ships inside `kitt-core`
 
 ```
-wopr-core/
+kitt-core/
   .claude-plugin/plugin.json
   .mcp.json                      -> scripts/bootstrap-serve.sh
   commands/ agents/ skills/ data/
   scripts/bootstrap-serve.sh     (0755)
   server/
-    pyproject.toml               (runtime deps only, wopr-serve entry)
-    src/wopr/                    (the package, no tests, no evals)
+    pyproject.toml               (runtime deps only, kitt-serve entry)
+    src/kitt/                    (the package, no tests, no evals)
     resources/
       catalog.yaml
       crew/templates/**
@@ -158,20 +158,20 @@ wopr-core/
 ```json
 {
   "mcpServers": {
-    "wopr": {
+    "kitt": {
       "command": "${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-serve.sh",
-      "env": { "WOPR_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}" }
+      "env": { "KITT_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}" }
     }
   }
 }
 ```
 
-The shim resolves the plugin root from `WOPR_PLUGIN_ROOT`, then
+The shim resolves the plugin root from `KITT_PLUGIN_ROOT`, then
 `CLAUDE_PLUGIN_ROOT`, then from its own location, then
-`exec uv run --project "$plugin_root/server" wopr-serve`.
+`exec uv run --project "$plugin_root/server" kitt-serve`.
 
 **Deviation from the plan text.** The plan wrote the shim as
-`exec uv run --project "$CLAUDE_PLUGIN_ROOT/server" wopr-serve`.
+`exec uv run --project "$CLAUDE_PLUGIN_ROOT/server" kitt-serve`.
 `CLAUDE_PLUGIN_ROOT` is documented as a placeholder that Claude Code
 expands inside `.mcp.json`, not as an environment variable guaranteed
 to be exported into the launched process. Depending on it inside the
@@ -184,17 +184,17 @@ Both branches were run for real:
 ```
 $ printf '' | timeout 60 .../bootstrap-serve.sh   # server starts, exits 0 at EOF
 $ env PATH=/usr/bin:/bin .../bootstrap-serve.sh   # exit 1 + per-OS guidance
-wopr: uv was not found on PATH, and the bundled WOPR MCP server needs it.
+kitt: uv was not found on PATH, and the bundled KITT MCP server needs it.
   Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
            or: winget install astral-sh.uv
   macOS:   brew install uv
   Linux:   curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 5. `wopr-serve` is a real entry point, not `wopr` with no args
+### 5. `kitt-serve` is a real entry point, not `kitt` with no args
 
-`wopr` with no subcommand still runs the server, unchanged. The bundle
-declares `wopr-serve = "wopr.cli:serve"` so the launch contract names
+`kitt` with no subcommand still runs the server, unchanged. The bundle
+declares `kitt-serve = "kitt.cli:serve"` so the launch contract names
 an action instead of relying on a bare invocation resolving to the
 server. The same script is now declared in the repo's `pyproject.toml`
 too, so a dev checkout exercises the identical entry point.
@@ -218,7 +218,7 @@ block with a regex rather than `tomllib` (3.11+).
 ### 7. Resource resolution: one env-var override, in `config.py`
 
 The problem: the bundled package sits at
-`<plugin>/server/src/wopr/`, and its resources sit at
+`<plugin>/server/src/kitt/`, and its resources sit at
 `<plugin>/server/resources/`, which is outside the package. Neither of
 the two existing candidates in `_data_paths.py` can reach that layout
 (one walks up to a repo root looking for `catalog/`, the other looks
@@ -227,7 +227,7 @@ for `resources/` inside the package directory).
 The fix is one override, not conditionals scattered through the tool
 modules:
 
-- `config.py` gains `ENV_WOPR_PLUGIN_ROOT`, the layout constants
+- `config.py` gains `ENV_KITT_PLUGIN_ROOT`, the layout constants
   `PLUGIN_SERVER_DIRNAME = "server"` and
   `PLUGIN_RESOURCES_DIRNAME = "resources"`, and
   `plugin_resources_root() -> Path | None`. Those two constants are
@@ -250,10 +250,10 @@ helpers that run on CLI paths where no `ServerContext` exists. The
 value is process-level and immutable, so routing it through a config
 object would buy nothing and cost an import cycle.
 
-Verified from the bundle, with `WOPR_PLUGIN_ROOT` set:
+Verified from the bundle, with `KITT_PLUGIN_ROOT` set:
 
 ```
-templates_dir: .../wopr-core/server/resources/crew/templates   (6 templates)
+templates_dir: .../kitt-core/server/resources/crew/templates   (6 templates)
 seed:          .../server/resources/crew/data/learnings-seed/fastapi.md
 by-stack:      .../server/resources/crew/templates/by-stack/angular
 catalog packs: ['_core', 'angular', 'auditors', 'crew', 'meta-authoring', 'python']
@@ -266,7 +266,7 @@ What is bundled and why: `crew/templates/**` (`get_pack_template`,
 (`get_help`). `catalog/_core/data/doctor-recommendations.yaml` is
 **not** bundled: nothing in the surviving tool set reads it (the
 doctor tool did not cross over in P1). It still ships as plugin
-content inside `wopr-core/data/`, where a skill can read it.
+content inside `kitt-core/data/`, where a skill can read it.
 
 ### 8. Version: PEP 440 in, semver out
 
@@ -317,15 +317,15 @@ Copilot converter.
 `build-plugins --out` and `learnings append|search` need real flags,
 which the old flat positional parser could not express without
 polluting the top level. All previous invocations still work and are
-now pinned by tests: `wopr`, `wopr list`, `wopr catalog`,
-`wopr help [topic]`, `wopr skill-usage record <source> <name>...`,
+now pinned by tests: `kitt`, `kitt list`, `kitt catalog`,
+`kitt help [topic]`, `kitt skill-usage record <source> <name>...`,
 `--version`, and both option orders around the verb.
 
 **Argparse trap worth remembering.** Since Python 3.9 a subparser
 parses into a fresh namespace and copies every key back onto the
 parent's, defaults included. A subcommand copy of `--workspace` on the
 shared parent therefore overwrote the value the top level had already
-parsed, and `wopr --workspace X list` silently resolved to the current
+parsed, and `kitt --workspace X list` silently resolved to the current
 directory. Caught by a test, not by reading. Fix: the subcommand
 parent uses `default=argparse.SUPPRESS` so unsupplied options never
 enter the copy. Two parent parsers, one for the top level with real
@@ -334,7 +334,7 @@ defaults and one for subcommands with suppressed ones.
 `main()` now takes an optional `argv`, so the tests drive the real
 parser instead of a reimplementation of it.
 
-### 11. `wopr learnings` is the MCP path, not a parallel one
+### 11. `kitt learnings` is the MCP path, not a parallel one
 
 `learnings_cli.py` calls `append_learnings` and `learnings_search`
 directly (via `asyncio.run`) with `target_workspace_path` supplied
@@ -365,11 +365,11 @@ code 1 with the message on stderr, so a shell caller can branch on it.
    non-semver string. See decision 8.
 3. **`hooks/` is a reserved-by-convention directory name.** The docs
    define `hooks/hooks.json` as the default hook config location.
-   `wopr-meta` ships a `hooks/` directory of WOPR's own
+   `kitt-meta` ships a `hooks/` directory of KITT's own
    `*.HOOK.yaml` manifests and handler scripts, which is a different
    thing that happens to share a name. It is inert: there is no
    `hooks.json`, and the docs describe only that filename as scanned.
-   The `/wopr-configure-*` commands remain the way those hooks get
+   The `/kitt-configure-*` commands remain the way those hooks get
    registered. If a future Claude Code version scans `hooks/*.json`
    instead of `hooks/hooks.json`, this becomes a real collision and
    the directory should be renamed in the catalog.
@@ -384,33 +384,33 @@ code 1 with the message on stderr, so a shell caller can branch on it.
    work, because only the plugin directory is copied into the cache.
    This is the root of the open issue below.
 
-## Open issue: `wopr-meta` hook configuration under a plugin install
+## Open issue: `kitt-meta` hook configuration under a plugin install
 
 Two independent breakages, both outside this generator and both worth
 fixing before the marketplace is used for real.
 
-**1. The script imports `wopr`.**
+**1. The script imports `kitt`.**
 `catalog/meta-authoring/scripts/configure_hook.py` imports
-`wopr.hook_manifest`. It ships in `wopr-meta`, which has no server
-bundle, and it cannot reach `wopr-core`'s bundle: each plugin is
+`kitt.hook_manifest`. It ships in `kitt-meta`, which has no server
+bundle, and it cannot reach `kitt-core`'s bundle: each plugin is
 copied into its own cache directory and cross-plugin relative paths
 are documented not to work.
 
 **2. The commands still assume the pip-install layout.** Every
-`/wopr-configure-*` command body runs:
+`/kitt-configure-*` command body runs:
 
 ```
-! WOPR_DIR=$(python3 -c "import wopr, pathlib; print(pathlib.Path(wopr.__file__).parent / 'resources')") \
-  && python3 "$WOPR_DIR/meta-authoring/scripts/configure_hook.py" ...
+! KITT_DIR=$(python3 -c "import kitt, pathlib; print(pathlib.Path(kitt.__file__).parent / 'resources')") \
+  && python3 "$KITT_DIR/meta-authoring/scripts/configure_hook.py" ...
 ```
 
-That is the wheel layout (`wopr/resources/<pack>/`, produced by
-`hatch_build.py`) reached through an ambient `python3` that has `wopr`
+That is the wheel layout (`kitt/resources/<pack>/`, produced by
+`hatch_build.py`) reached through an ambient `python3` that has `kitt`
 importable. Marketplace-only distribution has neither: there is no pip
 install, and the bundled `resources/` tree carries the crew subtrees
 the MCP tools read, not pack scripts. Under a plugin install the
 script is simply at `${CLAUDE_PLUGIN_ROOT}/scripts/configure_hook.py`
-inside `wopr-meta`, so the lookup dance is both broken and
+inside `kitt-meta`, so the lookup dance is both broken and
 unnecessary.
 
 `configure_git_guard.py` and `configure_prompt_log.py` are stdlib-only
@@ -422,16 +422,16 @@ directly, so they are fine.
 That file and its module are owned by another workstream right now, so
 this is a documented finding rather than a fix. Whatever option is
 chosen for (1), the command bodies in
-`catalog/meta-authoring/commands/wopr-configure-*.md` need the
+`catalog/meta-authoring/commands/kitt-configure-*.md` need the
 `${CLAUDE_PLUGIN_ROOT}/scripts/...` path instead of the
-`import wopr` lookup, which fixes (2) at the same time.
+`import kitt` lookup, which fixes (2) at the same time.
 
 Options for (1), in my order of preference:
 
 1. **Make the script self-contained** (PEP 723 inline metadata,
    stdlib only, manifest rendering inlined or vendored). Keeps the
    pack independent, which is what a per-pack plugin model wants.
-2. **Move hook configuration into `wopr-core`** as a command next to
+2. **Move hook configuration into `kitt-core`** as a command next to
    the server it depends on. Correct dependency direction, but it
    moves an authoring concern out of the authoring pack.
 3. **Emit the server bundle into any plugin that needs it.** About 64
@@ -439,7 +439,7 @@ Options for (1), in my order of preference:
    Mechanically easy (the generator would take a per-pack
    `needs_server` flag), and the least appealing.
 
-Explicitly rejected: locating `wopr-core` at runtime by guessing at
+Explicitly rejected: locating `kitt-core` at runtime by guessing at
 `~/.claude/plugins/cache/...`. That hard-codes an implementation
 detail of the plugin cache, and the docs call the path ephemeral.
 
@@ -461,18 +461,18 @@ detail of the plugin cache, and the docs call the path ephemeral.
 
 ## Verification performed
 
-Real run, `uv run wopr build-plugins --out /tmp/wopr-plugins-test`:
+Real run, `uv run kitt build-plugins --out /tmp/kitt-plugins-test`:
 
 ```
-Wrote wopr-marketplace to /tmp/wopr-plugins-test
+Wrote kitt-marketplace to /tmp/kitt-plugins-test
   version: 1.0.0-dev.0
   plugins: 6
-    wopr-core: 7 commands, 5 agents, 14 skills + bundled MCP server
-    wopr-angular: 2 agents, 2 skills
-    wopr-auditors: 4 commands, 3 agents
-    wopr-crew: 5 agents, 1 skill
-    wopr-meta: 10 commands, 1 skill
-    wopr-python: 2 agents, 1 skill
+    kitt-core: 7 commands, 5 agents, 14 skills + bundled MCP server
+    kitt-angular: 2 agents, 2 skills
+    kitt-auditors: 4 commands, 3 agents
+    kitt-crew: 5 agents, 1 skill
+    kitt-meta: 10 commands, 1 skill
+    kitt-python: 2 agents, 1 skill
   files: 294
 ```
 
@@ -481,10 +481,10 @@ Wrote wopr-marketplace to /tmp/wopr-plugins-test
 - `claude plugin validate .` passes for the marketplace and for each
   of the six plugin directories.
 - `bash -n` passes on the shim; mode is `0755`.
-- `uv run --project /tmp/wopr-plugins-test/wopr-core/server python -c
-  "from wopr.server import create_app; create_app()"` succeeds, and
+- `uv run --project /tmp/kitt-plugins-test/kitt-core/server python -c
+  "from kitt.server import create_app; create_app()"` succeeds, and
   the bundled server registers all 23 tools.
-- With `WOPR_PLUGIN_ROOT` set, pack templates, learnings seeds, the
+- With `KITT_PLUGIN_ROOT` set, pack templates, learnings seeds, the
   per-stack template dirs and `catalog.yaml` all resolve to the
   bundled `resources/` tree.
 - Both shim branches exercised (server starts; missing uv exits 1 with
@@ -497,7 +497,7 @@ Wrote wopr-marketplace to /tmp/wopr-plugins-test
 
 The plan's P3 verification list ends with an interactive step that
 needs a live Claude Code session:
-`/plugin marketplace add ./wopr-plugins`, install core plus crew plus a
+`/plugin marketplace add ./kitt-plugins`, install core plus crew plus a
 stack pack, confirm skills, agents and commands resolve natively,
 check `/context` shows only the installed packs' footprint, and run a
 crew end to end through the plugin install. The generated tree is

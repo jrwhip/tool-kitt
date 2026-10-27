@@ -3,7 +3,7 @@
 The problem this replaces
 ------------------------
 
-WOPR shipped ``capture-skill-trigger-hook.py`` and
+KITT shipped ``capture-skill-trigger-hook.py`` and
 ``capture-skill-trigger-hook-copilot.py`` as near-duplicate handlers, each
 with its own hand-written ``configure_*.py`` registration script and its own
 slash command. The *handlers* genuinely differ -- Copilot's transcript is an

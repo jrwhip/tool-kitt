@@ -1,6 +1,6 @@
 """Tests for the shared target-path helpers.
 
-``wopr.tools._target_paths`` is consumed by both ``wopr_yml``
+``kitt.tools._target_paths`` is consumed by both ``kitt_yml``
 and ``claude_md`` for normalizing operator-supplied target paths,
 locating profiles in a detection result, and deriving slugs / names.
 Pinning each helper's contract here means a future edit to the
@@ -10,7 +10,7 @@ failure away.
 
 from __future__ import annotations
 
-from wopr.tools._target_paths import (
+from kitt.tools._target_paths import (
     find_profile,
     name_from_slug,
     normalize_target_path,

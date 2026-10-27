@@ -1,14 +1,14 @@
 [project]
-name = "wopr"
+name = "kitt"
 dynamic = ["version"]
-description = "WOPR: a right-sized agent harness for Claude Code (MCP tools, skills, agents, commands)"
+description = "KITT: a right-sized agent harness for Claude Code (MCP tools, skills, agents, commands)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
     { name = "Jerry" }
 ]
-keywords = ["mcp", "claude", "ai", "cli", "wopr"]
+keywords = ["mcp", "claude", "ai", "cli", "kitt"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -28,11 +28,11 @@ dependencies = [
 ]
 
 [project.scripts]
-wopr = "wopr.cli:main"
+kitt = "kitt.cli:main"
 # Same entry point the generated plugin bundle declares, so the launch
 # contract in the emitted `.mcp.json` is exercised from a dev checkout
-# too. `wopr` with no subcommand does the same thing.
-wopr-serve = "wopr.cli:serve"
+# too. `kitt` with no subcommand does the same thing.
+kitt-serve = "kitt.cli:serve"
 
 # [project.urls] is deliberately absent until this repo has a public
 # home. The prior toolset's URLs pointed at a private client org and do
@@ -43,14 +43,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "src/wopr/__init__.py"
+path = "src/kitt/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/wopr"]
+packages = ["src/kitt"]
 
 [tool.hatch.build.targets.wheel.hooks.custom]
 # Auto-enumerates every catalog/<pack>/ dir at build time and adds
-# each as a force-include entry (catalog/<pack> → wopr/resources/<pack>),
+# each as a force-include entry (catalog/<pack> → kitt/resources/<pack>),
 # plus the standalone catalog.yaml manifest. Lives in ``hatch_build.py``
 # at the project root; hatchling auto-discovers it. Replaces the prior
 # per-pack list that required a manual pyproject.toml edit on every
@@ -134,7 +134,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/wopr"]
+source = ["src/kitt"]
 branch = true
 
 [tool.coverage.report]

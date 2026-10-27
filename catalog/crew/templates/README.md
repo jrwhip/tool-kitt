@@ -4,7 +4,7 @@ Two kinds of templates live here:
 
 **Tracking-document templates** (the four `*.template.md` files): skeletons for the documents a crew run produces and consumes. The caller fills in `[STACK: ...]` markers with stack specifics before the crew starts.
 
-**Project config example** (`wopr.example.yml`): a worked example of the WOPR-shared project configuration file. Each project has its own `wopr.yml` at its project root. Schema reference: `wopr-yml-schema.md` (this directory; ships with the pack).
+**Project config example** (`kitt.example.yml`): a worked example of the KITT-shared project configuration file. Each project has its own `kitt.yml` at its project root. Schema reference: `kitt-yml-schema.md` (this directory; ships with the pack).
 
 ## Tracking-document templates
 
@@ -17,39 +17,39 @@ Two kinds of templates live here:
 
 For migration projects, an additional template (`extracted-requirements.template.md`) ships with the `legacy-migration` pack, which is not part of this distribution. The scout populates it in `deep_analysis` mode by reading the legacy codebase. Non-migration projects do not need this template; they populate the implementation-tracking document's Requirements Baseline directly from their own requirements source (feature backlog, written spec, ticket system).
 
-## Project config (`wopr.yml`)
+## Project config (`kitt.yml`)
 
-`wopr.yml` is the WOPR-shared project configuration file, read by every agent on every invocation. It carries the project's slug, source roots, build file, API contract location (`api_contract`: OpenAPI or GraphQL) and pinned generator version, paths to the spec documents, and (for migration projects) the legacy source root, extracted requirements path, schema path, and handoff contract path.
+`kitt.yml` is the KITT-shared project configuration file, read by every agent on every invocation. It carries the project's slug, source roots, build file, API contract location (`api_contract`: OpenAPI or GraphQL) and pinned generator version, paths to the spec documents, and (for migration projects) the legacy source root, extracted requirements path, schema path, and handoff contract path.
 
 See:
 
-- `wopr.example.yml` (this directory): worked examples for both a backend and a frontend project.
-- `wopr-yml-schema.md` (this directory): full schema with section-by-section field tables. Agents fetch it via `mcp__wopr__get_pack_template` (`pack="crew"`, `name="wopr-yml-schema.md"`).
+- `kitt.example.yml` (this directory): worked examples for both a backend and a frontend project.
+- `kitt-yml-schema.md` (this directory): full schema with section-by-section field tables. Agents fetch it via `mcp__kitt__get_pack_template` (`pack="crew"`, `name="kitt-yml-schema.md"`).
 
-The crew does not run without `wopr.yml`. If it is missing at the resolved path, every agent stops and reports.
+The crew does not run without `kitt.yml`. If it is missing at the resolved path, every agent stops and reports.
 
 ## How to use a tracking-document template
 
-The default path is to let the WOPR setup tooling drop these templates for you. Operators should run `/wopr-init-project` (or the targeted stub-writer MCP tools below), not hand-copy from this directory.
+The default path is to let the KITT setup tooling drop these templates for you. Operators should run `/kitt-init-project` (or the targeted stub-writer MCP tools below), not hand-copy from this directory.
 
 **Recommended (one-shot):**
 
-Run `/wopr-init-project` against the target project. The skill detects the stack, writes `wopr.yml`, writes stack-pre-filled spec stubs, and drops `implementation-tracking.template.md` and `frontend-handoff-contract.template.md` at the paths declared by `wopr.yml`. It refuses to overwrite existing files unless you opt in.
+Run `/kitt-init-project` against the target project. The skill detects the stack, writes `kitt.yml`, writes stack-pre-filled spec stubs, and drops `implementation-tracking.template.md` and `frontend-handoff-contract.template.md` at the paths declared by `kitt.yml`. It refuses to overwrite existing files unless you opt in.
 
 **Targeted (one template at a time):**
 
-- `mcp__wopr__write_tracking_doc_stub` drops `implementation-tracking.template.md` at the operator-declared `legacy-migration.tracking_doc` path (default `implementation-tracking.md`).
-- `mcp__wopr__write_handoff_contract_stub` drops `frontend-handoff-contract.template.md` at `legacy-migration.handoff_contract` (default `frontend-handoff-contract.md`). Only meaningful for backend-producer projects.
+- `mcp__kitt__write_tracking_doc_stub` drops `implementation-tracking.template.md` at the operator-declared `legacy-migration.tracking_doc` path (default `implementation-tracking.md`).
+- `mcp__kitt__write_handoff_contract_stub` drops `frontend-handoff-contract.template.md` at `legacy-migration.handoff_contract` (default `frontend-handoff-contract.md`). Only meaningful for backend-producer projects.
 
 Both stub writers refuse to overwrite an existing file by default; pass `overwrite=True` to force.
 
-**Read-only access to the raw template content** is available via `mcp__wopr__get_pack_template(pack=..., name=...)` and `mcp__wopr__list_pack_templates(pack=...)`. Agents inside the crew must use these tools instead of running `find` against the workspace; the MCP server already knows the install root.
+**Read-only access to the raw template content** is available via `mcp__kitt__get_pack_template(pack=..., name=...)` and `mcp__kitt__list_pack_templates(pack=...)`. Agents inside the crew must use these tools instead of running `find` against the workspace; the MCP server already knows the install root.
 
 **After the stub lands:**
 
-1. Drop the `.template` infix from the filename if your `wopr.yml` path does not include it (e.g., `coder-spec.template.md` becomes `CODER_SPEC.md` or whatever your `specs.coder_spec` points at).
+1. Drop the `.template` infix from the filename if your `kitt.yml` path does not include it (e.g., `coder-spec.template.md` becomes `CODER_SPEC.md` or whatever your `specs.coder_spec` points at).
 2. Walk through every `[STACK: ...]` marker and replace it with your stack's specifics. Delete sections that do not apply. Add sections for concerns the skeleton doesn't cover.
-3. Point your `wopr.yml` at the filled-in document (`/wopr-init-project` handles this for the default paths).
+3. Point your `kitt.yml` at the filled-in document (`/kitt-init-project` handles this for the default paths).
 
 **Manual fallback:** if for any reason you need to hand-copy, the templates live alongside this README in the crew pack. Treat this as the exception, not the default; it is what the stub-writer tools exist to eliminate.
 
@@ -64,14 +64,14 @@ If you find yourself deleting a "universal pattern" line because it doesn't appl
 
 ## Naming of the filled-in documents
 
-The templates use generic names (`CODER_SPEC`, `IMPLEMENTATION_TRACKING`, etc.). Your project can name the filled-in documents whatever it wants. The agents read paths from `wopr.yml`; they do not care what the file is called. What matters is that the paths in `wopr.yml` are correct.
+The templates use generic names (`CODER_SPEC`, `IMPLEMENTATION_TRACKING`, etc.). Your project can name the filled-in documents whatever it wants. The agents read paths from `kitt.yml`; they do not care what the file is called. What matters is that the paths in `kitt.yml` are correct.
 
 ## Where to keep the filled-in documents
 
 The crew does not care where these documents live. Common patterns:
 
 - **At the project root**: `CODER_SPEC.md`, `IMPLEMENTATION_TRACKING.md`, etc. Easy to find, easy to reference, visible in any file listing.
-- **Under a `docs/` directory**: `docs/coder-spec.md`, `docs/implementation-tracking.md`, etc. Cleaner root, but adds a path prefix to every `wopr.yml` value.
+- **Under a `docs/` directory**: `docs/coder-spec.md`, `docs/implementation-tracking.md`, etc. Cleaner root, but adds a path prefix to every `kitt.yml` value.
 - **Under a dedicated `.crew/` directory**: isolates crew state from general docs. Useful if the project's `docs/` is already busy.
 
-Pick a pattern and update `wopr.yml` to match.
+Pick a pattern and update `kitt.yml` to match.

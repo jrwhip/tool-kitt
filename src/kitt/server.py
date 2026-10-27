@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WOPR MCP Server.
+KITT MCP Server.
 
 Registers the deterministic tools an agent cannot replicate on its own:
 the learnings corpus and its retrieval, the crew's contract/spec
@@ -32,7 +32,7 @@ from .tools import (
     skill_usage,
     stack_detect,
     stub_writers,
-    wopr_yml,
+    kitt_yml,
 )
 from .tools._workspace_target import (
     InvalidTargetWorkspaceError,
@@ -70,13 +70,13 @@ def _register_server_tools(mcp: FastMCP) -> None:
         Returns details about:
         - Current workspace path and how it was resolved
         - Detected CLI type
-        - WOPR resources, split into LOCAL (workspace-resident overrides
+        - KITT resources, split into LOCAL (workspace-resident overrides
           under ``<workspace>/.ai-cli/shared/``) and GLOBAL
           (``~/.claude/{skills,agents,commands}/``)
         - Which project files the surviving tools read or write
 
         Useful for debugging configuration issues. Zero counters do NOT
-        mean WOPR is broken: both locations are optional, and catalog
+        mean KITT is broken: both locations are optional, and catalog
         content is moving to per-pack Claude Code plugins.
         """
         server_ctx = ServerContext.get()
@@ -110,7 +110,7 @@ def _register_server_tools(mcp: FastMCP) -> None:
 
         # GLOBAL: what a Claude Code session sees regardless of
         # workspace. The ~/.gemini and ~/.copilot counters that used to
-        # sit beside these were removed in P2: WOPR targets Claude Code
+        # sit beside these were removed in P2: KITT targets Claude Code
         # only, so they could report nothing but zero.
         global_counts = {
             "claude": {
@@ -162,7 +162,7 @@ def _register_server_tools(mcp: FastMCP) -> None:
                 "learnings": (workspace / "LEARNINGS.md").exists(),
                 "agents_md": (workspace / "AGENTS.md").exists(),
                 "claude_md": (workspace / "CLAUDE.md").exists(),
-                "wopr_yml": (workspace / CONFIG_FILENAME).exists(),
+                "kitt_yml": (workspace / CONFIG_FILENAME).exists(),
             },
         }
 
@@ -174,14 +174,14 @@ def _register_server_tools(mcp: FastMCP) -> None:
         target_workspace_path: str = "",
         ctx: ToolContext | None = None,
     ) -> str:
-        """Get help on how to use WOPR.
+        """Get help on how to use KITT.
 
         Args:
             topic: Help topic. Options: overview, packs, tools, cli,
                    learnings. Leave empty to see the topic index.
 
         Returns help text for the given topic, or a topic index if no topic given.
-        Useful when users ask "how do I use this?" or need guidance on WOPR features.
+        Useful when users ask "how do I use this?" or need guidance on KITT features.
         """
         from .help import get_help as _get_help
 
@@ -201,7 +201,7 @@ def create_app(
     config: ServerConfig | None = None,
     workspace: str | None = None,
 ) -> FastMCP:
-    """Create and configure the WOPR MCP server.
+    """Create and configure the KITT MCP server.
 
     Args:
         config: Server configuration. Created from environment if not provided.
@@ -233,7 +233,7 @@ def create_app(
     routing_eval.register(mcp)
     skill_usage.register(mcp)
     stack_detect.register(mcp)
-    wopr_yml.register(mcp)
+    kitt_yml.register(mcp)
     stub_writers.register(mcp)
     crew_contracts.register(mcp)
     pack_templates.register(mcp)
@@ -245,7 +245,7 @@ def run_server(workspace: str | None = None) -> int:
     """Run the MCP server."""
     logging.basicConfig(
         level=logging.INFO,
-        format="[wopr] %(levelname)s: %(message)s",
+        format="[kitt] %(levelname)s: %(message)s",
         stream=sys.stderr,
     )
 

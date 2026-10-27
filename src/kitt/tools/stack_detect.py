@@ -2,10 +2,10 @@
 
 Deterministic and read-only. Inspects a workspace directory, identifies
 the stack via well-known marker files, enumerates monorepo apps, and
-inventories any existing ``wopr.yml`` files.
+inventories any existing ``kitt.yml`` files.
 
-Its JSON output is the required input to :mod:`.wopr_yml`'s
-``propose_wopr_yml`` / ``write_wopr_yml``, which is why it ships here.
+Its JSON output is the required input to :mod:`.kitt_yml`'s
+``propose_kitt_yml`` / ``write_kitt_yml``, which is why it ships here.
 In the prior toolset this lived inside a larger ``doctor`` module
 alongside a recommendation-and-dismissal engine; that engine does not
 cross over, so only the detector did.
@@ -52,12 +52,12 @@ class StackProfile:
 
 
 @dataclass
-class WoprYmlInventory:
-    """A `wopr.yml` file found in the workspace.
+class KittYmlInventory:
+    """A `kitt.yml` file found in the workspace.
 
     ``summary`` is a small subset of the parsed file that the recommender
     needs (specs paths, API contract pin, base_package). Operator-facing
-    skills surface these so the report shows what each wopr.yml
+    skills surface these so the report shows what each kitt.yml
     declares, not just that it exists.
     """
 
@@ -75,7 +75,7 @@ class StackDetection:
     project_type: str  # "single-app", "monorepo", or "container"
     monorepo_type: str | None = None
     targets: list[StackProfile] = field(default_factory=list)
-    wopr_yml_inventory: list[WoprYmlInventory] = field(default_factory=list)
+    kitt_yml_inventory: list[KittYmlInventory] = field(default_factory=list)
     detected_external_signals: list[str] = field(default_factory=list)
 
 
@@ -366,7 +366,7 @@ def _detect_nx_app(app_path: Path, workspace: Path) -> StackProfile | None:
 def _detect_target(target_path: Path, workspace: Path) -> StackProfile | None:
     """Run all language detectors on a target dir; first hit wins.
 
-    Order: Node first (most common in WOPR-adjacent work), then Java,
+    Order: Node first (most common in KITT-adjacent work), then Java,
     Python, Rust, Go, .NET. A target with both `package.json` and a
     backend marker is unusual but resolved by Node priority. Nx apps
     (``project.json`` only, no per-app ``package.json``) are handled by
@@ -467,8 +467,8 @@ def _detect_container_children(workspace: Path) -> list[StackProfile]:
     return children
 
 
-def _summarize_wopr_yml(data: Any) -> dict[str, Any]:
-    """Extract the recommender-relevant subset of a parsed wopr.yml.
+def _summarize_kitt_yml(data: Any) -> dict[str, Any]:
+    """Extract the recommender-relevant subset of a parsed kitt.yml.
 
     Picks just the fields downstream skills surface: project identity,
     spec paths, API contract pin. Avoids forwarding the whole document so
@@ -543,7 +543,7 @@ def _summarize_wopr_yml(data: Any) -> dict[str, Any]:
         # cloud_id is intentionally NOT extracted here. The Atlassian
         # site is resolved at runtime by the orchestrator via
         # getAccessibleAtlassianResources; it is machine-level state
-        # not project-level, and storing it in wopr.yml was redundant
+        # not project-level, and storing it in kitt.yml was redundant
         # for single-site operators. Any legacy `cloud_id` entry in
         # the yml is silently ignored.
         req_summary["jira"] = {
@@ -555,16 +555,16 @@ def _summarize_wopr_yml(data: Any) -> dict[str, Any]:
     return summary
 
 
-def _detect_wopr_yml_files(workspace: Path) -> list[WoprYmlInventory]:
-    """Find every `wopr.yml` in the workspace, parse it, and summarize.
+def _detect_kitt_yml_files(workspace: Path) -> list[KittYmlInventory]:
+    """Find every `kitt.yml` in the workspace, parse it, and summarize.
 
     The summary surfaces the recommender-relevant subset (project
     identity, spec paths, API contract pin). Operator-facing skills render
-    this so the report shows what each wopr.yml declares, not just that
+    this so the report shows what each kitt.yml declares, not just that
     it exists.
     """
-    found: list[WoprYmlInventory] = []
-    for path in workspace.rglob("wopr.yml"):
+    found: list[KittYmlInventory] = []
+    for path in workspace.rglob("kitt.yml"):
         # Skip directories the container scanner already considers
         # noise. Sharing the set keeps the two scanners aligned; the
         # previous inline set was a stale six-entry subset that let
@@ -582,7 +582,7 @@ def _detect_wopr_yml_files(workspace: Path) -> list[WoprYmlInventory]:
         except OSError as e:
             logger.debug("Cannot read %s as text: %s", path, e)
             found.append(
-                WoprYmlInventory(
+                KittYmlInventory(
                     path=path.relative_to(workspace).as_posix(),
                     parse_ok=False,
                     parse_error=str(e),
@@ -594,7 +594,7 @@ def _detect_wopr_yml_files(workspace: Path) -> list[WoprYmlInventory]:
         except yaml.YAMLError as e:
             logger.warning("Cannot parse %s as YAML: %s", path, e)
             found.append(
-                WoprYmlInventory(
+                KittYmlInventory(
                     path=path.relative_to(workspace).as_posix(),
                     parse_ok=False,
                     parse_error=str(e),
@@ -602,10 +602,10 @@ def _detect_wopr_yml_files(workspace: Path) -> list[WoprYmlInventory]:
             )
             continue
         found.append(
-            WoprYmlInventory(
+            KittYmlInventory(
                 path=path.relative_to(workspace).as_posix(),
                 parse_ok=True,
-                summary=_summarize_wopr_yml(data),
+                summary=_summarize_kitt_yml(data),
             )
         )
     return found
@@ -661,7 +661,7 @@ def detect_stack(workspace_path: str) -> str:
 
     Returns:
         JSON-encoded ``StackDetection`` describing project type, per-target
-        stack profiles, `wopr.yml` inventory, and external signals worth
+        stack profiles, `kitt.yml` inventory, and external signals worth
         flagging to the operator. Read-only; no file writes.
     """
     if not workspace_path:
@@ -719,7 +719,7 @@ def detect_stack(workspace_path: str) -> str:
                 project_type = "container"
             targets.extend(container_children)
 
-    wopr_yml_inventory = _detect_wopr_yml_files(workspace)
+    kitt_yml_inventory = _detect_kitt_yml_files(workspace)
     external_signals = _detect_external_signals(workspace, targets)
 
     detection = StackDetection(
@@ -727,7 +727,7 @@ def detect_stack(workspace_path: str) -> str:
         project_type=project_type,
         monorepo_type=monorepo_type,
         targets=targets,
-        wopr_yml_inventory=wopr_yml_inventory,
+        kitt_yml_inventory=kitt_yml_inventory,
         detected_external_signals=external_signals,
     )
     return json.dumps(asdict(detection), indent=2)
@@ -739,5 +739,5 @@ def detect_stack(workspace_path: str) -> str:
 
 
 def register(mcp: FastMCP) -> None:
-    """Register the stack detection tool with the WOPR MCP server."""
+    """Register the stack detection tool with the KITT MCP server."""
     mcp.tool()(detect_stack)

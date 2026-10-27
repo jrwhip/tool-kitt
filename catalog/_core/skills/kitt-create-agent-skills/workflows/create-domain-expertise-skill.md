@@ -511,9 +511,9 @@ mkdir -p ~/.claude/skills/expertise/{domain-name}/references
 ls -R ~/.claude/skills/expertise/{domain-name}
 ```
 
-## Step 11: Document in wopr-create-plans
+## Step 11: Document in kitt-create-plans
 
-Update `~/.claude/skills/wopr-create-plans/SKILL.md` to reference this new domain:
+Update `~/.claude/skills/kitt-create-plans/SKILL.md` to reference this new domain:
 
 Add to the domain inference table:
 ```markdown
@@ -556,7 +556,7 @@ Review entire skill:
 - [ ] Full lifecycle covered
 - [ ] Passes the "build from scratch through shipping" test
 - [ ] Can be invoked directly by users
-- [ ] Can be loaded by wopr-create-plans for knowledge
+- [ ] Can be loaded by kitt-create-plans for knowledge
 
 </process>
 
@@ -574,7 +574,7 @@ Domain expertise skill is complete when:
 - [ ] Full lifecycle covered (build → debug → test → optimize → ship)
 - [ ] Platform-specific considerations included
 - [ ] Located in ~/.claude/skills/expertise/{domain-name}/
-- [ ] Referenced in wopr-create-plans domain inference table
+- [ ] Referenced in kitt-create-plans domain inference table
 - [ ] Passes dual-purpose test: Can be invoked directly AND loaded for knowledge
 - [ ] User can build something professional from scratch through shipping
 </success_criteria>

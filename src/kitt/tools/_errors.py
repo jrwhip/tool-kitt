@@ -1,13 +1,13 @@
 """Shared error-return contract for MCP tools.
 
-WOPR tools return string status messages. The convention is:
+KITT tools return string status messages. The convention is:
 
 * Success: a free-form human-readable message starting with the
   past-tense verb (``"Wrote ..."``, ``"Appended ..."``, ``"Seeded ..."``).
 * Failure: a string beginning with the :data:`ERROR_PREFIX` constant
   followed by an operator-facing reason.
 
-Two writer modules (``wopr_yml`` and ``claude_md``) defined identical
+Two writer modules (``kitt_yml`` and ``claude_md``) defined identical
 copies of this prefix as ``_PROPOSER_ERROR_PREFIX``. The DEMO-123
 audit flagged that duplication and the broader pattern of inline
 ``"Error: ..."`` strings across the tools tree.
@@ -46,7 +46,7 @@ def error(message: str) -> str:
 def is_error(result: str) -> bool:
     """Return True when ``result`` matches the MCP-tool error shape.
 
-    Used by tool composers (e.g. ``write_wopr_yml`` guards against
+    Used by tool composers (e.g. ``write_kitt_yml`` guards against
     accidentally writing a proposer's error output) so the
     detection logic and the prefix definition stay in sync.
     """

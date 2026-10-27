@@ -120,7 +120,7 @@ async def pin_skill(
     so once instead of re-litigating it on every report.
 
     Args:
-        skill_name: Skill directory name (e.g. ``wopr-create-plans``).
+        skill_name: Skill directory name (e.g. ``kitt-create-plans``).
         pinned: True to pin, False to release back to automatic
             lifecycle labelling.
 

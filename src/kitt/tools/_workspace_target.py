@@ -9,7 +9,7 @@ Inferring it from the server's launch directory is how a handoff once
 overwrote an unrelated worktree. These tools therefore take an explicit
 ``target_workspace_path`` and validate it here instead of guessing.
 
-Private import name (leading underscore): this is not part of WOPR's
+Private import name (leading underscore): this is not part of KITT's
 MCP-tool surface, only a helper the tool modules share so the
 validation rules and error wording live in one place.
 """
@@ -53,7 +53,7 @@ def resolve_target_workspace(target_workspace_path: str) -> Path:
     if not target_workspace_path or not str(target_workspace_path).strip():
         raise InvalidTargetWorkspaceError(
             "Error: target_workspace_path is required. Pass the absolute path "
-            "to the project directory this should act on. WOPR does not infer "
+            "to the project directory this should act on. KITT does not infer "
             "the workspace from the server's launch directory."
         )
     ws = Path(target_workspace_path).expanduser()
@@ -76,7 +76,7 @@ def _resolve_ambient_workspace() -> Path | None:
     Claude Code sets ``CLAUDE_PROJECT_DIR`` in the spawned MCP server's
     environment to the session's project root: a reliable, per-session
     signal that does not require guessing from the server's launch
-    directory. This is the only cheap ambient signal WOPR consumes.
+    directory. This is the only cheap ambient signal KITT consumes.
 
     Deliberately NOT consulted:
 
@@ -191,7 +191,7 @@ def resolve_workspace_for_tool(target_workspace_path: str) -> Path:
     if ambient is not None:
         return ambient
     raise InvalidTargetWorkspaceError(
-        "Error: target_workspace_path was not provided and WOPR could not "
+        "Error: target_workspace_path was not provided and KITT could not "
         "determine it automatically (no CLAUDE_PROJECT_DIR in the server's "
         "environment). Pass the absolute path to the project this should "
         "act on."

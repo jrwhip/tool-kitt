@@ -2,7 +2,7 @@
 description: Create hierarchical project plans for solo agentic development (briefs, roadmaps, phase plans)
 argument-hint: [what to plan]
 allowed-tools:
-  - Skill(wopr-create-plans)
+  - Skill(kitt-create-plans)
   - Read
   - Bash
   - Write

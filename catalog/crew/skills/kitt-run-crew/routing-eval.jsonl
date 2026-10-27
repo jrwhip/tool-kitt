@@ -1,9 +1,9 @@
-{"intent": "this is ongoing iteration on an existing project, spin the crew up", "expected_skill": "wopr-run-crew"}
-{"intent": "addressing auditor blockers from the last pass, start now", "expected_skill": "wopr-run-crew"}
-{"intent": "we're handing off a backend change to a frontend track this afternoon", "expected_skill": "wopr-run-crew"}
-{"intent": "start running a legacy migration off the old jquery admin", "expected_skill": "wopr-run-crew"}
-{"intent": "kick it off: addressing auditor blockers first, then the new endpoint", "expected_skill": "wopr-run-crew"}
-{"intent": "back on it, ongoing iteration on an existing project again today", "expected_skill": "wopr-run-crew"}
+{"intent": "this is ongoing iteration on an existing project, spin the crew up", "expected_skill": "kitt-run-crew"}
+{"intent": "addressing auditor blockers from the last pass, start now", "expected_skill": "kitt-run-crew"}
+{"intent": "we're handing off a backend change to a frontend track this afternoon", "expected_skill": "kitt-run-crew"}
+{"intent": "start running a legacy migration off the old jquery admin", "expected_skill": "kitt-run-crew"}
+{"intent": "kick it off: addressing auditor blockers first, then the new endpoint", "expected_skill": "kitt-run-crew"}
+{"intent": "back on it, ongoing iteration on an existing project again today", "expected_skill": "kitt-run-crew"}
 {"intent": "who should I hire for my crew", "expected_skill": null}
 {"intent": "the crew is coming to fix the roof on tuesday", "expected_skill": null}
 {"intent": "how many people are on the crew right now", "expected_skill": null}

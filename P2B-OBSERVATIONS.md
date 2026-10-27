@@ -8,7 +8,7 @@ already made.
 
 ## How the gate actually works (context for everything below)
 
-`src/wopr/tools/_routing_eval.py` runs a no-model, lexical Layer A check:
+`src/kitt/tools/_routing_eval.py` runs a no-model, lexical Layer A check:
 
 1. `extract_trigger_phrases` reads each skill's frontmatter
    `description`, finds a sentence containing a recognized positive cue
@@ -41,11 +41,11 @@ them can pass today:
 
 | Skill | Why it extracts nothing |
 | --- | --- |
-| `wopr-create-agent-instructions` | Description is all declarative prose ("Scaffold a project's agent-instructions files ..."); no cue phrase. |
-| `wopr-create-yml` | Same: "Scaffold a `wopr.yml` at a specified path ..."; no cue phrase. |
-| `wopr-init-project` | Same: "One-shot umbrella skill that takes a project from ..."; no cue phrase. |
-| `wopr-angular-developer` | Says "**Trigger when** creating projects, components, or services, ...". The cue list recognizes `triggers on` and `trigger:` but **not** `trigger when`. One word away from working. |
-| `wopr-build-angular-apps` | Declarative feature list; no cue phrase. |
+| `kitt-create-agent-instructions` | Description is all declarative prose ("Scaffold a project's agent-instructions files ..."); no cue phrase. |
+| `kitt-create-yml` | Same: "Scaffold a `kitt.yml` at a specified path ..."; no cue phrase. |
+| `kitt-init-project` | Same: "One-shot umbrella skill that takes a project from ..."; no cue phrase. |
+| `kitt-angular-developer` | Says "**Trigger when** creating projects, components, or services, ...". The cue list recognizes `triggers on` and `trigger:` but **not** `trigger when`. One word away from working. |
+| `kitt-build-angular-apps` | Declarative feature list; no cue phrase. |
 | `build-python-services` | Declarative feature list; no cue phrase. |
 
 Evidence that this is a real blind spot, not a theoretical one: blanking
@@ -64,12 +64,12 @@ description gains a cue clause.
 
 **Recommended for the slimming pass:** add a "Use when ..." clause to
 each of these six descriptions and uncomment the parked positives. For
-`wopr-angular-developer`, the cheapest possible fix is changing
+`kitt-angular-developer`, the cheapest possible fix is changing
 "Trigger when" to "Use when" (or adding `trigger when` to
 `_POSITIVE_CUES`, which is a source change and therefore out of scope
 here).
 
-## 2. `wopr-create-plans` has a dangerously broad single-word trigger
+## 2. `kitt-create-plans` has a dangerously broad single-word trigger
 
 The description clause "Use when planning projects, phases, or tasks
 that the AI agent will execute" splits into three phrases, one of which
@@ -78,9 +78,9 @@ is the bare word `phases`. Six characters is exactly the
 
 Verified false positives against the live catalog:
 
-- `explain the moon phases to my kid` matches `wopr-create-plans`
-- `the disease progresses in phases` matches `wopr-create-plans`
-- `skip the intro phases of onboarding` matches `wopr-create-plans`
+- `explain the moon phases to my kid` matches `kitt-create-plans`
+- `the disease progresses in phases` matches `kitt-create-plans`
+- `skip the intro phases of onboarding` matches `kitt-create-plans`
 
 These were deliberately **not** committed as fixtures, because they
 would fail. They are recorded here as a real routing defect. Rewording
@@ -88,16 +88,16 @@ the clause (for example "Use when planning projects, mapping delivery
 phases, or breaking work into tasks that the AI agent will execute")
 would eliminate the bare `phases` token while keeping the meaning.
 
-## 3. `wopr-run-crew`'s first trigger phrase is unusable in practice
+## 3. `kitt-run-crew`'s first trigger phrase is unusable in practice
 
 The description reads:
 
 > Use for any disciplined dev work on a project configured with
-> `wopr.yml`: net-new feature implementation, ongoing iteration ...
+> `kitt.yml`: net-new feature implementation, ongoing iteration ...
 
 Because the colon is normalized to a space rather than treated as a
 clause boundary, the first extracted phrase is the 100-plus character
-run-on `any disciplined dev work on a project configured with wopr yml
+run-on `any disciplined dev work on a project configured with kitt yml
 net new feature implementation`. No developer types that, so no honest
 fixture can embed it. The other four phrases from that description
 (`ongoing iteration on an existing project`, `addressing auditor
@@ -112,13 +112,13 @@ list item would recover a fifth usable trigger.
 Three skills have trigger phrases that are single long clauses rather
 than short handles, which makes natural-sounding positives hard:
 
-- `wopr-create-meta-prompts`: only two phrases, both long
+- `kitt-create-meta-prompts`: only two phrases, both long
   (`building prompts that produce outputs for other prompts to consume`
   and `when running multi stage workflows research plan implement`).
   Every positive is a sentence built around one of them.
-- `wopr-doctor`: `any time the agent wants to confirm a project is
-  correctly wired for wopr` is a whole sentence, not a trigger.
-- `wopr-debug-like-expert`: `when issues require systematic root cause
+- `kitt-doctor`: `any time the agent wants to confirm a project is
+  correctly wired for kitt` is a whole sentence, not a trigger.
+- `kitt-debug-like-expert`: `when issues require systematic root cause
   analysis` includes the leading "when", which forces awkward
   constructions like "one of those when issues require ... moments".
 
@@ -128,7 +128,7 @@ handles. Worth considering during slimming.
 
 ## 5. Two Angular skills overlap and neither is routable
 
-`wopr-angular-developer` and `wopr-build-angular-apps` cover
+`kitt-angular-developer` and `kitt-build-angular-apps` cover
 substantially the same ground (Angular architecture, signals, component
 patterns). Neither has a cue phrase, so the gate cannot detect the
 collision today. `find_duplicate_descriptions` also will not flag them,
@@ -141,7 +141,7 @@ versus "reviewing or migrating an existing Angular app", or similar).
 ## 6. Naming inconsistency
 
 `build-python-services` is the only skill in the catalog without the
-`wopr-` prefix. `wopr-build-angular-apps` is the direct analogue and
+`kitt-` prefix. `kitt-build-angular-apps` is the direct analogue and
 does carry the prefix. Cosmetic, but it affects the fixture
 `expected_skill` values and anything else keyed by skill name, so it is
 cheaper to fix before more references accumulate than after.
@@ -164,15 +164,15 @@ FAILED tests/test_converters.py::TestToCopilotSkill::test_consider_command_gets_
 KeyError: 'disable-model-invocation'
 ```
 
-The test calls `to_copilot_skill(content, "wopr-consider-pareto")` and
+The test calls `to_copilot_skill(content, "kitt-consider-pareto")` and
 expects the `disable-model-invocation` flag. `to_copilot_skill` sets that
 flag only when the resource name is in
 `EXPLICIT_INVOCATION_ONLY_COMMANDS`, which is
-`frozenset({"wopr-consider", "wopr-realign"})` in
-`src/wopr/conversion_manifest.py`. A comment right above that frozenset
-says the `wopr-consider-*` commands were collapsed into a single
-`wopr-consider`, so the test is asserting against the pre-collapse name.
-The fix is almost certainly to update the test to use `wopr-consider`,
+`frozenset({"kitt-consider", "kitt-realign"})` in
+`src/kitt/conversion_manifest.py`. A comment right above that frozenset
+says the `kitt-consider-*` commands were collapsed into a single
+`kitt-consider`, so the test is asserting against the pre-collapse name.
+The fix is almost certainly to update the test to use `kitt-consider`,
 but that is a judgment call for whoever owns that consolidation.
 
 `tests/test_routing_eval.py` passes fully (45 passed), as does the rest

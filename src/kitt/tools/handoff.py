@@ -31,7 +31,7 @@ async def create_handoff(
         target_workspace_path: Absolute path to the project workspace root
             (where whats-next.md should live), and must exist. Optional on
             Claude Code, where it defaults to the session's project via
-            CLAUDE_PROJECT_DIR; on other CLIs pass it explicitly. WOPR never
+            CLAUDE_PROJECT_DIR; on other CLIs pass it explicitly. KITT never
             guesses from the server's launch directory.
         summary: Brief summary of what was accomplished.
         next_steps: What needs to happen next (bullet points recommended).

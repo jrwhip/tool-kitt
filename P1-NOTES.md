@@ -26,7 +26,7 @@ Test run: **548 passed, 1 skipped**. The single skip is pre-existing and
 not introduced here: `tests/test_embeddings.py` skips at module import
 when `numpy` is absent, which is the documented behavior of the optional
 `[embeddings]` extra. `uv run ruff check src tests` and
-`uv run mypy src/wopr` are both clean.
+`uv run mypy src/kitt` are both clean.
 
 Catalog content was copied **verbatim**. The 48,178-line figure is the
 six surviving packs unslimmed; content slimming is P2, so that number is
@@ -38,7 +38,7 @@ expected to drop a lot and is not a P1 result.
 append_learnings                 learnings_search
 check_mcp_servers_for_malware    list_pack_templates
 check_routing_evals              pin_skill
-create_handoff                   propose_wopr_yml
+create_handoff                   propose_kitt_yml
 curate_learnings                 scan_skill_directory
 detect_stack                     seed_learnings
 get_handoff                      skill_usage_report
@@ -46,7 +46,7 @@ get_help                         validate_scout_contract
 get_pack_template                write_handoff_contract_stub
 get_workspace_info               write_spec_stubs
 learnings_path                   write_tracking_doc_stub
-                                 write_wopr_yml
+                                 write_kitt_yml
 ```
 
 `tests/test_server.py::TestCreateApp::test_registers_exactly_the_expected_tool_set`
@@ -60,24 +60,24 @@ section 3.
 
 ### 3.1 `detect_stack` was ported, and registered as a tool
 
-**Not in the plan's keep-list.** `wopr_yml.propose_wopr_yml` and
-`write_wopr_yml` take a required `detection_json` argument whose
+**Not in the plan's keep-list.** `kitt_yml.propose_kitt_yml` and
+`write_kitt_yml` take a required `detection_json` argument whose
 documented contract is "the output of `detect_stack`". `detect_stack`
 lived in `tools/doctor.py`, which is dropped. Without it, two kept tools
 have no legal input short of an agent hand-authoring the detection JSON,
-and 25 assertions across `tests/test_wopr_yml.py` have no way to build a
+and 25 assertions across `tests/test_kitt_yml.py` have no way to build a
 fixture.
 
 Resolution: extracted the detector (the dataclasses, all `_detect_*`
-helpers, the `wopr.yml` inventory scan, the external-signal scan, and
-`detect_stack` itself) into a new module `src/wopr/tools/stack_detect.py`
+helpers, the `kitt.yml` inventory scan, the external-signal scan, and
+`detect_stack` itself) into a new module `src/kitt/tools/stack_detect.py`
 and registered `detect_stack` there. The extraction is verbatim except
 for the module docstring, the removal of the `doctor_readiness` /
 `doctor_recommendations` re-export blocks, and four comments that named
 a client project (see 6.2). The recommendation-and-dismissal engine
-(`recommend_wopr_setup`, `dismiss_wopr_recommendation`,
-`list_dismissed_wopr_recommendations`,
-`reset_wopr_recommendation_dismissals`) and both `doctor_*` support
+(`recommend_kitt_setup`, `dismiss_kitt_recommendation`,
+`list_dismissed_kitt_recommendations`,
+`reset_kitt_recommendation_dismissals`) and both `doctor_*` support
 modules did NOT cross over; that is the "doctor nag machinery" the plan
 retires.
 
@@ -92,10 +92,10 @@ This writer's only job is to land
 `catalog/legacy-migration/templates/extracted-requirements.template.md`.
 The `legacy-migration` pack never crosses over, so the tool cannot
 succeed here. Removed from `stub_writers.py` along with its re-export in
-`wopr_yml.py`. Its two sibling writers (`write_tracking_doc_stub`,
+`kitt_yml.py`. Its two sibling writers (`write_tracking_doc_stub`,
 `write_handoff_contract_stub`) land `crew` pack templates and are kept
 unchanged, including their reading of `legacy-migration.*` keys out of a
-project's `wopr.yml` (that is a yml key namespace, not a pack
+project's `kitt.yml` (that is a yml key namespace, not a pack
 dependency, and changing it would be a behavior change).
 
 ### 3.3 `is_safe_entry_name` inlined into `tools/_skill_usage.py`
@@ -131,7 +131,7 @@ wired to the CLI. Module docstring updated to say so.
 
 `resolver.py` is the skill-loading-tier resolver: it exists to classify
 skills into `always` / `resolver` / `dormant` and render the generated
-`wopr-skill-resolver` skill. Every symbol it imports comes from
+`kitt-skill-resolver` skill. Every symbol it imports comes from
 `loading_manifest.py`, which the plan explicitly does not port ("the
 skill-loading-tier mechanism is deliberately not ported"; "per-pack
 plugin install IS the tiering now"). Its only consumer was `cli_setup`,
@@ -158,7 +158,7 @@ assertion was weakened to make a ported behavior pass.
    `cli_setup.setup_claude` / `setup_gemini` / `setup_copilot` against
    escaping a fake `$HOME`; none of those functions exist here, so the
    fixture could only raise `AttributeError` at import. The other
-   autouse guard (`_wopr_home_never_points_at_the_real_home`, which is
+   autouse guard (`_kitt_home_never_points_at_the_real_home`, which is
    the one that matters for the surviving tools) is untouched, as is
    `_rebind_everywhere` which it uses. Two docstrings that named dropped
    modules were reworded.
@@ -188,11 +188,11 @@ assertion was weakened to make a ported behavior pass.
    Cross-workspace isolation for the tools that DID survive is still
    covered by `test_handoff_workspace.py` and `test_learnings*.py`.
 
-5. **`tests/test_wopr_yml.py`**: deleted the three
+5. **`tests/test_kitt_yml.py`**: deleted the three
    `write_extracted_requirements_stub` cases (see 3.2) and adjusted
    `test_stub_writers_register_registers_expected_tools` from a
    three-name list to a two-name list. Changed the import of
-   `detect_stack` from `wopr.tools.doctor` to `wopr.tools.stack_detect`
+   `detect_stack` from `kitt.tools.doctor` to `kitt.tools.stack_detect`
    (see 3.1); all 25 call sites are otherwise untouched.
 
 6. **`tests/test_pack_templates.py`**: deleted
@@ -245,7 +245,7 @@ Also not ported: `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
 was authored), `RESEARCH-CLI-COMPATIBILITY.md`, `docs/`, `docker/`,
 `specs/`, `.planning/`, `playground/`, `research/`,
 `frontend-handoff-contract.md`, `implementation-tracking.md`,
-`tools-manifest.json`, `wopr.yml`, `whats-next.md`, `LEARNINGS.md`,
+`tools-manifest.json`, `kitt.yml`, `whats-next.md`, `LEARNINGS.md`,
 `LEARNINGS.embeddings.npz`, `.ai-cli/`, `.github/`.
 
 ### 5.4 Catalog
@@ -280,9 +280,9 @@ prose, which P1 is not supposed to do.
 
 ### 6.1 Stale prose in ported code
 
-- `help.py` (23 KB) still documents `wopr --init`, `wopr add`,
-  `wopr remove`, `wopr --uninstall`, the skill resolver, Gemini and
-  Copilot install paths, and packs that no longer exist. `wopr help`
+- `help.py` (23 KB) still documents `kitt --init`, `kitt add`,
+  `kitt remove`, `kitt --uninstall`, the skill resolver, Gemini and
+  Copilot install paths, and packs that no longer exist. `kitt help`
   therefore prints instructions for a surface this repo does not have.
   It is the single biggest piece of stale text in `src/`.
 - `server.py`'s `get_workspace_info` still counts
@@ -292,7 +292,7 @@ prose, which P1 is not supposed to do.
   a world with three CLIs and tools that are gone. Structure kept per
   the port brief.
 - `catalog/` markdown still contains `import ai_cli_mcp` shims (two
-  `meta-authoring` commands, one line in `wopr-run-crew/SKILL.md`) and
+  `meta-authoring` commands, one line in `kitt-run-crew/SKILL.md`) and
   a reference to `src/ai_cli_mcp/tools/crew_contracts.py` in
   `catalog/crew/README.md`. Those are real breakages once this package
   is what gets installed. They were left alone because the catalog is
@@ -304,8 +304,8 @@ The quarry had already been scrubbed of client and personal
 identifiers, leaving bracketed placeholders behind. Roughly 20 of these
 came across in comments and docstrings: `[TICKET-ID]` (an issue key)
 and `[client-project-cac]` / `[client-project-b]` (project names). They
-are in `src/wopr/{catalog,help}.py`,
-`src/wopr/tools/{_data_paths,_embeddings,_errors,_target_paths,_version_check,wopr_yml}.py`,
+are in `src/kitt/{catalog,help}.py`,
+`src/kitt/tools/{_data_paths,_embeddings,_errors,_target_paths,_version_check,kitt_yml}.py`,
 and six test modules. They leak nothing, and rewriting comments is
 outside a mechanical port, so they stay for now. Four occurrences WERE
 rewritten in `stack_detect.py` only because that module's comments were
@@ -328,13 +328,13 @@ clean. Add the file before any public push.
   not copied from the quarry.
 - `uv run pytest` -> 548 passed, 1 skipped.
 - `uv run ruff check src tests` -> clean.
-- `uv run mypy src/wopr` -> clean, 41 source files.
-- `uv run wopr --help`, `--version`, `catalog`, `list`, `skill-usage
+- `uv run mypy src/kitt` -> clean, 41 source files.
+- `uv run kitt --help`, `--version`, `catalog`, `list`, `skill-usage
   report` all behave.
-- `uv run python -c "from wopr.server import create_app; create_app()"`
+- `uv run python -c "from kitt.server import create_app; create_app()"`
   imports and builds the app.
-- `uv build` -> wheel contains all six packs under `wopr/resources/`
-  plus `wopr/catalog.yaml`, confirming the ported `hatch_build.py` hook
+- `uv build` -> wheel contains all six packs under `kitt/resources/`
+  plus `kitt/catalog.yaml`, confirming the ported `hatch_build.py` hook
   maps to the new package name correctly. Build artifacts removed
   afterwards.
 
@@ -344,9 +344,9 @@ Two log lines told the operator to run a command that no longer exists.
 Left as-is they would be actively wrong output, so they were reworded.
 No logic changed.
 
-- `manager.py` `cmd_list`: `"No packs installed. Run 'wopr --init'
+- `manager.py` `cmd_list`: `"No packs installed. Run 'kitt --init'
   first."` -> `"No packs installed for this workspace."`, and
-  `"No global packs installed. Use 'wopr add -g <pack>' to install."` ->
+  `"No global packs installed. Use 'kitt add -g <pack>' to install."` ->
   `"No global packs installed."`
-- `skill_usage_cli.py`: `"No skills found. Run \`wopr --init\` first."`
+- `skill_usage_cli.py`: `"No skills found. Run \`kitt --init\` first."`
   -> `"No skills found in this workspace's shared dirs."`

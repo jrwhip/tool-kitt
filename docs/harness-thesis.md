@@ -4,9 +4,9 @@ Evidence document. The presentation's thesis is larger than this file: what is p
 
 Presentation source data. Every number in this document is reproducible from this repository (`evals/golden-req/`) or cited to a published Anthropic source. No number is estimated.
 
-## Terminology: WOPR is not the harness
+## Terminology: KITT is not the harness
 
-Strictly, the harness is the runtime that owns the agent loop: context management, tool execution, permissions, model calls. That is Claude Code (or Gemini CLI, or Copilot). WOPR ships no loop of its own; it is skills, subagents, MCP tools, and specs, all executed by the host harness, which is exactly why it can be cross-CLI. The accurate label for WOPR is an orchestration and methodology layer, a harness extension: the crew (scout, coder, tester, auditor) is orchestration expressed through the harness's subagent mechanism, not an independent runtime. The defensible framing for the talk is "WOPR turns a general-purpose harness into a disciplined one," not "WOPR is a harness." This document uses "harness" loosely for the harness-plus-WOPR stack because the shrink measurements apply to the layered whole; when precision matters on a slide, use the strict sense.
+Strictly, the harness is the runtime that owns the agent loop: context management, tool execution, permissions, model calls. That is Claude Code (or Gemini CLI, or Copilot). KITT ships no loop of its own; it is skills, subagents, MCP tools, and specs, all executed by the host harness, which is exactly why it can be cross-CLI. The accurate label for KITT is an orchestration and methodology layer, a harness extension: the crew (scout, coder, tester, auditor) is orchestration expressed through the harness's subagent mechanism, not an independent runtime. The defensible framing for the talk is "KITT turns a general-purpose harness into a disciplined one," not "KITT is a harness." This document uses "harness" loosely for the harness-plus-KITT stack because the shrink measurements apply to the layered whole; when precision matters on a slide, use the strict sense.
 
 ## The thesis in three sentences
 
@@ -14,7 +14,7 @@ A quality toolset multiplies what a strong model can do: structure, verification
 
 ## The story in one arc
 
-WOPR's crew orchestrator was designed in the pre-Claude-4.5 era: four separated agent roles, a corrective-RAG learning loop, and 473 lines of orchestration instruction that told the model things it needed to be told at the time. In August 2026 the orchestrator was rewritten for the Claude 5 era using Claude Code itself, with every change gated on a golden-requirement evaluation: the same small FastAPI feature (REQ-GOLD-1, an echo endpoint with validation, boundary cases, OpenAPI presence, and coverage floors) run through the crew before and after, twice each, plus a no-harness control.
+KITT's crew orchestrator was designed in the pre-Claude-4.5 era: four separated agent roles, a corrective-RAG learning loop, and 473 lines of orchestration instruction that told the model things it needed to be told at the time. In August 2026 the orchestrator was rewritten for the Claude 5 era using Claude Code itself, with every change gated on a golden-requirement evaluation: the same small FastAPI feature (REQ-GOLD-1, an echo endpoint with validation, boundary cases, OpenAPI presence, and coverage floors) run through the crew before and after, twice each, plus a no-harness control.
 
 ## The data: one REQ, three harness sizes
 

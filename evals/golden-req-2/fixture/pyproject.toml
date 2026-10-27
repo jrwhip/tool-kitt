@@ -1,7 +1,7 @@
 [project]
-name = "wopr-golden-fixture"
+name = "kitt-golden-fixture"
 version = "0.1.0"
-description = "Deterministic FastAPI fixture for WOPR crew-skill golden-REQ evaluation."
+description = "Deterministic FastAPI fixture for KITT crew-skill golden-REQ evaluation."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115,<1.0",

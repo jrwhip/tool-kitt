@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
-"""CLI entry point for WOPR.
+"""CLI entry point for KITT.
 
 Usage:
-    wopr                             # Run MCP server (stdio)
-    wopr list                        # Show installed packs
-    wopr catalog                     # Show all available packs
-    wopr help                        # Show help topics
-    wopr help packs                  # Help on a specific topic
-    wopr skill-usage report          # Observed skill usage (a lower bound)
-    wopr skill-usage pin NAME        # Never mark a rare skill stale
-    wopr build-plugins --out DIR     # Emit the plugin marketplace
-    wopr build-plugins --out plugins --marketplace-root .   # hosted from this repo
-    wopr learnings append --entry-file -   # Append a LEARNINGS entry
-    wopr learnings search --req-id REQ-1   # Retrieve relevant entries
-    wopr --version                   # Show version
+    kitt                             # Run MCP server (stdio)
+    kitt list                        # Show installed packs
+    kitt catalog                     # Show all available packs
+    kitt help                        # Show help topics
+    kitt help packs                  # Help on a specific topic
+    kitt skill-usage report          # Observed skill usage (a lower bound)
+    kitt skill-usage pin NAME        # Never mark a rare skill stale
+    kitt build-plugins --out DIR     # Emit the plugin marketplace
+    kitt build-plugins --out plugins --marketplace-root .   # hosted from this repo
+    kitt learnings append --entry-file -   # Append a LEARNINGS entry
+    kitt learnings search --req-id REQ-1   # Retrieve relevant entries
+    kitt --version                   # Show version
 
 Pack installation is not part of this surface. The prior toolset
 deployed catalog content by symlinking it into each CLI's own
-directories (``wopr --init``); that machinery is replaced by the
-per-pack Claude Code plugins ``wopr build-plugins`` emits.
+directories (``kitt --init``); that machinery is replaced by the
+per-pack Claude Code plugins ``kitt build-plugins`` emits.
 
 Parser shape: one subparser per subcommand, with the three workspace
 options on a shared parent so they are accepted on either side of the
-subcommand (``wopr --workspace X list`` and ``wopr list --workspace X``
+subcommand (``kitt --workspace X list`` and ``kitt list --workspace X``
 both work, as they did under the previous flat parser).
 """
 
@@ -56,7 +56,7 @@ def _workspace_options(*, suppress_defaults: bool) -> argparse.ArgumentParser:
     subparser parses into a fresh namespace and copies every key back
     onto the parent's, defaults included, so a subcommand copy of
     ``--workspace`` silently overwrites the value the top level already
-    parsed: ``wopr --workspace X list`` would resolve to the current
+    parsed: ``kitt --workspace X list`` would resolve to the current
     directory. ``SUPPRESS`` keeps unsupplied subcommand options out of
     that copy, so the top-level value survives and an explicit
     subcommand value still wins.
@@ -120,7 +120,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Flag-free by design: the skill-usage hook shells out to
-    # ``wopr skill-usage record <source> <name>...`` and
+    # ``kitt skill-usage record <source> <name>...`` and
     # ``skill_usage_cli`` owns the positional grammar.
     usage_parser = subparsers.add_parser(
         "skill-usage", parents=[common], help="Skill telemetry: report, record, pin",
@@ -238,8 +238,8 @@ def _run_learnings(args: argparse.Namespace) -> int:
         )
 
     print(
-        "Error: `wopr learnings` needs an action: append or search. "
-        "Run `wopr learnings --help`.",
+        "Error: `kitt learnings` needs an action: append or search. "
+        "Run `kitt learnings --help`.",
         file=sys.stderr,
     )
     return 2
@@ -273,12 +273,12 @@ def _run_build_plugins(args: argparse.Namespace) -> int:
 
 
 def serve() -> int:
-    """Run the MCP server. Entry point of the bundled ``wopr-serve`` script.
+    """Run the MCP server. Entry point of the bundled ``kitt-serve`` script.
 
-    ``wopr`` with no subcommand does the same thing. The plugin bundle
+    ``kitt`` with no subcommand does the same thing. The plugin bundle
     gets its own console script so the launch contract in the emitted
     ``.mcp.json`` names an action rather than relying on a bare
-    ``wopr`` invocation resolving to the server.
+    ``kitt`` invocation resolving to the server.
     """
     from .server import run_server
 

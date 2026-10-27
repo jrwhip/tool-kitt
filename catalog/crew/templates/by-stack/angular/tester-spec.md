@@ -13,7 +13,7 @@
 | Implementation tracking | `IMPLEMENTATION_TRACKING.md` | Which REQs need coverage, which need disabled stubs |
 | Extracted requirements | (legacy projects) `EXTRACTED_REQUIREMENTS.md` | Acceptance criteria per REQ |
 | Coder spec | `specs/coder-spec.md` | What the production code should look like |
-| OpenAPI spec | path in `wopr.yml` (`api_contract.spec_url`) | Source of truth for endpoint shapes; tests assert against generated types |
+| OpenAPI spec | path in `kitt.yml` (`api_contract.spec_url`) | Source of truth for endpoint shapes; tests assert against generated types |
 
 ---
 
@@ -135,7 +135,7 @@ Never report `gate: PASS` without a fresh `ng test --coverage` (or `npx nx test 
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
+When `spec_writes` is ON (`kitt.yml` `specs.spec_writes`; default OFF), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
 
 - A new fixture-construction idiom (builder for nested signal-based forms).
 - A coverage rule for a new test category.
@@ -145,11 +145,11 @@ When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend th
 
 ---
 
-## Visual Regression (only when `wopr.yml` declares `specs.design_spec`)
+## Visual Regression (only when `kitt.yml` declares `specs.design_spec`)
 
 The `crew-designer` role owns these tests; the tester never writes or edits `@visual` tests, and the designer never writes anything else. Listed here because they live in the same e2e tree and the auditor runs them at the gate.
 
 - Mechanism: Playwright screenshot assertions (`await expect(page).toHaveScreenshot(...)`), one per appearance acceptance criterion, tagged `@visual`.
-- Command: `specs.visual_check` from `wopr.yml` (canonically `npx playwright test --grep @visual`).
+- Command: `specs.visual_check` from `kitt.yml` (canonically `npx playwright test --grep @visual`).
 - Baselines: committed to the repo at Playwright's default `__screenshots__/` layout. **Only the operator commits or updates a baseline.** The designer generates candidates and lists them; a machine-approved baseline grades the screenshot against itself.
 - Coverage rule: a REQ whose acceptance criteria include appearance with no corresponding `@visual` test is a BLOCKER at audit (auditor checklist item 11).

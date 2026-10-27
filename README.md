@@ -1,6 +1,6 @@
-# WOPR
+# KITT
 
-WOPR is an agent harness for Claude Code: a stdio MCP server plus a
+KITT is an agent harness for Claude Code: a stdio MCP server plus a
 catalog of skills, agents, and commands. The MCP server ships the
 deterministic things a model cannot do for itself (a learnings corpus
 with retrieval and a curation gate, the four-role crew's contract and
@@ -19,7 +19,7 @@ This repository is a clean-room rebuild. It is not a fork. An earlier,
 private toolset (68 MCP tools, 13 catalog packs, roughly 75k lines of
 catalog markdown) was designed against pre-4.5 models and is now
 over-instructed for the current ones. That toolset stays private and
-stays put; WOPR ports the surviving subset, re-authored as it crosses
+stays put; KITT ports the surviving subset, re-authored as it crosses
 over, and drops the rest. Nothing client-entangled comes across.
 
 ## Install
@@ -28,10 +28,10 @@ Not published yet. From a checkout:
 
 ```
 uv sync
-uv run wopr --help
+uv run kitt --help
 ```
 
-Register the MCP server with Claude Code by pointing it at `wopr` (no
+Register the MCP server with Claude Code by pointing it at `kitt` (no
 subcommand) over stdio.
 
 ## Status

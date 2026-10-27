@@ -1,17 +1,17 @@
-"""Emit the ``wopr-plugins`` Claude Code marketplace from the catalog.
+"""Emit the ``kitt-plugins`` Claude Code marketplace from the catalog.
 
 One catalog pack becomes one plugin. The generated tree is a complete,
 installable marketplace: ``.claude-plugin/marketplace.json`` at the
-root, one plugin directory per pack, and inside ``wopr-core`` the MCP
+root, one plugin directory per pack, and inside ``kitt-core`` the MCP
 server itself (source, a runtime-only ``pyproject.toml``, the packaged
 resources the surviving tools read, and a bootstrap shim that launches
 it through ``uv``).
 
 Distribution posture (decided 2026-08-21): marketplace only. There is
-no ``wopr install`` of any kind and no PyPI dependency at install time.
-``/plugin install wopr-core@wopr-marketplace`` copies the plugin into
+no ``kitt install`` of any kind and no PyPI dependency at install time.
+``/plugin install kitt-core@kitt-marketplace`` copies the plugin into
 the plugin cache; the first MCP launch runs
-``uv run --project <plugin>/server wopr-serve``, and uv resolves the
+``uv run --project <plugin>/server kitt-serve``, and uv resolves the
 two runtime dependencies from PyPI at that point. The only prerequisite
 on the user's machine is uv, which is a static binary that provisions
 its own Python.
@@ -36,7 +36,7 @@ What is deliberately NOT emitted:
   slimming gate (``check_routing_evals``), read from the source
   catalog, and are useless to an installed plugin.
 * Pack-root ``README.md`` files. They document the retired
-  ``wopr add <pack>`` install path and would ship stale instructions.
+  ``kitt add <pack>`` install path and would ship stale instructions.
 * ``catalog/_core/context/``. The ``get_shared_context`` shim that
   served those documents retired with the rest of the cross-CLI shim
   layer in P1; nothing in a plugin-native world reads them.
@@ -116,7 +116,7 @@ PLUGIN_NAME_OVERRIDES: dict[str, str] = {
     "meta-authoring": f"{PLUGIN_PREFIX}meta",
 }
 """Pack directory name -> plugin name, where the default rule does not
-apply. Every other pack becomes ``wopr-<pack>``."""
+apply. Every other pack becomes ``kitt-<pack>``."""
 
 COMPONENT_DIRS: tuple[str, ...] = ("commands", "agents", "skills")
 """Claude Code component directories, scanned by the plugin loader at
@@ -126,11 +126,11 @@ and is skipped."""
 AUXILIARY_DIRS: tuple[str, ...] = ("hooks", "scripts", "templates", "data")
 """Pack-owned support directories copied verbatim when present.
 
-``hooks/`` is WOPR's own hook source (``*.HOOK.yaml`` manifests plus
+``hooks/`` is KITT's own hook source (``*.HOOK.yaml`` manifests plus
 the scripts they register), NOT a Claude Code ``hooks/hooks.json``.
 Claude Code only loads ``hooks/hooks.json`` by default and no emitted
 pack has one, so the directory is inert until an operator runs
-``/wopr-configure-*``. See P3-NOTES.md."""
+``/kitt-configure-*``. See P3-NOTES.md."""
 
 EXCLUDED_FILE_NAMES = frozenset({"routing-eval.jsonl"})
 EXCLUDED_DIR_NAMES = frozenset({"__pycache__", "node_modules"})
@@ -145,15 +145,15 @@ covers every future cache directory without a maintenance list."""
 # POLICY (decided 2026-08-22, after a live plugin session found every
 # agent tool grant dead on arrival):
 #
-#   The catalog source names WOPR's MCP tools install-agnostically, as
-#   ``mcp__wopr__<tool>``. The generator owns the runtime name.
+#   The catalog source names KITT's MCP tools install-agnostically, as
+#   ``mcp__kitt__<tool>``. The generator owns the runtime name.
 #
 # Why the source form cannot also be the runtime form. Claude Code
 # namespaces an MCP server by how it was reached. A server registered
-# by hand in ``~/.claude.json`` under the key ``wopr`` presents its
-# tools as ``mcp__wopr__<tool>``. The SAME server, shipped inside a
+# by hand in ``~/.claude.json`` under the key ``kitt`` presents its
+# tools as ``mcp__kitt__<tool>``. The SAME server, shipped inside a
 # plugin, presents them as ``mcp__plugin_<plugin>_<server-key>__<tool>``
-# — here ``mcp__plugin_wopr-core_wopr__<tool>``, verified against a live
+# — here ``mcp__plugin_kitt-core_kitt__<tool>``, verified against a live
 # session's tool list and against the sibling Atlassian plugin's
 # ``mcp__plugin_atlassian_atlassian__*``. So there is no single string
 # that is correct in both worlds, and the catalog has to pick one.
@@ -161,7 +161,7 @@ covers every future cache directory without a maintenance list."""
 # It picks the short one, for three reasons:
 #
 # 1. The plugin name is a distribution decision (``PLUGIN_NAME_OVERRIDES``
-#    maps ``_core`` -> ``wopr-core`` today and could map it elsewhere
+#    maps ``_core`` -> ``kitt-core`` today and could map it elsewhere
 #    tomorrow). Baking a distribution decision into 58 prose references
 #    across 7 catalog files means a rename becomes a catalog-wide sed.
 # 2. The catalog is also read directly out of the repo by developers and
@@ -173,17 +173,17 @@ covers every future cache directory without a maintenance list."""
 #    CRAG write path died.
 #
 # Enforcement lives in ``tests/test_prose_contract.py``: every
-# ``mcp__wopr__<tool>`` token in the catalog must name a tool
+# ``mcp__kitt__<tool>`` token in the catalog must name a tool
 # ``create_app()`` actually registers, and the runtime form must never
 # appear in source.
 #
 # The rewrite applies to EVERY plugin's markdown, not just
-# ``wopr-core``'s. ``wopr`` is the only MCP server in the marketplace;
-# a skill in ``wopr-crew`` calling ``append_learnings`` is calling the
-# server that ``wopr-core`` carries, so it needs ``wopr-core``'s prefix.
+# ``kitt-core``'s. ``kitt`` is the only MCP server in the marketplace;
+# a skill in ``kitt-crew`` calling ``append_learnings`` is calling the
+# server that ``kitt-core`` carries, so it needs ``kitt-core``'s prefix.
 
 SOURCE_TOOL_PREFIX = f"mcp__{MCP_SERVER_KEY}__"
-"""How the catalog spells a WOPR MCP tool. Install-agnostic."""
+"""How the catalog spells a KITT MCP tool. Install-agnostic."""
 
 _SOURCE_TOOL_RE = re.compile(
     re.escape(SOURCE_TOOL_PREFIX) + r"(?P<tool>[a-z][a-z0-9_]*)"
@@ -191,7 +191,7 @@ _SOURCE_TOOL_RE = re.compile(
 """Matches a whole tool reference, never a bare prefix mention.
 
 Requiring a trailing tool name keeps prose that discusses the naming
-scheme itself (``the mcp__wopr__ prefix``) out of the rewrite, and
+scheme itself (``the mcp__kitt__ prefix``) out of the rewrite, and
 makes the substitution idempotent: the runtime form it produces does
 not contain :data:`SOURCE_TOOL_PREFIX` as a substring."""
 
@@ -358,8 +358,8 @@ def runtime_tool_prefix(
 def rewrite_tool_names(text: str, prefix: str | None = None) -> str:
     """Rewrite catalog tool references into their runtime form.
 
-    ``mcp__wopr__append_learnings`` becomes
-    ``mcp__plugin_wopr-core_wopr__append_learnings``. Frontmatter
+    ``mcp__kitt__append_learnings`` becomes
+    ``mcp__plugin_kitt-core_kitt__append_learnings``. Frontmatter
     ``tools:`` entries and prose are the same substitution: both are
     plain text as far as this function is concerned, and a grant that
     does not match the runtime name grants nothing.
@@ -568,19 +568,19 @@ def render_marketplace_manifest(
 
 
 def render_mcp_config() -> str:
-    """Render ``wopr-core/.mcp.json``.
+    """Render ``kitt-core/.mcp.json``.
 
     ``${CLAUDE_PLUGIN_ROOT}`` is expanded by Claude Code in ``command``,
-    ``args`` and ``env`` for stdio servers. ``WOPR_PLUGIN_ROOT`` is
+    ``args`` and ``env`` for stdio servers. ``KITT_PLUGIN_ROOT`` is
     passed through so the server can find its bundled resources without
     inferring anything from ``__file__`` (see
-    :func:`wopr.config.plugin_resources_root`).
+    :func:`kitt.config.plugin_resources_root`).
     """
     config = {
         "mcpServers": {
             MCP_SERVER_KEY: {
                 "command": "${CLAUDE_PLUGIN_ROOT}/" + BOOTSTRAP_SCRIPT_REL,
-                "env": {"WOPR_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}"},
+                "env": {"KITT_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}"},
             }
         }
     }
@@ -593,14 +593,14 @@ def render_bootstrap_script() -> str:
     The shim exists so ``.mcp.json`` can name one stable command while
     the launch details (uv, the project path, the missing-uv guidance)
     live in a file that can be read and debugged. It resolves the
-    plugin root from ``WOPR_PLUGIN_ROOT`` (set by ``.mcp.json``), then
+    plugin root from ``KITT_PLUGIN_ROOT`` (set by ``.mcp.json``), then
     ``CLAUDE_PLUGIN_ROOT``, then from its own location, so it also
     works when run by hand from a terminal.
     """
     return """#!/usr/bin/env bash
-# Launch the WOPR MCP server bundled inside this plugin.
+# Launch the KITT MCP server bundled inside this plugin.
 #
-# Generated by `wopr build-plugins`. Do not edit by hand: the next
+# Generated by `kitt build-plugins`. Do not edit by hand: the next
 # `/plugin update` overwrites it.
 #
 # uv is the only prerequisite. It is a static binary that provisions
@@ -609,7 +609,7 @@ def render_bootstrap_script() -> str:
 # PyPI into a venv beside the bundled server; later launches reuse it.
 set -euo pipefail
 
-plugin_root="${WOPR_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}"
+plugin_root="${KITT_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}"
 if [ -z "$plugin_root" ]; then
   script_dir="$(cd "$(dirname "$0")" && pwd)"
   plugin_root="$(dirname "$script_dir")"
@@ -617,7 +617,7 @@ fi
 
 if ! command -v uv >/dev/null 2>&1; then
   {
-    echo "wopr: uv was not found on PATH, and the bundled WOPR MCP server needs it."
+    echo "kitt: uv was not found on PATH, and the bundled KITT MCP server needs it."
     echo "Install uv, then restart Claude Code:"
     echo "  Windows: powershell -c \\"irm https://astral.sh/uv/install.ps1 | iex\\""
     echo "           or: winget install astral-sh.uv"
@@ -628,7 +628,7 @@ if ! command -v uv >/dev/null 2>&1; then
   exit 1
 fi
 
-export WOPR_PLUGIN_ROOT="$plugin_root"
+export KITT_PLUGIN_ROOT="$plugin_root"
 exec uv run --project "$plugin_root/@SERVER_DIR@" @SERVER_ENTRY@
 """.replace("@SERVER_DIR@", PLUGIN_SERVER_DIRNAME).replace(
         "@SERVER_ENTRY@", SERVER_ENTRY_POINT
@@ -648,30 +648,30 @@ def render_server_pyproject(version: str) -> str:
     opt-in.
     """
     deps = "\n".join(f'    "{dep}",' for dep in SERVER_DEPENDENCIES)
-    return f"""# Generated by `wopr build-plugins`. Do not edit by hand.
+    return f"""# Generated by `kitt build-plugins`. Do not edit by hand.
 #
-# The runtime projection of the WOPR package: the server source plus
+# The runtime projection of the KITT package: the server source plus
 # the dependencies it imports at run time (including the embeddings
 # stack for CRAG's semantic search). `uv run --project .` resolves
 # these on first launch.
 [project]
-name = "wopr"
+name = "kitt"
 version = "{version}"
-description = "WOPR MCP server, bundled inside the wopr-core Claude Code plugin"
+description = "KITT MCP server, bundled inside the kitt-core Claude Code plugin"
 requires-python = ">=3.10"
 dependencies = [
 {deps}
 ]
 
 [project.scripts]
-{SERVER_ENTRY_POINT} = "wopr.cli:serve"
+{SERVER_ENTRY_POINT} = "kitt.cli:serve"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/wopr"]
+packages = ["src/kitt"]
 """
 
 
@@ -696,10 +696,10 @@ def render_marketplace_readme(plans: list[PluginPlan], version: str) -> str:
     rows = "\n".join(
         f"| `{plan.name}` | {plan.description} |" for plan in plans
     )
-    return f"""# WOPR plugins
+    return f"""# KITT plugins
 
-Generated by `wopr build-plugins`. Do not hand-edit: this whole tree is
-rewritten on every run. Change the catalog in the `wopr` repo instead.
+Generated by `kitt build-plugins`. Do not hand-edit: this whole tree is
+rewritten on every run. Change the catalog in the `kitt` repo instead.
 
 Marketplace: `{MARKETPLACE_NAME}` (version {version})
 
@@ -710,7 +710,7 @@ Marketplace: `{MARKETPLACE_NAME}` (version {version})
 /plugin install {server_plugin_name()}@{MARKETPLACE_NAME}
 ```
 
-Install `wopr-core` first: it carries the MCP server every other pack's
+Install `kitt-core` first: it carries the MCP server every other pack's
 skills call. Add the rest as needed.
 
 | Plugin | What it ships |
@@ -719,7 +719,7 @@ skills call. Add the rest as needed.
 
 ## Prerequisite: uv
 
-`wopr-core` runs its MCP server through [uv](https://docs.astral.sh/uv/).
+`kitt-core` runs its MCP server through [uv](https://docs.astral.sh/uv/).
 uv is a static binary, installs into your user profile, needs no admin
 rights, and provisions its own Python, so nothing else is required.
 
@@ -761,7 +761,7 @@ def _prepare_output_dir(out_dir: Path) -> None:
             raise UnsafeOutputDirError(
                 f"Refusing to write into {out_dir}: it is not empty and has "
                 f"no {MARKER_NAME} marker, so it was not generated by "
-                "`wopr build-plugins`. This command wipes and rewrites its "
+                "`kitt build-plugins`. This command wipes and rewrites its "
                 "output directory. Pick an empty or previously generated "
                 "path, or delete that one yourself first."
             )
@@ -808,32 +808,32 @@ def _write_server_bundle(
     prefix: str,
     previous_lock: bytes | None = None,
 ) -> int:
-    """Copy the server into ``wopr-core/server/``. Returns the file count.
+    """Copy the server into ``kitt-core/server/``. Returns the file count.
 
     Four parts, in the layout ``uv run --project`` and
-    :func:`wopr.config.plugin_resources_root` expect:
+    :func:`kitt.config.plugin_resources_root` expect:
 
-    * ``server/src/wopr/`` - the package source, minus caches. Tests,
+    * ``server/src/kitt/`` - the package source, minus caches. Tests,
       evals and repo tooling live outside ``src/`` and never enter.
     * ``server/resources/`` - the catalog subtrees the surviving tools
       read at run time, plus ``catalog.yaml``. Same relative layout as
-      the wheel's ``wopr/resources/``, so a plugin install and a pip
+      the wheel's ``kitt/resources/``, so a plugin install and a pip
       install resolve identically. Markdown here gets the same tool-name
       rewrite as the component tree: ``get_pack_template`` hands this
       content straight to a model, so a source-form tool name in a
       template is as dead as one in a skill body.
     * ``server/pyproject.toml`` - runtime dependencies and the
-      ``wopr-serve`` entry point.
+      ``kitt-serve`` entry point.
     * ``server/uv.lock`` - the pinned resolution of those dependencies,
       produced by ``uv lock`` (see :data:`SERVER_LOCK_NAME`).
     """
     server_dir = core_dir / PLUGIN_SERVER_DIRNAME
     count = 0
 
-    package_src = repo_root / "src" / "wopr"
+    package_src = repo_root / "src" / "kitt"
     for source in _walk_package_files(package_src):
         rel = source.relative_to(package_src)
-        _copy_file(source, server_dir / "src" / "wopr" / rel)
+        _copy_file(source, server_dir / "src" / "kitt" / rel)
         count += 1
 
     resources_dir = server_dir / PLUGIN_RESOURCES_DIRNAME
@@ -914,8 +914,8 @@ def build_plugins(
         out_dir: Plugin tree root. Created if absent; wiped and
             rewritten if it carries this generator's marker file;
             refused otherwise.
-        repo_root: The ``wopr`` repo root (holds ``catalog/``,
-            ``catalog.yaml`` and ``src/wopr/``).
+        repo_root: The ``kitt`` repo root (holds ``catalog/``,
+            ``catalog.yaml`` and ``src/kitt/``).
         marketplace_root: Where ``.claude-plugin/marketplace.json``
             lands. ``None`` (the default) keeps the tree self-contained:
             the manifest sits inside ``out_dir`` and each plugin's
@@ -958,8 +958,8 @@ def build_plugins(
     previous_lock = _read_previous_lock(out_dir)
     _prepare_output_dir(out_dir)
 
-    # One prefix for the whole tree: `wopr` is the marketplace's only
-    # MCP server, and `wopr-core` is the only plugin that declares it.
+    # One prefix for the whole tree: `kitt` is the marketplace's only
+    # MCP server, and `kitt-core` is the only plugin that declares it.
     prefix = runtime_tool_prefix(core_plan.name)
 
     file_count = 0
@@ -1031,7 +1031,7 @@ def _resolve_manifest_location(
 
 
 def find_repo_root(start: Path | None = None) -> Path:
-    """Locate the repo root that holds ``catalog/`` and ``src/wopr/``.
+    """Locate the repo root that holds ``catalog/`` and ``src/kitt/``.
 
     Walks up from this module's own location, which is correct for both
     an editable install (the repo itself) and a source checkout. A
@@ -1040,11 +1040,11 @@ def find_repo_root(start: Path | None = None) -> Path:
     """
     here = (start or Path(__file__)).resolve()
     for candidate in [here, *here.parents]:
-        if (candidate / "catalog").is_dir() and (candidate / "src" / "wopr").is_dir():
+        if (candidate / "catalog").is_dir() and (candidate / "src" / "kitt").is_dir():
             return candidate
     raise BuildPluginsError(
-        "Could not find the wopr repo root (a directory holding both "
-        f"catalog/ and src/wopr/) above {here}. `wopr build-plugins` "
+        "Could not find the kitt repo root (a directory holding both "
+        f"catalog/ and src/kitt/) above {here}. `kitt build-plugins` "
         "generates from the source catalog and must run from a checkout."
     )
 

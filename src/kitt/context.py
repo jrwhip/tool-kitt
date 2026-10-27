@@ -1,4 +1,4 @@
-"""Runtime context for the WOPR MCP server.
+"""Runtime context for the KITT MCP server.
 
 Holds resolved workspace, CLI type, and shared directory accessors.
 Created once at startup via ServerContext.init(), accessed via ServerContext.get().
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from mcp.server.session import ServerSession
 
     # Fully parameterized so annotations satisfy disallow_any_generics.
-    # No WOPR tool reads ctx.request_context.lifespan_context, hence
+    # No KITT tool reads ctx.request_context.lifespan_context, hence
     # ``object``; RequestT is the SDK's own default (Any).
     ToolContext: TypeAlias = Context[ServerSession, object, Any]
 else:
@@ -46,7 +46,7 @@ logger = logging.getLogger(LOGGER_NAME)
 class WorkspaceNotConfiguredError(RuntimeError):
     """No workspace could be resolved from configuration.
 
-    WOPR deliberately does NOT fall back to the server's launch
+    KITT deliberately does NOT fall back to the server's launch
     directory. A single long-lived MCP server is shared across many git
     worktrees and CLI sessions; binding to whatever directory the
     process happened to spawn in is how a write once landed in an
@@ -139,7 +139,7 @@ class ServerContext:
            ``_core`` pack inside the installed package, the "always
            available" fallback.
 
-        Note: the global install directory at ``~/.wopr/shared/`` (see
+        Note: the global install directory at ``~/.kitt/shared/`` (see
         :attr:`global_shared_dir`) is NOT consulted here. It is unioned
         with this directory in :meth:`resource_dirs`, which is what
         most callers actually use.
@@ -172,7 +172,7 @@ class ServerContext:
 
     @property
     def global_shared_dir(self) -> Path | None:
-        """Global shared resource directory at ``~/.wopr/shared``.
+        """Global shared resource directory at ``~/.kitt/shared``.
 
         Returns None if the directory doesn't exist (no global packs installed).
         """
@@ -189,8 +189,8 @@ class ServerContext:
 
         1. :attr:`shared_dir` ``/ category`` (workspace-local override
            if present, otherwise the bundled ``_core`` pack root).
-        2. :attr:`global_shared_dir` ``/ category`` (``~/.wopr/shared/``
-           where global ``wopr add`` installs land).
+        2. :attr:`global_shared_dir` ``/ category`` (``~/.kitt/shared/``
+           where global ``kitt add`` installs land).
 
         The list is ordered by descending priority so callers can
         iterate and take the first hit. Cross-source name collisions
@@ -226,10 +226,10 @@ class ServerContext:
                 "AI_CLI_WORKSPACE env var",
             ),
             (
-                Path(self.config.wopr_workspace).expanduser().resolve()
-                if self.config.wopr_workspace
+                Path(self.config.kitt_workspace).expanduser().resolve()
+                if self.config.kitt_workspace
                 else None,
-                "WOPR_WORKSPACE env var",
+                "KITT_WORKSPACE env var",
             ),
         ]
 
@@ -246,9 +246,9 @@ class ServerContext:
             )
 
         raise WorkspaceNotConfiguredError(
-            "No WOPR workspace is configured. Set WOPR_WORKSPACE (or "
+            "No KITT workspace is configured. Set KITT_WORKSPACE (or "
             "AI_CLI_WORKSPACE) in the MCP server registration to an existing "
-            "directory. WOPR does not fall back to the server's launch "
+            "directory. KITT does not fall back to the server's launch "
             "directory, to avoid binding to an unrelated worktree."
         )
 

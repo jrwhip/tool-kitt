@@ -18,12 +18,12 @@ rotation legitimately mentions ``~/.aws``). Findings are a screening
 signal for human review, not a verdict to trust blindly — same
 disclaimer Hermes itself makes about its own scanner.
 
-Scope, deliberately narrower than Hermes's ~80-pattern set: WOPR has no
+Scope, deliberately narrower than Hermes's ~80-pattern set: KITT has no
 skill-install pipeline of its own to gate (that's the marketplace's job),
 so this ships as a standalone diagnostic an operator or agent runs
 against any skill directory before trusting it, not a hard install-time
 block. No trust-tiered install policy is implemented for the same reason
-Hermes's exists — WOPR doesn't own the install step to enforce one at.
+Hermes's exists — KITT doesn't own the install step to enforce one at.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from pathlib import Path
 
 from ._threat_patterns import SKILL_GUARD, for_scope
 
-SCANNER_VERSION = "wopr-skill-guard-v1"
+SCANNER_VERSION = "kitt-skill-guard-v1"
 
 # File extensions worth scanning as text. Binary files are flagged
 # structurally (see _check_structure), not pattern-scanned.

@@ -55,7 +55,7 @@ bucket so the per-tool numbers reconcile against the session total.
 
 WHAT IT WRITES
 --------------
-``~/.wopr/token-usage.json`` (override with TOKEN_USAGE_SIDECAR). The
+``~/.kitt/token-usage.json`` (override with TOKEN_USAGE_SIDECAR). The
 whole session entry is recomputed from the transcript and OVERWRITTEN on
 each Stop -- idempotent, no delta bookkeeping, so repeated Stop events or
 a resumed session never double-count. No prompt text, no tool inputs, no
@@ -236,7 +236,7 @@ def resolve_sidecar() -> Path:
     override = os.environ.get("TOKEN_USAGE_SIDECAR", "").strip()
     if override:
         return Path(override)
-    return Path.home() / ".wopr" / "token-usage.json"
+    return Path.home() / ".kitt" / "token-usage.json"
 
 
 def load_sidecar(path: Path) -> dict[str, Any]:

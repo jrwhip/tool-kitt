@@ -1,7 +1,7 @@
 # Golden-REQ post-rewrite run 1
 
 - Date: 2026-08-21
-- Crew skill version: catalog/crew/skills/wopr-run-crew/SKILL.md rewritten to 119 lines (from 473), uncommitted at run time
+- Crew skill version: catalog/crew/skills/kitt-run-crew/SKILL.md rewritten to 119 lines (from 473), uncommitted at run time
 - Dispatch method: identical to baseline (fresh subagents reading agent specs; scout haiku, coder/tester/auditor sonnet)
 - Scratch workspace: /tmp/post-run-1 (copy of the fixed fixture, ruff dep present)
 - CRAG pre-step: ran ONCE per the new skill; learnings_search EMPTY; rule 2: empty relevant_learnings to all agents, no evaluator

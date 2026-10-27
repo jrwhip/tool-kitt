@@ -1,7 +1,7 @@
-# WOPR Golden Fixture
+# KITT Golden Fixture
 
 A small, deterministic FastAPI project. Its only purpose is to act as the
-golden-REQ evaluation fixture for the WOPR crew skill (`wopr-run-crew`):
+golden-REQ evaluation fixture for the KITT crew skill (`kitt-run-crew`):
 scout, coder, tester, auditor. Because the project is tiny and fixed, a
 crew run against `REQ-GOLD-1` produces comparable results across different
 versions of the crew skill. The point is a fast, cheap, repeatable run,
@@ -10,8 +10,8 @@ not a showcase of what the crew can build.
 ## Run procedure
 
 1. Copy the entire directory to a scratch location, for example:
-   `cp -r /tmp/wopr-golden-fixture /tmp/wopr-golden-fixture-run-001`
-2. Run the crew (`wopr-run-crew` skill) against `REQ-GOLD-1` inside that
+   `cp -r /tmp/kitt-golden-fixture /tmp/kitt-golden-fixture-run-001`
+2. Run the crew (`kitt-run-crew` skill) against `REQ-GOLD-1` inside that
    scratch copy, not here.
 3. Record whatever results you are comparing (coverage numbers, audit
    verdict, token/time cost, diffs produced) from the scratch copy.

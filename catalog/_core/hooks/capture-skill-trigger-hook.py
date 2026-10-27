@@ -2,13 +2,13 @@
 """
 capture-skill-trigger-hook.py
 
-Nudges the agent to consider running the wopr-capture-skill skill after a
+Nudges the agent to consider running the kitt-capture-skill skill after a
 session has accumulated enough tool calls that a real, hard-won lesson may
 have come out of it. Designed as a Stop hook for Claude Code.
 
 Why a nudge and not an automatic capture: the decision of WHAT is worth
 capturing is a judgment call (was this actually hard-won, is it durable, is
-it likely to recur) that lives in the wopr-capture-skill skill itself and
+it likely to recur) that lives in the kitt-capture-skill skill itself and
 needs the agent's read of the conversation, not a regex over the transcript.
 A hook cannot invoke a skill directly — the Claude Code hook API has no such
 primitive — so the most this hook can do is put the question in front of the
@@ -95,7 +95,7 @@ NUDGE_TEMPLATE = (
     "genuinely hard-won, reusable lesson came out of this stretch of work — "
     "something that took real investigation, a corrected wrong assumption, "
     "or a non-obvious fix — consider running the capture-skill skill "
-    "(wopr-capture-skill on newer installs) now while the context is fresh. "
+    "(kitt-capture-skill on newer installs) now while the context is fresh. "
     "Skip it if nothing here would help a future session; most stretches of "
     "ordinary work do not need this."
 )
@@ -163,15 +163,15 @@ def count_tool_calls(messages: list[dict[str, Any]], start_index: int) -> int:
     return count
 
 
-_CAPTURE_SKILL_NAMES = ("wopr-capture-skill", "capture-skill")
+_CAPTURE_SKILL_NAMES = ("kitt-capture-skill", "capture-skill")
 
 
 def skill_installed(cwd: str) -> bool:
     """Check whether a capture-skill is reachable from this project or the
-    user's global Claude config. Checks both the WOPR-pack name
-    (``wopr-capture-skill``) and the unprefixed ``capture-skill`` name a
+    user's global Claude config. Checks both the KITT-pack name
+    (``kitt-capture-skill``) and the unprefixed ``capture-skill`` name a
     real install can carry — confirmed against a live machine where the
-    installed skill predates the WOPR meta-authoring pack (older SKILL.md,
+    installed skill predates the KITT meta-authoring pack (older SKILL.md,
     same purpose, name never migrated). Checking only the prefixed name
     made this hook a silent, permanent no-op on that machine; there was no
     error, just nothing ever firing. Mirrors prompt-log-hook.py's opt-in

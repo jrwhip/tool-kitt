@@ -25,8 +25,8 @@ corpus every other tool can find.
 Starting at ``start`` and walking UP parent by parent:
 
 1. A directory is accepted as the workspace root when it contains
-   **either** ``wopr.yml`` **or** ``LEARNINGS.md``. Two markers, not
-   one: ``wopr.yml`` identifies a WOPR-configured package, and
+   **either** ``kitt.yml`` **or** ``LEARNINGS.md``. Two markers, not
+   one: ``kitt.yml`` identifies a KITT-configured package, and
    ``LEARNINGS.md`` identifies a directory that already owns a corpus.
 2. **Nearest match wins.** The walk stops at the first directory that
    carries a marker, not the outermost one.
@@ -37,21 +37,21 @@ Starting at ``start`` and walking UP parent by parent:
 4. When no marker is found before the boundary, resolution **fails**.
    It does not guess. Callers decide what a failure means; the learnings
    tools refuse to write rather than silently retargeting
-   ``~/.wopr/LEARNINGS.md``.
+   ``~/.kitt/LEARNINGS.md``.
 
 The multi-package loop
 ----------------------
 
 The rule that needs spelling out is what happens to a repository whose
-``wopr.yml`` files live in subdirectories while the corpus lives at the
+``kitt.yml`` files live in subdirectories while the corpus lives at the
 repo root::
 
     arcade/                 <- .git, LEARNINGS.md
-      backend/wopr.yml
-      frontend/wopr.yml
+      backend/kitt.yml
+      frontend/kitt.yml
 
 Before anything is seeded, ``arcade/`` carries no marker of its own:
-``wopr.yml`` is one level down in each package, and there is no
+``kitt.yml`` is one level down in each package, and there is no
 ``LEARNINGS.md`` yet. Resolution from ``arcade/`` therefore fails, and
 ``append_learnings`` says so instead of writing somewhere else.
 
@@ -63,8 +63,8 @@ curate call agrees. Seeding a repo root is the supported way to declare
 
 Nearest-match-wins still applies inside that repo: a call targeting
 ``arcade/backend`` resolves to ``arcade/backend`` (it has its own
-``wopr.yml``) and gets its own ``LEARNINGS.md``. Two packages that each
-carry ``wopr.yml`` are two workspaces. To keep one shared corpus for the
+``kitt.yml``) and gets its own ``LEARNINGS.md``. Two packages that each
+carry ``kitt.yml`` are two workspaces. To keep one shared corpus for the
 whole repository, target the repo root.
 """
 
@@ -80,19 +80,19 @@ from ._learnings_format import LEARNINGS_FILENAME
 __all__ = [
     "GIT_DIR_NAME",
     "MARKER_FILENAMES",
-    "WOPR_YML_FILENAME",
+    "KITT_YML_FILENAME",
     "WorkspaceRoot",
     "find_git_toplevel",
     "find_workspace_root",
     "has_marker",
 ]
 
-WOPR_YML_FILENAME = CONFIG_FILENAME
+KITT_YML_FILENAME = CONFIG_FILENAME
 
 #: A directory carrying either of these is a workspace root. Order is
 #: presentation order in error messages only; neither marker outranks
 #: the other during resolution.
-MARKER_FILENAMES: tuple[str, ...] = (WOPR_YML_FILENAME, LEARNINGS_FILENAME)
+MARKER_FILENAMES: tuple[str, ...] = (KITT_YML_FILENAME, LEARNINGS_FILENAME)
 
 GIT_DIR_NAME = ".git"
 
@@ -152,7 +152,7 @@ def find_git_toplevel(start: Path) -> Path | None:
     Detected by walking for the ``.git`` entry rather than shelling out
     to ``git rev-parse --show-toplevel``: no subprocess on a path that
     runs on every append, no dependency on a ``git`` binary being
-    installed, and the same answer for the shapes WOPR cares about.
+    installed, and the same answer for the shapes KITT cares about.
     ``.git`` is matched as either a directory (an ordinary clone) or a
     file (a linked worktree or a submodule), which is why the check is
     ``exists()`` rather than ``is_dir()``.

@@ -1,6 +1,6 @@
 """Shared helpers for resolving a target path against a ``detect_stack`` profile.
 
-Two tool modules (``wopr_yml`` and ``claude_md``) take ``(detection,
+Two tool modules (``kitt_yml`` and ``claude_md``) take ``(detection,
 target_path)`` and need to:
 
 1. Normalize the operator-supplied path (``./apps/example-app`` and
@@ -14,7 +14,7 @@ which is the duplication finding the DEMO-123 audit flagged. Pulled
 into this private shared module so future edits land in one place.
 
 Private import name (leading underscore) because this is not part of
-WOPR's MCP-tool surface; only the generator modules call it.
+KITT's MCP-tool surface; only the generator modules call it.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def find_profile(
 def slug_from_target(target_path: str, workspace_path: str) -> str:
     """Derive a kebab-case ASCII slug from the target's basename.
 
-    The wopr.yml schema defines ``project.slug`` as a kebab-case ASCII
+    The kitt.yml schema defines ``project.slug`` as a kebab-case ASCII
     identifier; Unicode characters in directory names are normalized
     to their closest ASCII equivalents via NFKD before non-alphanumerics
     are collapsed to hyphens. ``apps/café`` becomes ``cafe``, not

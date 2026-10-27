@@ -1,6 +1,6 @@
 # Golden-REQ baseline summary (pre-rewrite)
 
-Two full crew runs against the unmodified 473-line `wopr-run-crew/SKILL.md` (commit 44aae80), REQ-GOLD-1, empty learnings corpus, models per the skill's table (scout haiku, coder/tester/auditor sonnet), dispatched as fresh subagents reading their agent specs.
+Two full crew runs against the unmodified 473-line `kitt-run-crew/SKILL.md` (commit 44aae80), REQ-GOLD-1, empty learnings corpus, models per the skill's table (scout haiku, coder/tester/auditor sonnet), dispatched as fresh subagents reading their agent specs.
 
 ## Outcomes (the comparison baseline for the rewrite)
 

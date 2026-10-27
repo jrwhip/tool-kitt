@@ -1,6 +1,6 @@
 """Declarative hook manifests and per-CLI registration rendering.
 
-WOPR used to carry one hand-written ``configure_*.py`` per hook per CLI.
+KITT used to carry one hand-written ``configure_*.py`` per hook per CLI.
 Those scripts differed only in the event name, the config file path, and the
 entry shape -- which is why porting the capture-skill hook to Copilot cost a
 whole release. These tests pin the replacement: the wiring is declared once
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from wopr.hook_manifest import (
+from kitt.hook_manifest import (
     HookManifestError,
     HookTarget,
     bash_command,
@@ -424,7 +424,7 @@ class TestCatalogHookManifests:
 
         Every shipped hook here is Claude-only: the Copilot port of
         capture-skill-trigger (a separate handler, a separate `agentStop`
-        transcript format) was retired along with the rest of WOPR's
+        transcript format) was retired along with the rest of KITT's
         Copilot surface, so its manifest no longer declares a `copilot`
         target either. `skill-usage` is here for the telemetry flavor of
         the same rule: its handler parses Claude Code's transcript shape,
@@ -483,9 +483,9 @@ class TestCatalogHookManifests:
     def test_slash_commands_invoke_the_generic_script(self):
         commands = REPO_ROOT / "catalog" / "_core" / "commands"
         for fname, cli, hook in [
-            ("wopr-configure-capture-skill-hook.md", "claude", "capture-skill-trigger"),
-            ("wopr-configure-skill-usage-hook.md", "claude", "skill-usage"),
-            ("wopr-configure-token-usage-hook.md", "claude", "token-usage"),
+            ("kitt-configure-capture-skill-hook.md", "claude", "capture-skill-trigger"),
+            ("kitt-configure-skill-usage-hook.md", "claude", "skill-usage"),
+            ("kitt-configure-token-usage-hook.md", "claude", "token-usage"),
         ]:
             text = (commands / fname).read_text(encoding="utf-8")
             assert "configure_hook.py" in text, fname

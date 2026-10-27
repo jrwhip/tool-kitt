@@ -1,4 +1,4 @@
-# Count native Claude Code skill invocations into WOPR's usage sidecar.
+# Count native Claude Code skill invocations into KITT's usage sidecar.
 #
 # Claude-only on purpose, and this one is not a "not ported yet" gap: the
 # handler counts assistant `tool_use` blocks named `Skill` out of Claude
@@ -12,7 +12,7 @@
 # docs/skill-usage-telemetry.md.
 name: skill-usage
 description: >-
-  Count native Claude Code Skill tool invocations into WOPR's usage
+  Count native Claude Code Skill tool invocations into KITT's usage
   sidecar (names and counts only).
 handler: skill-usage-hook.py
 targets:

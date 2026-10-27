@@ -20,7 +20,7 @@ When the caller has already resolved one (``learnings_search`` resolves
 once per search so all sidecars in a run use the same engine), it is
 passed through; otherwise the helper resolves it from the corpus's own
 directory (``get_active_provider(learnings_path.parent)``), which is
-where the owning ``wopr.yml`` lives.
+where the owning ``kitt.yml`` lives.
 
 Every helper here is a no-op when the embeddings extra is not
 installed, when the configured provider is ``none``, or when the
@@ -130,7 +130,7 @@ def build_sidecar(
         logger.warning("Cannot write sidecar at %s: %s", sidecar_path, e)
         return None
     # Read the sidecar back to get the canonical metadata the
-    # downstream consumers may rely on (wopr_version, created_at,
+    # downstream consumers may rely on (kitt_version, created_at,
     # format_version). Falling back to the just-built values keeps
     # the function honest even if the disk readback fails for any
     # reason (rare; the write just succeeded).
@@ -142,7 +142,7 @@ def build_sidecar(
         vectors=vectors,
         model_name=provider.name,
         corpus_hash=sidecar_corpus_hash,
-        wopr_version=__version__,
+        kitt_version=__version__,
         created_at=datetime.now(tz=timezone.utc).isoformat(),
         format_version=_embeddings.EMBEDDINGS_SIDECAR_FORMAT_VERSION,
         dimensions=int(vectors.shape[1]) if vectors.ndim == 2 else 0,
@@ -170,7 +170,7 @@ def append_to_sidecar(
     the sidecar even though both entries are in LEARNINGS.md. This
     is recoverable on the next ``learnings_search`` call because
     the hash-mismatch detection rebuilds the sidecar from the
-    authoritative markdown corpus. WOPR is operator-driven and
+    authoritative markdown corpus. KITT is operator-driven and
     single-writer-per-gate in practice, so the race window is
     effectively never hit; the recovery path makes the outcome
     eventually consistent. If the system grows multi-writer

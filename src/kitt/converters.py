@@ -201,7 +201,7 @@ def to_copilot_agent(content: str, resource_name: str = "") -> str:
 
         copilot_tools = set()
         for tool in claude_tools:
-            # Unknown names (MCP tools like ``mcp__wopr__*``) pass
+            # Unknown names (MCP tools like ``mcp__kitt__*``) pass
             # through unchanged; MCP tool names are exact identifiers,
             # not aliases to normalize.
             mapped = tool_map.get(tool, tool)
@@ -244,7 +244,7 @@ def _derive_description(frontmatter: dict[str, Any], body: str, resource_name: s
         if sentence:
             return sentence
 
-    return f"WOPR command {resource_name}"
+    return f"KITT command {resource_name}"
 
 
 def _skill_wrapper_body(resource_name: str, original_body: str) -> str:

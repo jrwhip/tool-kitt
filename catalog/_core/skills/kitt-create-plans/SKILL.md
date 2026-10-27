@@ -1,5 +1,5 @@
 ---
-name: wopr-create-plans
+name: kitt-create-plans
 description: Create hierarchical project plans optimized for solo agentic development. Use when planning projects, phases, or tasks that the AI agent will execute. Produces agent-executable plans with verification criteria, not enterprise documentation. Handles briefs, roadmaps, phase plans, and context handoffs.
 ---
 
@@ -383,7 +383,7 @@ What would you like to do?
 | "roadmap", "phases", 2 (no structure) | `workflows/create-roadmap.md` |
 | "phase", "plan phase", "next phase", 1 (has structure) | `workflows/plan-phase.md` |
 | "chunk", "next tasks", "what's next" | `workflows/plan-chunk.md` |
-| "execute", "run", "do it", "build it", 2 (has structure) | **EXIT SKILL** → `/wopr-run-plan <path>` (all CLIs; fallback: `run_skill("wopr-run-plan", "<path>")`) |
+| "execute", "run", "do it", "build it", 2 (has structure) | **EXIT SKILL** → `/kitt-run-plan <path>` (all CLIs; fallback: `run_skill("kitt-run-plan", "<path>")`) |
 | "research", "investigate", "unknowns" | `workflows/research-phase.md` |
 | "handoff", "pack up", "stopping", 3 (has structure) | `workflows/handoff.md` |
 | "resume", "continue", 1 (has handoff) | `workflows/resume.md` |
@@ -391,7 +391,7 @@ What would you like to do?
 | "milestone", "ship", "v1.0", "release" | `workflows/complete-milestone.md` |
 | "guidance", "help", 4 | `workflows/get-guidance.md` |
 
-**Critical:** Plan execution should NOT invoke this skill. Use `/wopr-run-plan` (a command on Claude, a TOML command on Gemini, a slash-invocable skill on Copilot) for context efficiency (skill loads ~20k tokens, run-plan loads ~5-7k).
+**Critical:** Plan execution should NOT invoke this skill. Use `/kitt-run-plan` (a command on Claude, a TOML command on Gemini, a slash-invocable skill on Copilot) for context efficiency (skill loads ~20k tokens, run-plan loads ~5-7k).
 
 **After reading the workflow, follow it exactly.**
 </routing>
@@ -506,5 +506,5 @@ Planning skill succeeds when:
 - Deviations handled automatically per embedded rules
 - All work (planned and discovered) fully documented
 - Domain expertise loaded intelligently (SKILL.md + selective references, not all files)
-- Plan execution uses `/wopr-run-plan` on all CLIs (not skill invocation)
+- Plan execution uses `/kitt-run-plan` on all CLIs (not skill invocation)
 </success_criteria>

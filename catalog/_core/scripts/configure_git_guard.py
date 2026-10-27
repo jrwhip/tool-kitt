@@ -14,7 +14,7 @@ Usage:
   python3 configure_git_guard.py [--project-root PATH] [--dry-run]
 
 Default project root is the current working directory. Guard script path
-is resolved relative to this script's location in the wopr-core plugin's
+is resolved relative to this script's location in the kitt-core plugin's
 scripts/ directory (a sibling of hooks/).
 
 Only Python stdlib is used.
@@ -118,7 +118,7 @@ def main() -> None:
     if not GUARD_PATH.exists():
         sys.exit(
             f"ERROR: guard script not found at {GUARD_PATH}.\n"
-            "Verify the wopr-core plugin is installed correctly."
+            "Verify the kitt-core plugin is installed correctly."
         )
 
     hook_command = f"bash {shlex.quote(str(GUARD_PATH))}"

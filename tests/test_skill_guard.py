@@ -1,4 +1,4 @@
-"""Tests for ``wopr.tools._skill_guard`` and its MCP wrapper.
+"""Tests for ``kitt.tools._skill_guard`` and its MCP wrapper.
 
 A representative subset of Hermes Agent's threat-pattern categories, not
 an attempt to reproduce its full ~80-pattern set — see the module
@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from wopr.tools._skill_guard import (
+from kitt.tools._skill_guard import (
     MAX_FILE_COUNT,
     MAX_SINGLE_FILE_KB,
     format_scan_report,
     scan_skill,
 )
-from wopr.tools.skill_guard import scan_skill_directory
+from kitt.tools.skill_guard import scan_skill_directory
 
 
 def _write_skill(tmp_path: Path, content: str, filename: str = "SKILL.md") -> Path:

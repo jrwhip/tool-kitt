@@ -553,7 +553,7 @@ wheels = [
 ]
 
 [[package]]
-name = "wopr-golden-fixture"
+name = "kitt-golden-fixture"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

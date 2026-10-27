@@ -1,14 +1,14 @@
 """Stub writers for pack-shipped templates.
 
 Each writer copies a single pack template into a project at a path
-declared by the project's ``wopr.yml``, with a sensible default when
+declared by the project's ``kitt.yml``, with a sensible default when
 the yml does not declare one. Same atomic-write + refuse-overwrite
-semantics as :func:`tools.wopr_yml.write_spec_stubs`. Crew agents
+semantics as :func:`tools.kitt_yml.write_spec_stubs`. Crew agents
 that need these documents should never need to filesystem-search;
-``/wopr-init-project`` calls these writers, and the orchestrator can
+``/kitt-init-project`` calls these writers, and the orchestrator can
 call them mid-crew if a project surfaces a missing-stub blocker.
 
-Split out of :mod:`tools.wopr_yml` so the ``wopr.yml`` generator
+Split out of :mod:`tools.kitt_yml` so the ``kitt.yml`` generator
 module stops carrying three unrelated concerns (yml generation, spec
 stubs, pack-template stubs). The generator is the authority for the
 yml format; the spec stubs are the per-stack spec-templating tool;
@@ -35,8 +35,8 @@ if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 
-def _read_project_wopr_yml(target_dir: Path) -> dict[str, Any] | str:
-    """Read `<target_dir>/wopr.yml`. Returns the parsed mapping or an error string.
+def _read_project_kitt_yml(target_dir: Path) -> dict[str, Any] | str:
+    """Read `<target_dir>/kitt.yml`. Returns the parsed mapping or an error string.
 
     Success returns the parsed mapping (a ``dict``). Failure returns a
     string beginning with ``Error:``. Callers narrow with ``isinstance``;
@@ -44,11 +44,11 @@ def _read_project_wopr_yml(target_dir: Path) -> dict[str, Any] | str:
     union, not a pair of optionals smuggling a "exactly one is set"
     invariant the type checker cannot see.
     """
-    yml_path = target_dir / "wopr.yml"
+    yml_path = target_dir / "kitt.yml"
     if not yml_path.is_file():
         return (
-            f"Error: project wopr.yml not found at {yml_path}. "
-            "Run /wopr-create-yml first."
+            f"Error: project kitt.yml not found at {yml_path}. "
+            "Run /kitt-create-yml first."
         )
     try:
         data = yaml.safe_load(yml_path.read_text(encoding="utf-8")) or {}
@@ -59,9 +59,9 @@ def _read_project_wopr_yml(target_dir: Path) -> dict[str, Any] | str:
     return data
 
 
-def _legacy_field(wopr_yml: dict[str, Any], key: str) -> str | None:
+def _legacy_field(kitt_yml: dict[str, Any], key: str) -> str | None:
     """Return `legacy-migration.<key>` from the yml if present, else None."""
-    section = wopr_yml.get("legacy-migration")
+    section = kitt_yml.get("legacy-migration")
     if not isinstance(section, dict):
         return None
     value = section.get(key)
@@ -79,9 +79,9 @@ def _write_pack_template(
     from the pack catalog and writes it to ``<target_dir>/<destination>``
     atomically. Refuses to overwrite by default.
 
-    Unlike :func:`tools.wopr_yml.write_wopr_yml`, this function DOES
+    Unlike :func:`tools.kitt_yml.write_kitt_yml`, this function DOES
     create intermediate directories for ``destination``. The contrast
-    is intentional: ``write_wopr_yml`` writes a file at the project
+    is intentional: ``write_kitt_yml`` writes a file at the project
     root (which must already exist; missing project root means the
     operator typo'd the path), while the stub writers write files at
     operator-declared sub-paths inside the project (where the leaf
@@ -130,13 +130,13 @@ def write_tracking_doc_stub(target_dir: str, overwrite: bool = False) -> str:
     """Drop the crew pack's implementation-tracking template into the project.
 
     Destination path comes from the project's
-    ``legacy-migration.tracking_doc`` (when declared in ``wopr.yml``);
+    ``legacy-migration.tracking_doc`` (when declared in ``kitt.yml``);
     otherwise falls back to ``implementation-tracking.md`` at the
     target root. Atomic write; refuses to overwrite by default.
 
     Args:
         target_dir: Absolute path of the project directory (the one
-            containing ``wopr.yml``).
+            containing ``kitt.yml``).
         overwrite: When ``False`` (default), refuses to overwrite an
             existing destination file.
 
@@ -149,7 +149,7 @@ def write_tracking_doc_stub(target_dir: str, overwrite: bool = False) -> str:
     if not target.is_absolute():
         return f"Error: target_dir {target_dir!r} is not absolute."
     target = target.resolve()
-    result = _read_project_wopr_yml(target)
+    result = _read_project_kitt_yml(target)
     if isinstance(result, str):
         return result
     destination = _legacy_field(result, "tracking_doc") or "implementation-tracking.md"
@@ -167,7 +167,7 @@ def write_handoff_contract_stub(target_dir: str, overwrite: bool = False) -> str
 
     Destination path comes from the project's
     ``legacy-migration.handoff_contract`` (when declared in
-    ``wopr.yml``); otherwise falls back to
+    ``kitt.yml``); otherwise falls back to
     ``frontend-handoff-contract.md`` at the target root.
 
     Use this for backend-producer projects that drive a frontend track.
@@ -187,7 +187,7 @@ def write_handoff_contract_stub(target_dir: str, overwrite: bool = False) -> str
     if not target.is_absolute():
         return f"Error: target_dir {target_dir!r} is not absolute."
     target = target.resolve()
-    result = _read_project_wopr_yml(target)
+    result = _read_project_kitt_yml(target)
     if isinstance(result, str):
         return result
     destination = (
@@ -203,6 +203,6 @@ def write_handoff_contract_stub(target_dir: str, overwrite: bool = False) -> str
 
 
 def register(mcp: FastMCP) -> None:
-    """Register stub-writer tools with the WOPR MCP server."""
+    """Register stub-writer tools with the KITT MCP server."""
     mcp.tool()(write_tracking_doc_stub)
     mcp.tool()(write_handoff_contract_stub)

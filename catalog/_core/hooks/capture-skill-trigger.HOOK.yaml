@@ -1,7 +1,7 @@
-# Nudge toward wopr-capture-skill once a session accumulates tool calls.
+# Nudge toward kitt-capture-skill once a session accumulates tool calls.
 #
 # Claude-only. A Copilot target and a separate `agentStop` handler existed
-# here and were removed in P2 along with the rest of WOPR's Copilot
+# here and were removed in P2 along with the rest of KITT's Copilot
 # surface: Copilot's transcript is an events.jsonl of
 # `tool.execution_start` records rather than Claude's nested `tool_use`
 # blocks, and `agentStop` supports only decision/reason where `Stop`
@@ -10,7 +10,7 @@
 # a live firing. The quarry keeps both if Copilot support returns.
 name: capture-skill-trigger
 description: >-
-  Nudge the agent to consider running wopr-capture-skill once a session
+  Nudge the agent to consider running kitt-capture-skill once a session
   crosses a tool-call threshold.
 handler: capture-skill-trigger-hook.py
 targets:

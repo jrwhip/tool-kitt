@@ -1,11 +1,11 @@
-# Naked Baseline: WOPR Arcade scaffold, control arm
+# Naked Baseline: KITT Arcade scaffold, control arm
 
 Date: 2026-08-21
 Model: Claude Opus 5 (1M context), Claude Code / Agent SDK
-Arm: CONTROL. No WOPR plugin, no skills, no MCP tools, no templates, no seed
+Arm: CONTROL. No KITT plugin, no skills, no MCP tools, no templates, no seed
 learnings. The only inputs were the task prompt and `requirements/REQ-ARC-1.md`
 through `REQ-ARC-8.md` plus `implementation-tracking.md`.
-Output directory: `/home/jrwhip/Work/AI/WOPR/.p4-naked-baseline/`
+Output directory: `/home/jrwhip/Work/AI/KITT/.p4-naked-baseline/`
 
 Wall clock: 21:04:48 to 21:17:08 local, **12 minutes 20 seconds**.
 
@@ -114,9 +114,9 @@ Command: `cd backend && .venv/bin/pytest -v`
 
 ```
 ============================= test session starts ==============================
-platform linux -- Python 3.13.9, pytest-9.1.1, pluggy-1.6.0 -- /home/jrwhip/Work/AI/WOPR/.p4-naked-baseline/backend/.venv/bin/python3
+platform linux -- Python 3.13.9, pytest-9.1.1, pluggy-1.6.0 -- /home/jrwhip/Work/AI/KITT/.p4-naked-baseline/backend/.venv/bin/python3
 cachedir: .pytest_cache
-rootdir: /home/jrwhip/Work/AI/WOPR/.p4-naked-baseline/backend
+rootdir: /home/jrwhip/Work/AI/KITT/.p4-naked-baseline/backend
 configfile: pyproject.toml
 testpaths: tests
 plugins: asyncio-1.4.0, cov-7.1.0, anyio-4.14.2
@@ -152,7 +152,7 @@ Command: `cd frontend && mise exec node@24 -- npm test -- --reporters=verbose`
 (ANSI escapes stripped)
 
 ```
-> wopr-arcade-web@0.1.0 test
+> kitt-arcade-web@0.1.0 test
 > ng test --reporters=verbose
 
 ❯ Building...
@@ -160,7 +160,7 @@ Command: `cd frontend && mise exec node@24 -- npm test -- --reporters=verbose`
 Application bundle generation complete. [0.514 seconds] - 2026-08-22T03:16:18.446Z
 
 
- RUN  v4.1.11 /home/jrwhip/Work/AI/WOPR/.p4-naked-baseline/frontend
+ RUN  v4.1.11 /home/jrwhip/Work/AI/KITT/.p4-naked-baseline/frontend
 
  ✓  frontend  src/app/core/api-base-url.spec.ts > API_BASE_URL > defaults to same origin so the dev proxy handles routing 7ms
  ✓  frontend  src/app/core/api-base-url.spec.ts > API_BASE_URL > can be overridden by a provider 1ms
@@ -222,14 +222,14 @@ The API was smoke-tested against that same Postgres:
 
 ```
 $ curl -s localhost:8111/health
-{"status":"ok","service":"WOPR Arcade API","version":"0.1.0","environment":"local"}
+{"status":"ok","service":"KITT Arcade API","version":"0.1.0","environment":"local"}
 $ curl -s localhost:8111/health/ready
 {"status":"ready","database":"up"}
 $ curl -s localhost:8111/openapi.json | head -c 200
-{"openapi":"3.1.0","info":{"title":"WOPR Arcade API","description":"Backend for **WOPR Arcade**, ...
+{"openapi":"3.1.0","info":{"title":"KITT Arcade API","description":"Backend for **KITT Arcade**, ...
 ```
 
-The container was torn down afterwards (`docker compose -p wopr-arcade-baseline down -v`).
+The container was torn down afterwards (`docker compose -p kitt-arcade-baseline down -v`).
 
 ---
 
@@ -241,7 +241,7 @@ project convention to follow.
 | Decision | What I chose | Why, and what else was equally defensible |
 |---|---|---|
 | **Backend project layout** | `src/` layout, package at `backend/src/arcade_api/` | Tests then import the installed package rather than the working tree, so a packaging error fails locally instead of in the container. A flat `backend/app/` layout is at least as common in FastAPI projects and I could have gone either way. |
-| **Package name** | import name `arcade_api`, distribution name `wopr-arcade-api` | Nothing told me whether the product prefix belongs in the import path. `wopr_arcade` and plain `app` were both live options. |
+| **Package name** | import name `arcade_api`, distribution name `kitt-arcade-api` | Nothing told me whether the product prefix belongs in the import path. `kitt_arcade` and plain `app` were both live options. |
 | **Internal module split** | `api/` (routers), `schemas/` (pydantic), `models/` (ORM), `config.py`, `db.py`, `main.py`, `scripts/` | Layer-first. A feature-first split (`features/auth/{router,schemas,models}.py`) would arguably suit eight independent REQs better. I picked layer-first purely out of habit. |
 | **Python version floor** | `requires-python = ">=3.13"`, venv on 3.13.9 | The machine has 3.14.7 system-wide. I dropped to 3.13 out of unverified caution about C-extension wheel availability on 3.14 for `asyncpg`. I never checked whether 3.14 actually works. That is a guess dressed as a decision. |
 | **Build backend** | `hatchling` | No reason beyond it being the current default in most `uv init` output. `setuptools`, `pdm-backend`, `poetry-core` were all equivalent here. |
@@ -369,7 +369,7 @@ project convention to follow.
     error). I did not audit the rest.
 
 16. **The Angular workspace project is still named `frontend`**, so builds land
-    in `dist/frontend`. I renamed the npm package to `wopr-arcade-web` but not
+    in `dist/frontend`. I renamed the npm package to `kitt-arcade-web` but not
     the `angular.json` project key. Inconsistent, and I noticed only while
     reading the build output.
 

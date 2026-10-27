@@ -9,23 +9,23 @@ in two layouts:
    --editable``). Edits to ``catalog/...`` show up without reinstall.
 2. The bundled ``resources/`` directory inside the installed package,
    used when the package is installed normally (the build step copies
-   ``catalog/`` into ``src/wopr/resources/``).
+   ``catalog/`` into ``src/kitt/resources/``).
 
 The path arithmetic to walk from ``__file__`` up to the repo root and
 then into either ``catalog/`` or ``resources/`` was duplicated across
-``learnings._candidate_seed_paths``, ``wopr_yml._select_stack_template_sources``,
+``learnings._candidate_seed_paths``, ``kitt_yml._select_stack_template_sources``,
 and (at the time) a third copy in ``tools/doctor.py``, since cut along
 with the rest of that module. The DEMO-123 audit flagged the
 duplication as a fragility risk: if the module layout ever changes,
 every copy needs parallel surgery.
 
 3. The ``resources/`` directory of a Claude Code plugin install, at
-   ``$WOPR_PLUGIN_ROOT/server/resources/``. ``wopr build-plugins``
+   ``$KITT_PLUGIN_ROOT/server/resources/``. ``kitt build-plugins``
    copies the runtime-relevant catalog subtrees there, and the
-   generated ``.mcp.json`` sets ``WOPR_PLUGIN_ROOT`` for the server
+   generated ``.mcp.json`` sets ``KITT_PLUGIN_ROOT`` for the server
    process. Neither of the two path-arithmetic candidates can find
    that layout: the bundled server lives at ``<plugin>/server/src/
-   wopr/`` with its resources one level up and outside the package.
+   kitt/`` with its resources one level up and outside the package.
 
 Single source of truth here. Callers describe the file or directory
 they want as a sequence of path parts; this module checks the plugin
@@ -43,9 +43,9 @@ from ..config import plugin_resources_root
 # tool modules previously inlined:
 #
 # * ``parent.parent.parent.parent`` walks from
-#   ``.../src/wopr/tools/_data_paths.py`` up to the repo root.
+#   ``.../src/kitt/tools/_data_paths.py`` up to the repo root.
 # * ``parent.parent`` walks from the same file up to
-#   ``.../src/wopr/``, where the bundled ``resources/`` tree
+#   ``.../src/kitt/``, where the bundled ``resources/`` tree
 #   lives.
 #
 # Both are computed once. ``Path.resolve()`` is on ``__file__`` so a
@@ -64,7 +64,7 @@ def candidate_data_paths(
 
     Returns the dev (repo) and bundled candidates always, without
     filtering by existence, and prepends the plugin-install candidate
-    when ``WOPR_PLUGIN_ROOT`` is set. Callers that want only the first
+    when ``KITT_PLUGIN_ROOT`` is set. Callers that want only the first
     existing path should use :func:`resolve_data_path`.
 
     The plugin candidate goes first because it is the only one set

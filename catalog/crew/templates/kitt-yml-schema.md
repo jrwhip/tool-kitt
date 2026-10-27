@@ -1,25 +1,25 @@
-# `wopr.yml` schema
+# `kitt.yml` schema
 
-> **Status:** ported 2026-08-21 into the wopr clean-room repo from the original toolset; field semantics unchanged.
+> **Status:** ported 2026-08-21 into the kitt clean-room repo from the original toolset; field semantics unchanged.
 
 ## Purpose
 
-`wopr.yml` is the per-project configuration file that WOPR packs read at the start of every agent invocation. It lives at the project root. It carries:
+`kitt.yml` is the per-project configuration file that KITT packs read at the start of every agent invocation. It lives at the project root. It carries:
 
-- Project-level facts every WOPR workflow pack needs (slug, source roots, build file, base package).
+- Project-level facts every KITT workflow pack needs (slug, source roots, build file, base package).
 - Cross-pack concerns (spec file paths, API contract location and pinned generator version, requirements source).
 - Pack-specific sections that only the relevant pack reads.
 
-Putting all of these in one file at project root means a project can be served by multiple WOPR packs (legacy-migration, java, angular, future workflow packs) without accumulating `.legacy-migration.yml`, `.java.yml`, `.angular.yml`, etc. side by side. Each pack reads the shared sections it needs plus its own pack-specific section.
+Putting all of these in one file at project root means a project can be served by multiple KITT packs (legacy-migration, java, angular, future workflow packs) without accumulating `.legacy-migration.yml`, `.java.yml`, `.angular.yml`, etc. side by side. Each pack reads the shared sections it needs plus its own pack-specific section.
 
 ## File location
 
-- Default: `wopr.yml` at the project root (the directory where the operator opens their Claude Code session).
+- Default: `kitt.yml` at the project root (the directory where the operator opens their Claude Code session).
 - Override: callers may pass an absolute path to a config file in a side directory. Useful when a project's root is not the operator's working directory.
 
 ## Behavior when absent
 
-If `wopr.yml` is missing at the resolved path, the tool stops and reports an error pointing the operator at `/wopr-create-yml`. It does not fall back to interactive prompts or per-call parameter passing. Operator must produce a config file before dependent tools run.
+If `kitt.yml` is missing at the resolved path, the tool stops and reports an error pointing the operator at `/kitt-create-yml`. It does not fall back to interactive prompts or per-call parameter passing. Operator must produce a config file before dependent tools run.
 
 ## Top-level structure
 
@@ -35,7 +35,7 @@ legacy-migration:   # required only when the legacy-migration pack is in use
 
 ## Section: `project`
 
-Pack-agnostic. Identifies the project and its top-level directory layout. Read by `stack_detect.py`'s `_summarize_wopr_yml` and by the `propose_wopr_yml` generator.
+Pack-agnostic. Identifies the project and its top-level directory layout. Read by `stack_detect.py`'s `_summarize_kitt_yml` and by the `propose_kitt_yml` generator.
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
@@ -48,7 +48,7 @@ Pack-agnostic. Identifies the project and its top-level directory layout. Read b
 
 ## Section: `specs`
 
-Pack-agnostic. The authoritative documents the agents read on every invocation. Read by `stack_detect.py`'s `_summarize_wopr_yml`.
+Pack-agnostic. The authoritative documents the agents read on every invocation. Read by `stack_detect.py`'s `_summarize_kitt_yml`.
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
@@ -61,7 +61,7 @@ Pack-agnostic. The authoritative documents the agents read on every invocation. 
 
 ## Section: `api_contract`
 
-The machine-readable API contract that crew agents cite instead of hand-copying shapes. Required by the crew pack (no contract, no crew run). Read by `stack_detect.py`'s `_summarize_wopr_yml`.
+The machine-readable API contract that crew agents cite instead of hand-copying shapes. Required by the crew pack (no contract, no crew run). Read by `stack_detect.py`'s `_summarize_kitt_yml`.
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
@@ -73,28 +73,28 @@ The machine-readable API contract that crew agents cite instead of hand-copying 
 
 ## Section: `requirements`
 
-Pack-agnostic. Tells the orchestrator where the active REQ body comes from at crew dispatch. Absent section defaults to `source: local` with `local.path: requirements`, so existing projects predating this field keep working unchanged. Read by `stack_detect.py`'s `_summarize_wopr_yml`; generated (with the same default) by `propose_wopr_yml`.
+Pack-agnostic. Tells the orchestrator where the active REQ body comes from at crew dispatch. Absent section defaults to `source: local` with `local.path: requirements`, so existing projects predating this field keep working unchanged. Read by `stack_detect.py`'s `_summarize_kitt_yml`; generated (with the same default) by `propose_kitt_yml`.
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
 | `source` | optional | string | `local` or `jira`. Defaults to `local` when the whole `requirements` section, or this field, is absent. |
-| `local.path` | optional | string | Directory of `<REQ-ID>.md` files, relative to this `wopr.yml`. Defaults to `requirements` when `source: local` and the field is omitted. Read only when `source: local`. |
+| `local.path` | optional | string | Directory of `<REQ-ID>.md` files, relative to this `kitt.yml`. Defaults to `requirements` when `source: local` and the field is omitted. Read only when `source: local`. |
 | `jira.project_key` | optional | string | Optional sanity check against the configured Jira project. Read only when `source: jira`. |
 | `jira.cloud_id` | not read | string | If present under `jira`, it is silently ignored. The Atlassian site is resolved at runtime via the Atlassian MCP's `getAccessibleAtlassianResources` call, not stored here; it is machine-level state, not project-level. **(not read by current tooling)** |
 
 ## Section: `learnings`
 
-Pack-agnostic, optional. Configures the semantic half of the LEARNINGS retrieval path (`learnings_search`). Read by the MCP server's embedding-provider resolution (`src/wopr/tools/_embedding_providers.py`) from the `wopr.yml` in the workspace root that owns the `LEARNINGS.md` corpus. Absent section means the default: `embeddings.provider: local`.
+Pack-agnostic, optional. Configures the semantic half of the LEARNINGS retrieval path (`learnings_search`). Read by the MCP server's embedding-provider resolution (`src/kitt/tools/_embedding_providers.py`) from the `kitt.yml` in the workspace root that owns the `LEARNINGS.md` corpus. Absent section means the default: `embeddings.provider: local`.
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
-| `embeddings.provider` | optional | string | Which engine produces entry/query embeddings for semantic search. One of `local` (default; the bundled fastembed + BAAI/bge-small-en-v1.5 model, ~130MB downloaded lazily to `~/.cache/fastembed/` on first use), `bedrock` (Amazon Titan Text Embeddings V2 via AWS Bedrock; requires `pip install 'wopr[bedrock]'` plus AWS credentials and a region — without them, search degrades to the deterministic prefilter, no crash, no AWS call), or `none` (opt-out: semantic search off, the deterministic prefilter is the whole retrieval path). The env var `WOPR_EMBEDDING_PROVIDER` overrides this field on any machine where it is set. Switching providers transparently rebuilds the `.npz` sidecars from the markdown corpus on next search. An unrecognized value is logged and treated as unset. |
+| `embeddings.provider` | optional | string | Which engine produces entry/query embeddings for semantic search. One of `local` (default; the bundled fastembed + BAAI/bge-small-en-v1.5 model, ~130MB downloaded lazily to `~/.cache/fastembed/` on first use), `bedrock` (Amazon Titan Text Embeddings V2 via AWS Bedrock; requires `pip install 'kitt[bedrock]'` plus AWS credentials and a region — without them, search degrades to the deterministic prefilter, no crash, no AWS call), or `none` (opt-out: semantic search off, the deterministic prefilter is the whole retrieval path). The env var `KITT_EMBEDDING_PROVIDER` overrides this field on any machine where it is set. Switching providers transparently rebuilds the `.npz` sidecars from the markdown corpus on next search. An unrecognized value is logged and treated as unset. |
 
 ## Section: `legacy-migration`
 
 Read only by the `legacy-migration` pack namespace. Other packs ignore this section except for a presence check (`stack_detect.py` sets `has_legacy_migration_block: true` when the key exists, without inspecting its contents).
 
-The legacy-migration pack itself (its scout, its `extract_legacy_context.py` pre-flight, its schema-extractor scripts) is not part of this repo. Of the fields below, only `tracking_doc` and `handoff_contract` are actively read by surviving tooling in this repo, via `write_tracking_doc_stub` and `write_handoff_contract_stub` in `src/wopr/tools/stub_writers.py` (each falls back to a default filename when the field is absent). The remaining fields are documented here because the `legacy-migration` section is still read as a yml namespace by surviving tools and a project may carry them for a pack run elsewhere; nothing in this repo currently parses them beyond the presence check above.
+The legacy-migration pack itself (its scout, its `extract_legacy_context.py` pre-flight, its schema-extractor scripts) is not part of this repo. Of the fields below, only `tracking_doc` and `handoff_contract` are actively read by surviving tooling in this repo, via `write_tracking_doc_stub` and `write_handoff_contract_stub` in `src/kitt/tools/stub_writers.py` (each falls back to a default filename when the field is absent). The remaining fields are documented here because the `legacy-migration` section is still read as a yml namespace by surviving tools and a project may carry them for a pack run elsewhere; nothing in this repo currently parses them beyond the presence check above.
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
@@ -126,23 +126,23 @@ Each maps 1:1 onto a harness env var:
 
 ## Path conventions
 
-- **`<target_dir>`**, wherever it appears in pack documentation (crew agents, orchestrator skill, contracts), means **the directory containing the project's `wopr.yml`** — the project root by default, or the override directory when the operator passes an explicit config path. It is a documentation term resolved from the `wopr.yml` location, not a `wopr.yml` field. Example: the scout contract lands at `<target_dir>/crew-contracts/<REQ-ID>/scout.md`.
+- **`<target_dir>`**, wherever it appears in pack documentation (crew agents, orchestrator skill, contracts), means **the directory containing the project's `kitt.yml`** — the project root by default, or the override directory when the operator passes an explicit config path. It is a documentation term resolved from the `kitt.yml` location, not a `kitt.yml` field. Example: the scout contract lands at `<target_dir>/crew-contracts/<REQ-ID>/scout.md`.
 - All paths in shared sections (`project`, `specs`) are **relative to project root** unless the field documentation explicitly says otherwise.
 - `api_contract.spec_url` accepts a URL OR a relative path; agents detect the form.
-- `requirements.local.path` is relative to this `wopr.yml`.
+- `requirements.local.path` is relative to this `kitt.yml`.
 - `legacy-migration.legacy_source_root` and `legacy-migration.legacy_ui_source_root` are **absolute**. The legacy source typically lives outside the project repo (a sibling directory or a separate clone).
 - `legacy-migration.extracted_requirements`, `tracking_doc`, `legacy_analysis_root`, `schema_path`, and `handoff_contract` are **relative to project root**.
 - `legacy-migration.schema_env_prefix` is a string identifier, not a path. It is appended to canonical env-var suffixes the schema-extractor scripts expect.
 
 ## Future packs
 
-A new WOPR workflow pack adds its own section to `wopr.yml`. It reads the shared sections (`project`, `specs`, `api_contract` if applicable, `requirements`) plus its own section. It does not modify or read other packs' sections. Adding a new section does not break existing packs.
+A new KITT workflow pack adds its own section to `kitt.yml`. It reads the shared sections (`project`, `specs`, `api_contract` if applicable, `requirements`) plus its own section. It does not modify or read other packs' sections. Adding a new section does not break existing packs.
 
 If a new pack needs a field that already exists in a shared section, it reads from there. If it needs a new shared concern (e.g., a `lint` section that multiple packs would benefit from), the schema gets a new top-level section and this doc updates.
 
 ## Example: backend project (`demo-api-poc`)
 
-See `wopr.example.yml` (this directory).
+See `kitt.example.yml` (this directory).
 
 ## Example: frontend project (`apps/demo-admin`)
 

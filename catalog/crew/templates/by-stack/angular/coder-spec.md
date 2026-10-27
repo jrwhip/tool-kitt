@@ -47,7 +47,7 @@ The coder does NOT point at individual test files. Always use the `ng`/Nx target
 | App-level routes | `src/app/app.routes.ts` | `apps/*/src/app/app.routes.ts` |
 | Standalone components | colocated with their feature or route | colocated with their feature or route |
 
-`base_package` does not apply to Angular. Omit it from `wopr.yml`.
+`base_package` does not apply to Angular. Omit it from `kitt.yml`.
 
 ---
 
@@ -84,7 +84,7 @@ The frontend consumes the backend's OpenAPI spec via a generated client. Two rul
    ```
 2. **Never hand-edit the generated files.** If a customization is needed (e.g. mapping a `*/*` response to `Blob`), the fix is a custom Mustache template at `openapi-overrides/api.mustache` with a header comment explaining what the default produced and why we overrode it.
 
-The pinned generator version lives in `wopr.yml` (`api_contract.pinned_generator_version`). The pin must match the backend's `spec_version`.
+The pinned generator version lives in `kitt.yml` (`api_contract.pinned_generator_version`). The pin must match the backend's `spec_version`.
 
 If a needed endpoint is missing from the generated client, STOP and flag it as a missing backend dependency. Do not write a fallback.
 
@@ -125,7 +125,7 @@ The five-condition gate (the orchestrator owns and enforces it; the tester recor
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), the coder amends this spec when a new pattern emerges. Examples that belong here the moment they are used:
+When `spec_writes` is ON (`kitt.yml` `specs.spec_writes`; default OFF), the coder amends this spec when a new pattern emerges. Examples that belong here the moment they are used:
 
 - A new component pattern this project will repeat (a route guard idiom, a form composition shape, etc.).
 - A naming convention for a new category of file.

@@ -1,5 +1,5 @@
 ---
-name: wopr-wargame
+name: kitt-wargame
 description: "Turn an idea into an executable requirements set through a guided wargame session. Use when brainstorming requirements, rubber-ducking a new app idea, defining acceptance criteria for a feature, building a product backlog, or turning an idea into REQ files the crew can execute."
 ---
 
@@ -14,7 +14,7 @@ Three phases, operator-gated. Announce phase transitions in one line. The operat
 
 **2. Converge (the hammering).** Dedupe and merge candidates. Collide overlapping ones and make the operator pick. Classify every survivor: in scope, deferred, or excluded, and record WHY for every exclusion; excluded scope with reasons is a first-class output the crew's intake reads. Order the in-scope set by dependency, then priority. Size each requirement to one crew run; split anything bigger.
 
-**3. Formalize.** Delegate to the wopr-draft-req skill: it asks where requirements live (REQ files, Jira, or GitHub issues) before anything is written, owns the document format and the criteria quality bar, and handles any post-sign-off publish step. One document per in-scope requirement (KEY: short project code the operator picks). Then write or update the Requirements Baseline table in the project's tracking document, statuses all Pending, deferred and excluded items listed under it with their reasons. Present the set for operator review; revise until they sign off.
+**3. Formalize.** Delegate to the kitt-draft-req skill: it asks where requirements live (REQ files, Jira, or GitHub issues) before anything is written, owns the document format and the criteria quality bar, and handles any post-sign-off publish step. One document per in-scope requirement (KEY: short project code the operator picks). Then write or update the Requirements Baseline table in the project's tracking document, statuses all Pending, deferred and excluded items listed under it with their reasons. Present the set for operator review; revise until they sign off.
 </session_flow>
 
 <rules>

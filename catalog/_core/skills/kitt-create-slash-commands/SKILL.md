@@ -1,5 +1,5 @@
 ---
-name: wopr-create-slash-commands
+name: kitt-create-slash-commands
 description: Expert guidance for creating slash commands. Use when working with slash commands, creating custom commands, understanding command structure, or learning YAML configuration.
 ---
 

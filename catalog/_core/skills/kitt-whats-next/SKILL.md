@@ -1,6 +1,6 @@
 ---
-name: wopr-whats-next
-description: Produce a grounded, reference-based handoff (and durable learnings) so this work resumes in a fresh context with zero loss, on any CLI (Claude Code, GitHub Copilot, Gemini CLI). Persists state through WOPR's cross-CLI MCP tools, not any CLI's private memory. Use when wrapping up a work session, switching CLIs, or before a context runs out.
+name: kitt-whats-next
+description: Produce a grounded, reference-based handoff (and durable learnings) so this work resumes in a fresh context with zero loss, on any CLI (Claude Code, GitHub Copilot, Gemini CLI). Persists state through KITT's cross-CLI MCP tools, not any CLI's private memory. Use when wrapping up a work session, switching CLIs, or before a context runs out.
 ---
 
 <agent_identification>
@@ -9,7 +9,7 @@ description: Produce a grounded, reference-based handoff (and durable learnings)
 - **I am GitHub Copilot** → file reads = `read`, shell = `shell`, search = `search`
 - **I am Gemini CLI** → use your equivalent read / shell / search tools
 
-The handoff itself is persisted through WOPR's MCP tools (`get_handoff`, `create_handoff`, `append_learnings`), which are identical on every CLI. Each accepts a `target_workspace_path` (the absolute repo root of the project you are handing off). On Claude Code you may omit it and it defaults to the session's project (via `CLAUDE_PROJECT_DIR`); on GitHub Copilot and Gemini CLI you must pass it. WOPR never guesses from where the server happens to be running. That is the whole point: state survives a switch between CLIs and sessions because it never lives in any CLI's private memory.
+The handoff itself is persisted through KITT's MCP tools (`get_handoff`, `create_handoff`, `append_learnings`), which are identical on every CLI. Each accepts a `target_workspace_path` (the absolute repo root of the project you are handing off). On Claude Code you may omit it and it defaults to the session's project (via `CLAUDE_PROJECT_DIR`); on GitHub Copilot and Gemini CLI you must pass it. KITT never guesses from where the server happens to be running. That is the whole point: state survives a switch between CLIs and sessions because it never lives in any CLI's private memory.
 </agent_identification>
 
 <objective>
@@ -22,7 +22,7 @@ Two non-negotiable principles:
 </objective>
 
 <procedure>
-1. **Resolve the target workspace, then read the prior handoff.** The handoff belongs to the project you are working in: resolve its absolute repo root (`git rev-parse --show-toplevel`, or `$CLAUDE_PROJECT_DIR` on Claude Code) and pass it as `target_workspace_path` to every WOPR state tool below. Call `get_handoff(target_workspace_path)`. If one exists, you are superseding it: build on what is still true and capture anything from the old one that still matters, because step 4 replaces it.
+1. **Resolve the target workspace, then read the prior handoff.** The handoff belongs to the project you are working in: resolve its absolute repo root (`git rev-parse --show-toplevel`, or `$CLAUDE_PROJECT_DIR` on Claude Code) and pass it as `target_workspace_path` to every KITT state tool below. Call `get_handoff(target_workspace_path)`. If one exists, you are superseding it: build on what is still true and capture anything from the old one that still matters, because step 4 replaces it.
 
 2. **Gather hard evidence before writing anything.** Recent commits (`git log --oneline -20`) and what the active branch contains; uncommitted state (`git status -s`, `git diff --stat`). These are the authoritative record. Verify any "done" claim: does the commit/file/output actually exist? Run the check. If you cannot verify a claim, mark it `unverified` rather than asserting it. Identify the durable artifacts this work writes to (running logs, design docs, trackers) and reference their paths instead of copying their contents.
 

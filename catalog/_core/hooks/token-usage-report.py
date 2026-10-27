@@ -50,7 +50,7 @@ def resolve_sidecar(override: str) -> Path:
     if override:
         return Path(override)
     env = os.environ.get("TOKEN_USAGE_SIDECAR", "").strip()
-    return Path(env) if env else Path.home() / ".wopr" / "token-usage.json"
+    return Path(env) if env else Path.home() / ".kitt" / "token-usage.json"
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -90,7 +90,7 @@ def _n(x: int) -> str:
 def render_text(agg: dict[str, Any], md: bool) -> str:
     L: list[str] = []
     h1 = "# " if md else ""
-    L.append(f"{h1}WOPR Token Usage Retrospective")
+    L.append(f"{h1}KITT Token Usage Retrospective")
     L.append("")
     L.append(f"Sessions: {agg['session_count']}")
     L.append("")

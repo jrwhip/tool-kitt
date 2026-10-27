@@ -23,7 +23,7 @@ The tester agent reads these before writing any tests.
 | Implementation tracking | `[STACK: e.g. CURRENT_REQUIREMENTS.md]` | Which REQs need coverage, which need disabled stubs, which need nothing. Also carries the pinned `spec_version` and `generator_version`. |
 | Extracted requirements | `[STACK: e.g. LEGACY_REQUIREMENTS.md]` | Acceptance criteria for each REQ |
 | Coder spec | `[STACK: e.g. CODER_SPEC.md]` | What the production code is supposed to look like, the Migration Context for this session, and the coverage gate definition (section 22). |
-| API contract | `[STACK: e.g. /v3/api-docs, specs/openapi.json, schema.graphql]` | Source of truth for operation shapes, status codes or result types, and model types (`api_contract.spec_url` in `wopr.yml`). Tests assert against types generated from the contract, not against hand-copied types. |
+| API contract | `[STACK: e.g. /v3/api-docs, specs/openapi.json, schema.graphql]` | Source of truth for operation shapes, status codes or result types, and model types (`api_contract.spec_url` in `kitt.yml`). Tests assert against types generated from the contract, not against hand-copied types. |
 
 ---
 
@@ -197,7 +197,7 @@ If the target code does not handle time zones in any meaningful way, delete this
 
 ### Coverage gate (contract with the coder and auditor)
 
-The coverage gate is a five-condition contract owned and stated by the crew orchestrator (`wopr-run-crew`); the coder spec's section 22 carries its stack-specific commands and floors. The tester spec's job is to make conditions 3 (traceability: the criterion→test map, with line/branch coverage recorded as diagnostics) and 5 (static-analysis Quality Gate; see section 7 of this spec) verifiable and recorded. On every tester-agent run, the tester:
+The coverage gate is a five-condition contract owned and stated by the crew orchestrator (`kitt-run-crew`); the coder spec's section 22 carries its stack-specific commands and floors. The tester spec's job is to make conditions 3 (traceability: the criterion→test map, with line/branch coverage recorded as diagnostics) and 5 (static-analysis Quality Gate; see section 7 of this spec) verifiable and recorded. On every tester-agent run, the tester:
 
 1. Runs the full coverage command after writing tests and confirms line and branch coverage meet or exceed the floors above.
 2. Records the measured coverage in the implementation-tracking document's `coverage_status` field on the log entry for the current REQ, in the canonical format defined in section 7: `line XX% / branch YY% / static_analysis: PASS|FAIL (reason) / gate: PASS|FAIL (reason)`. There is exactly one format; the auditor parses it.

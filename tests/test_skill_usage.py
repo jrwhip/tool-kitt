@@ -1,6 +1,6 @@
 """Tests for the skill usage telemetry sidecar and its MCP tools.
 
-Covers the store (:mod:`wopr.tools._skill_usage`), the ``wopr
+Covers the store (:mod:`kitt.tools._skill_usage`), the ``kitt
 skill-usage`` CLI, and the two MCP tools. The coverage-boundary metadata
 is asserted explicitly: it is the part of this feature most likely to be
 quietly dropped in a future refactor, and without it the numbers read as
@@ -15,19 +15,19 @@ from pathlib import Path
 
 import pytest
 
-from wopr import skill_usage_cli
-from wopr.tools import _skill_usage, skill_usage
+from kitt import skill_usage_cli
+from kitt.tools import _skill_usage, skill_usage
 
 NOW = datetime(2026, 8, 2, 12, 0, tzinfo=timezone.utc)
 
 
 @pytest.fixture
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Isolated ``WOPR_HOME`` so the sidecar never touches the operator's."""
-    wopr_home = tmp_path / "wopr-home"
-    wopr_home.mkdir()
-    monkeypatch.setenv("WOPR_HOME", str(wopr_home))
-    return wopr_home
+    """Isolated ``KITT_HOME`` so the sidecar never touches the operator's."""
+    kitt_home = tmp_path / "kitt-home"
+    kitt_home.mkdir()
+    monkeypatch.setenv("KITT_HOME", str(kitt_home))
+    return kitt_home
 
 
 def _make_skill(skills_dir: Path, name: str, description: str = "Does a thing") -> Path:
@@ -47,26 +47,26 @@ def _make_skill(skills_dir: Path, name: str, description: str = "Does a thing") 
 
 class TestRecordInvocation:
     def test_first_record_creates_the_sidecar(self, home: Path):
-        assert _skill_usage.record_invocation("wopr-debug", _skill_usage.SOURCE_MCP)
+        assert _skill_usage.record_invocation("kitt-debug", _skill_usage.SOURCE_MCP)
         data = json.loads((home / "skill-usage.json").read_text(encoding="utf-8"))
         assert data["version"] == _skill_usage.USAGE_VERSION
-        record = data["skills"]["wopr-debug"]
+        record = data["skills"]["kitt-debug"]
         assert record["count"] == 1
         assert record["sources"] == {"mcp": 1}
         assert record["state"] == "active"
 
     def test_counts_accumulate_per_source(self, home: Path):
-        _skill_usage.record_invocation("wopr-debug", _skill_usage.SOURCE_MCP)
-        _skill_usage.record_invocation("wopr-debug", _skill_usage.SOURCE_MCP)
+        _skill_usage.record_invocation("kitt-debug", _skill_usage.SOURCE_MCP)
+        _skill_usage.record_invocation("kitt-debug", _skill_usage.SOURCE_MCP)
         _skill_usage.record_invocation(
-            "wopr-debug", _skill_usage.SOURCE_HOOK_CLAUDE, count=3
+            "kitt-debug", _skill_usage.SOURCE_HOOK_CLAUDE, count=3
         )
-        record = _skill_usage.load_usage()["wopr-debug"]
+        record = _skill_usage.load_usage()["kitt-debug"]
         assert record["count"] == 5
         assert record["sources"] == {"mcp": 2, "hook:claude": 3}
 
     def test_unknown_source_is_refused(self, home: Path):
-        assert not _skill_usage.record_invocation("wopr-debug", "telepathy")
+        assert not _skill_usage.record_invocation("kitt-debug", "telepathy")
         assert _skill_usage.load_usage() == {}
 
     @pytest.mark.parametrize(
@@ -78,26 +78,26 @@ class TestRecordInvocation:
 
     def test_non_positive_count_is_refused(self, home: Path):
         assert not _skill_usage.record_invocation(
-            "wopr-debug", _skill_usage.SOURCE_MCP, count=0
+            "kitt-debug", _skill_usage.SOURCE_MCP, count=0
         )
 
     def test_use_resets_a_stale_label(self, home: Path):
         _skill_usage.record_invocation(
-            "wopr-debug", _skill_usage.SOURCE_MCP, now=NOW - timedelta(days=300)
+            "kitt-debug", _skill_usage.SOURCE_MCP, now=NOW - timedelta(days=300)
         )
         records, _ = _skill_usage.refresh(
             _skill_usage.load_usage(), [], now=NOW
         )
         _skill_usage.save_usage(records)
-        assert _skill_usage.load_usage()["wopr-debug"]["state"] == "stale"
+        assert _skill_usage.load_usage()["kitt-debug"]["state"] == "stale"
 
-        _skill_usage.record_invocation("wopr-debug", _skill_usage.SOURCE_MCP, now=NOW)
-        assert _skill_usage.load_usage()["wopr-debug"]["state"] == "active"
+        _skill_usage.record_invocation("kitt-debug", _skill_usage.SOURCE_MCP, now=NOW)
+        assert _skill_usage.load_usage()["kitt-debug"]["state"] == "active"
 
     def test_privacy_no_free_text_reaches_the_file(self, home: Path):
-        _skill_usage.record_invocation("wopr-debug", _skill_usage.SOURCE_MCP)
+        _skill_usage.record_invocation("kitt-debug", _skill_usage.SOURCE_MCP)
         text = (home / "skill-usage.json").read_text(encoding="utf-8")
-        record = json.loads(text)["skills"]["wopr-debug"]
+        record = json.loads(text)["skills"]["kitt-debug"]
         assert set(record) == {
             "count",
             "sources",
@@ -129,7 +129,7 @@ class TestLoadRobustness:
                 {
                     "version": 1,
                     "skills": {
-                        "wopr-debug": {
+                        "kitt-debug": {
                             "count": "seven",
                             "sources": {"mcp": 2, "hacked": 99, "bad": "x"},
                             "state": "banana",
@@ -141,7 +141,7 @@ class TestLoadRobustness:
             ),
             encoding="utf-8",
         )
-        record = _skill_usage.load_usage()["wopr-debug"]
+        record = _skill_usage.load_usage()["kitt-debug"]
         assert record["count"] == 0
         assert record["sources"] == {"mcp": 2}
         assert record["state"] == "active"
@@ -211,54 +211,54 @@ class TestClassify:
 
 class TestRefresh:
     def test_seeds_installed_skills_with_a_first_seen_anchor(self):
-        records, changed = _skill_usage.refresh({}, ["wopr-a", "wopr-b"], now=NOW)
+        records, changed = _skill_usage.refresh({}, ["kitt-a", "kitt-b"], now=NOW)
         assert changed is True
-        assert set(records) == {"wopr-a", "wopr-b"}
-        assert records["wopr-a"]["first_seen_at"] == NOW.isoformat()
-        assert records["wopr-a"]["count"] == 0
+        assert set(records) == {"kitt-a", "kitt-b"}
+        assert records["kitt-a"]["first_seen_at"] == NOW.isoformat()
+        assert records["kitt-a"]["count"] == 0
 
     def test_no_change_is_reported_as_no_change(self):
-        records, _ = _skill_usage.refresh({}, ["wopr-a"], now=NOW)
-        _, changed = _skill_usage.refresh(records, ["wopr-a"], now=NOW)
+        records, _ = _skill_usage.refresh({}, ["kitt-a"], now=NOW)
+        _, changed = _skill_usage.refresh(records, ["kitt-a"], now=NOW)
         assert changed is False
 
     def test_uninstalled_records_are_kept(self):
-        records, _ = _skill_usage.refresh({}, ["wopr-a"], now=NOW)
+        records, _ = _skill_usage.refresh({}, ["kitt-a"], now=NOW)
         records, _ = _skill_usage.refresh(records, [], now=NOW)
-        assert "wopr-a" in records
+        assert "kitt-a" in records
 
 
 class TestPinning:
     def test_pin_creates_a_record_before_first_use(self, home: Path):
-        assert _skill_usage.set_pinned("wopr-rare", True)
-        assert _skill_usage.load_usage()["wopr-rare"]["pinned"] is True
+        assert _skill_usage.set_pinned("kitt-rare", True)
+        assert _skill_usage.load_usage()["kitt-rare"]["pinned"] is True
 
     def test_pin_survives_refresh_and_blocks_staleness(self, home: Path):
         _skill_usage.record_invocation(
-            "wopr-rare", _skill_usage.SOURCE_MCP, now=NOW - timedelta(days=900)
+            "kitt-rare", _skill_usage.SOURCE_MCP, now=NOW - timedelta(days=900)
         )
-        _skill_usage.set_pinned("wopr-rare", True)
+        _skill_usage.set_pinned("kitt-rare", True)
         records, _ = _skill_usage.refresh(
-            _skill_usage.load_usage(), ["wopr-rare"], now=NOW
+            _skill_usage.load_usage(), ["kitt-rare"], now=NOW
         )
-        assert records["wopr-rare"]["state"] == "active"
+        assert records["kitt-rare"]["state"] == "active"
 
     def test_unpin_lets_the_clock_apply_again(self, home: Path):
         _skill_usage.record_invocation(
-            "wopr-rare", _skill_usage.SOURCE_MCP, now=NOW - timedelta(days=900)
+            "kitt-rare", _skill_usage.SOURCE_MCP, now=NOW - timedelta(days=900)
         )
-        _skill_usage.set_pinned("wopr-rare", True)
-        _skill_usage.set_pinned("wopr-rare", False)
+        _skill_usage.set_pinned("kitt-rare", True)
+        _skill_usage.set_pinned("kitt-rare", False)
         records, _ = _skill_usage.refresh(
-            _skill_usage.load_usage(), ["wopr-rare"], now=NOW
+            _skill_usage.load_usage(), ["kitt-rare"], now=NOW
         )
-        assert records["wopr-rare"]["state"] == "archived"
+        assert records["kitt-rare"]["state"] == "archived"
 
     def test_forget_drops_the_record(self, home: Path):
-        _skill_usage.record_invocation("wopr-debug", _skill_usage.SOURCE_MCP)
-        assert _skill_usage.forget("wopr-debug") is True
+        _skill_usage.record_invocation("kitt-debug", _skill_usage.SOURCE_MCP)
+        assert _skill_usage.forget("kitt-debug") is True
         assert _skill_usage.load_usage() == {}
-        assert _skill_usage.forget("wopr-debug") is False
+        assert _skill_usage.forget("kitt-debug") is False
 
 
 # ---------------------------------------------------------------------------
@@ -268,8 +268,8 @@ class TestPinning:
 
 class TestReport:
     def test_report_seeds_persists_and_labels(self, home: Path):
-        _skill_usage.record_invocation("wopr-used", _skill_usage.SOURCE_MCP, now=NOW)
-        payload = _skill_usage.report(["wopr-used", "wopr-never"], now=NOW)
+        _skill_usage.record_invocation("kitt-used", _skill_usage.SOURCE_MCP, now=NOW)
+        payload = _skill_usage.report(["kitt-used", "kitt-never"], now=NOW)
         assert payload["persisted"] is True
         assert payload["totals"] == {
             "skills": 2,
@@ -278,19 +278,19 @@ class TestReport:
             "pinned": 0,
         }
         rows = {row["name"]: row for row in payload["skills"]}
-        assert rows["wopr-used"]["count"] == 1
-        assert rows["wopr-never"]["count"] == 0
-        assert rows["wopr-never"]["installed"] is True
+        assert rows["kitt-used"]["count"] == 1
+        assert rows["kitt-never"]["count"] == 0
+        assert rows["kitt-never"]["installed"] is True
         # Seeding persisted, so a second report sees the same anchor.
-        assert _skill_usage.load_usage()["wopr-never"]["first_seen_at"]
+        assert _skill_usage.load_usage()["kitt-never"]["first_seen_at"]
 
     def test_uninstalled_records_are_flagged(self, home: Path):
-        _skill_usage.record_invocation("wopr-gone", _skill_usage.SOURCE_MCP)
+        _skill_usage.record_invocation("kitt-gone", _skill_usage.SOURCE_MCP)
         payload = _skill_usage.report([], now=NOW)
         assert payload["skills"][0]["installed"] is False
 
     def test_coverage_boundary_ships_with_the_numbers(self, home: Path):
-        payload = _skill_usage.report(["wopr-a"], now=NOW)
+        payload = _skill_usage.report(["kitt-a"], now=NOW)
         coverage = payload["coverage"]
         assert coverage["counts_are"] == "lower bound"
         assert set(coverage["observed_sources"]) == _skill_usage.KNOWN_SOURCES
@@ -317,10 +317,10 @@ class TestWriteFailureContainment:
     ):
         blocked = tmp_path / "not-a-directory"
         blocked.write_text("i am a file", encoding="utf-8")
-        monkeypatch.setenv("WOPR_HOME", str(blocked))
+        monkeypatch.setenv("KITT_HOME", str(blocked))
 
         assert not _skill_usage.record_invocation(
-            "wopr-create-plans", _skill_usage.SOURCE_MCP
+            "kitt-create-plans", _skill_usage.SOURCE_MCP
         )
 
 
@@ -337,26 +337,26 @@ class TestMcpTools:
     async def test_report_tool_returns_json_with_coverage(self, workspace: Path):
         skills = workspace / ".ai-cli" / "shared" / "skills"
         skills.mkdir(parents=True)
-        _make_skill(skills, "wopr-a")
+        _make_skill(skills, "kitt-a")
         payload = json.loads(
             await skill_usage.skill_usage_report(
                 target_workspace_path=str(workspace)
             )
         )
-        assert [row["name"] for row in payload["skills"]] == ["wopr-a"]
+        assert [row["name"] for row in payload["skills"]] == ["kitt-a"]
         assert payload["coverage"]["counts_are"] == "lower bound"
 
     async def test_pin_tool_round_trip(self, workspace: Path):
         skills = workspace / ".ai-cli" / "shared" / "skills"
         skills.mkdir(parents=True)
-        _make_skill(skills, "wopr-a")
+        _make_skill(skills, "kitt-a")
         payload = json.loads(
-            await skill_usage.pin_skill("wopr-a", True, str(workspace))
+            await skill_usage.pin_skill("kitt-a", True, str(workspace))
         )
         assert payload["pinned"] is True
         assert payload["installed"] is True
         payload = json.loads(
-            await skill_usage.pin_skill("wopr-a", False, str(workspace))
+            await skill_usage.pin_skill("kitt-a", False, str(workspace))
         )
         assert payload["pinned"] is False
 
@@ -373,15 +373,15 @@ class TestMcpTools:
 class TestCli:
     def test_record_counts_repeated_names_once_per_write(self, home: Path):
         rc = skill_usage_cli.cmd_skill_usage(
-            ["record", "hook:claude", "wopr-a", "wopr-a", "wopr-b"]
+            ["record", "hook:claude", "kitt-a", "kitt-a", "kitt-b"]
         )
         assert rc == 0
         records = _skill_usage.load_usage()
-        assert records["wopr-a"]["count"] == 2
-        assert records["wopr-b"]["count"] == 1
+        assert records["kitt-a"]["count"] == 2
+        assert records["kitt-b"]["count"] == 1
 
     def test_record_rejects_unknown_source(self, home: Path):
-        assert skill_usage_cli.cmd_skill_usage(["record", "nope", "wopr-a"]) == 1
+        assert skill_usage_cli.cmd_skill_usage(["record", "nope", "kitt-a"]) == 1
         assert _skill_usage.load_usage() == {}
 
     def test_record_needs_a_source_and_a_name(self, home: Path):
@@ -389,10 +389,10 @@ class TestCli:
         assert skill_usage_cli.cmd_skill_usage(["record", "hook:claude"]) == 1
 
     def test_pin_and_unpin(self, home: Path):
-        assert skill_usage_cli.cmd_skill_usage(["pin", "wopr-a"]) == 0
-        assert _skill_usage.load_usage()["wopr-a"]["pinned"] is True
-        assert skill_usage_cli.cmd_skill_usage(["unpin", "wopr-a"]) == 0
-        assert _skill_usage.load_usage()["wopr-a"]["pinned"] is False
+        assert skill_usage_cli.cmd_skill_usage(["pin", "kitt-a"]) == 0
+        assert _skill_usage.load_usage()["kitt-a"]["pinned"] is True
+        assert skill_usage_cli.cmd_skill_usage(["unpin", "kitt-a"]) == 0
+        assert _skill_usage.load_usage()["kitt-a"]["pinned"] is False
 
     def test_pin_needs_a_name(self, home: Path):
         assert skill_usage_cli.cmd_skill_usage(["pin"]) == 1
@@ -404,13 +404,13 @@ class TestCli:
     def test_report_runs_against_a_workspace(self, workspace: Path):
         skills = workspace / ".ai-cli" / "shared" / "skills"
         skills.mkdir(parents=True)
-        _make_skill(skills, "wopr-a")
+        _make_skill(skills, "kitt-a")
         assert skill_usage_cli.cmd_skill_usage(["report"], workspace) == 0
-        assert "wopr-a" in _skill_usage.load_usage()
+        assert "kitt-a" in _skill_usage.load_usage()
 
     def test_installed_skill_names_reads_the_shared_dir(self, workspace: Path):
         skills = workspace / ".ai-cli" / "shared" / "skills"
         skills.mkdir(parents=True)
-        _make_skill(skills, "wopr-a")
+        _make_skill(skills, "kitt-a")
         (skills / "not-a-skill").mkdir()
-        assert skill_usage_cli.installed_skill_names(workspace) == ["wopr-a"]
+        assert skill_usage_cli.installed_skill_names(workspace) == ["kitt-a"]

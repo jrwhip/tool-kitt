@@ -1,11 +1,11 @@
-# WOPR Doctor recommendation table
+# KITT Doctor recommendation table
 #
-# Edited by hand. `/wopr-doctor` and `/wopr-init-project` read this file
+# Edited by hand. `/kitt-doctor` and `/kitt-init-project` read this file
 # directly with the file-read tool (there is no recommendation tool and
 # no code loader for this file); no restart needed for data edits.
 #
 # Sections:
-#   framework_to_pack:  detected framework -> list of WOPR packs to install
+#   framework_to_pack:  detected framework -> list of KITT packs to install
 #   signal_to_mcp:      detected external signal -> MCP server registration
 #   language_to_plugin: detected stack language -> official upstream plugin
 #
@@ -61,8 +61,8 @@ signal_to_mcp:
     documentation_url: https://github.com/ChromeDevTools/chrome-devtools-mcp
 
 # Detected stack languages that map to an OFFICIAL UPSTREAM PLUGIN
-# (Copilot CLI / Claude Code `/plugin` flow) rather than a WOPR pack.
-# WOPR deliberately does not vendor these — the upstream marketplace is
+# (Copilot CLI / Claude Code `/plugin` flow) rather than a KITT pack.
+# KITT deliberately does not vendor these — the upstream marketplace is
 # the source of truth and self-updates (the vendored .NET pack was
 # removed 2026-08-03 for exactly this reason). There is no reliable
 # cross-CLI "plugin already installed" check, so the suggestion repeats

@@ -2,14 +2,14 @@
 """
 configure_hook.py
 
-Register any WOPR hook declared by a ``<name>.HOOK.yaml`` manifest into a
+Register any KITT hook declared by a ``<name>.HOOK.yaml`` manifest into a
 project, for any CLI that hook declares a target for. Idempotent: re-running
 reconciles the existing entry in place instead of appending a duplicate,
 including after the handler's absolute path has changed.
 
 Replaces the former per-hook, per-CLI scripts, which were near-identical
 apart from the event name, the config file, and the entry shape: all three
-are now declared in the manifest and rendered by ``wopr.hook_manifest``.
+are now declared in the manifest and rendered by ``kitt.hook_manifest``.
 
 Usage:
   python3 configure_hook.py --hook NAME --cli claude \
@@ -26,7 +26,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from wopr.hook_manifest import (
+from kitt.hook_manifest import (
     HookManifestError,
     discover_hook_manifests,
     find_hook_manifest,

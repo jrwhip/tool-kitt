@@ -1,5 +1,5 @@
 ---
-name: wopr-create-meta-prompts
+name: kitt-create-meta-prompts
 description: Create optimized prompts for agent-to-agent pipelines with research, planning, and execution stages. Use when building prompts that produce outputs for other prompts to consume, or when running multi-stage workflows (research -> plan -> implement).
 ---
 

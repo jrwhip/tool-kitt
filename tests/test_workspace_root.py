@@ -2,13 +2,13 @@
 
 Three layers:
 
-1. :func:`wopr.tools._workspace_root.find_workspace_root` as a pure
+1. :func:`kitt.tools._workspace_root.find_workspace_root` as a pure
    function: markers, nearest-match-wins, and the git-toplevel boundary.
 2. The learnings tools end to end on the exact shape that exposed the
-   defect -- a repo whose ``wopr.yml`` files live in subpackages while
+   defect -- a repo whose ``kitt.yml`` files live in subpackages while
    the corpus lives at the repo root. ``seed_learnings`` wrote the root
    file, ``append_learnings`` sent the next entries to
-   ``~/.wopr/LEARNINGS.md``, and the read path could reach neither, so
+   ``~/.kitt/LEARNINGS.md``, and the read path could reach neither, so
    the root corpus was an orphan that looked correct.
 3. Status messages that describe what happened rather than what the
    happy path would have done.
@@ -24,13 +24,13 @@ from pathlib import Path
 
 import pytest
 
-from wopr.tools import learnings
-from wopr.tools._workspace_root import (
+from kitt.tools import learnings
+from kitt.tools._workspace_root import (
     WorkspaceRoot,
     find_git_toplevel,
     find_workspace_root,
 )
-from wopr.tools.learnings import (
+from kitt.tools.learnings import (
     _ensure_workspace_registered,
     _registration_note,
     append_learnings,
@@ -40,8 +40,8 @@ from wopr.tools.learnings import (
     seed_learnings,
 )
 
-# ``isolated_env`` lives in tests/conftest.py: it isolates WOPR_HOME so
-# nothing here can touch the operator's real ``~/.wopr``.
+# ``isolated_env`` lives in tests/conftest.py: it isolates KITT_HOME so
+# nothing here can touch the operator's real ``~/.kitt``.
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -79,10 +79,10 @@ def _mkrepo(root: Path) -> Path:
 
 
 def _mkpackage(parent: Path, name: str) -> Path:
-    """Create a subpackage carrying its own ``wopr.yml``."""
+    """Create a subpackage carrying its own ``kitt.yml``."""
     package = parent / name
     package.mkdir(parents=True, exist_ok=True)
-    (package / "wopr.yml").write_text("project:\n  slug: pkg\n", encoding="utf-8")
+    (package / "kitt.yml").write_text("project:\n  slug: pkg\n", encoding="utf-8")
     return package
 
 
@@ -90,7 +90,7 @@ def _mkpackage(parent: Path, name: str) -> Path:
 def arcade(tmp_path: Path) -> tuple[Path, Path, Path]:
     """The shape from the bug report, minus the corpus.
 
-    ``<root>/.git`` plus ``backend/wopr.yml`` and ``frontend/wopr.yml``,
+    ``<root>/.git`` plus ``backend/kitt.yml`` and ``frontend/kitt.yml``,
     and deliberately NO ``LEARNINGS.md`` at the root yet: that file is
     what ``seed_learnings`` is supposed to establish.
     """
@@ -101,7 +101,7 @@ def arcade(tmp_path: Path) -> tuple[Path, Path, Path]:
 
 
 class TestFindWorkspaceRoot:
-    def test_wopr_yml_in_the_start_directory_wins_immediately(self, tmp_path: Path):
+    def test_kitt_yml_in_the_start_directory_wins_immediately(self, tmp_path: Path):
         package = _mkpackage(tmp_path, "pkg")
         result = find_workspace_root(package)
         assert result.found
@@ -131,7 +131,7 @@ class TestFindWorkspaceRoot:
 
     def test_stops_at_the_git_toplevel(self, tmp_path: Path):
         """A marker outside the repository is not this repository's corpus."""
-        (tmp_path / "wopr.yml").write_text("project:\n  slug: outside\n", encoding="utf-8")
+        (tmp_path / "kitt.yml").write_text("project:\n  slug: outside\n", encoding="utf-8")
         repo = _mkrepo(tmp_path / "repo")
         sub = repo / "sub"
         sub.mkdir()
@@ -182,7 +182,7 @@ class TestExplainAFailedSearch:
 
         text = find_workspace_root(sub).explain()
 
-        assert "wopr.yml or LEARNINGS.md" in text
+        assert "kitt.yml or LEARNINGS.md" in text
         assert str(sub) in text
         assert str(repo) in text
         assert "git toplevel" in text
@@ -205,7 +205,7 @@ class TestArcadeShapeEndToEnd:
     async def test_before_seeding_append_at_the_root_refuses_and_writes_nothing(
         self, arcade, isolated_env
     ):
-        """The defect: this used to land in ~/.wopr/LEARNINGS.md."""
+        """The defect: this used to land in ~/.kitt/LEARNINGS.md."""
         root, _backend, _frontend = arcade
         _ws, home = isolated_env
 
@@ -248,11 +248,11 @@ class TestArcadeShapeEndToEnd:
     async def test_append_from_a_subpackage_uses_that_subpackage(
         self, arcade, isolated_env
     ):
-        """Nearest match wins: a subpackage with its own wopr.yml is its own root.
+        """Nearest match wins: a subpackage with its own kitt.yml is its own root.
 
         The point of the assertion is not which of the two files wins,
         it is that the entry lands in a file the read path can reach --
-        never in ``~/.wopr`` behind the caller's back.
+        never in ``~/.kitt`` behind the caller's back.
         """
         root, backend, _frontend = arcade
         _ws, home = isolated_env
@@ -406,8 +406,8 @@ class TestHonestStatusMessages:
 class TestGoldenFixtureResolutionIsUnchanged:
     """The single-package shape must resolve exactly as it always did.
 
-    Both golden-req fixtures carry ``wopr.yml`` at their root, which is
-    the case the old ``wopr.yml``-at-the-root rule handled. Resolution
+    Both golden-req fixtures carry ``kitt.yml`` at their root, which is
+    the case the old ``kitt.yml``-at-the-root rule handled. Resolution
     must terminate on the fixture directory itself without walking, so
     the new walk-up costs these projects nothing and changes nothing.
 
@@ -422,7 +422,7 @@ class TestGoldenFixtureResolutionIsUnchanged:
     @pytest.mark.parametrize("name", ["golden-req", "golden-req-2"])
     def test_resolution_terminates_on_the_fixture_directory(self, name: str):
         fixture = REPO_ROOT / "evals" / name / "fixture"
-        assert (fixture / "wopr.yml").is_file(), "fixture precondition"
+        assert (fixture / "kitt.yml").is_file(), "fixture precondition"
 
         result = find_workspace_root(fixture)
 
@@ -437,8 +437,8 @@ class TestGoldenFixtureResolutionIsUnchanged:
         fixture = REPO_ROOT / "evals" / name / "fixture"
         replica = tmp_path / name
         replica.mkdir()
-        (replica / "wopr.yml").write_text(
-            (fixture / "wopr.yml").read_text(encoding="utf-8"), encoding="utf-8"
+        (replica / "kitt.yml").write_text(
+            (fixture / "kitt.yml").read_text(encoding="utf-8"), encoding="utf-8"
         )
         _ws, home = isolated_env
 
@@ -454,9 +454,9 @@ class TestGoldenFixtureResolutionIsUnchanged:
         assert not (home / "LEARNINGS.md").exists()
 
     def test_the_golden_req_2_corpus_marker_does_not_change_resolution(self):
-        """Adding LEARNINGS.md beside wopr.yml resolves the same way."""
+        """Adding LEARNINGS.md beside kitt.yml resolves the same way."""
         fixture = REPO_ROOT / "evals" / "golden-req-2" / "fixture"
-        assert (fixture / "wopr.yml").is_file(), "fixture precondition"
+        assert (fixture / "kitt.yml").is_file(), "fixture precondition"
         assert (fixture / "LEARNINGS.md").is_file(), "fixture precondition"
 
         result = find_workspace_root(fixture)

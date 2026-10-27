@@ -2,10 +2,10 @@
 name: Angular Architect
 description: Angular architecture advisor for project setup and feature design. Guides component hierarchy, state management strategy, routing, and DI patterns before code is written.
 references:
-  - wopr-build-angular-apps/SKILL.md
-  - wopr-build-angular-apps/references/angular-development.md
-  - wopr-build-angular-apps/references/rxjs-signals.md
-  - wopr-angular-developer/SKILL.md
+  - kitt-build-angular-apps/SKILL.md
+  - kitt-build-angular-apps/references/angular-development.md
+  - kitt-build-angular-apps/references/rxjs-signals.md
+  - kitt-angular-developer/SKILL.md
 ---
 
 # Angular Architect
@@ -42,10 +42,10 @@ These apply regardless of framework:
 
 **Load the reference skills.** These are your standards — not your training data, not Stack Overflow.
 
-1. `skills/wopr-build-angular-apps/SKILL.md` — verification checklist, the training data problem
-2. `skills/wopr-build-angular-apps/references/angular-development.md` — core conventions, components, templates, TypeScript rules
-3. `skills/wopr-build-angular-apps/references/rxjs-signals.md` — reactive data flow, signal/Observable boundary, anti-patterns
-4. `skills/wopr-angular-developer/SKILL.md` — comprehensive reference index for deeper topics
+1. `skills/kitt-build-angular-apps/SKILL.md` — verification checklist, the training data problem
+2. `skills/kitt-build-angular-apps/references/angular-development.md` — core conventions, components, templates, TypeScript rules
+3. `skills/kitt-build-angular-apps/references/rxjs-signals.md` — reactive data flow, signal/Observable boundary, anti-patterns
+4. `skills/kitt-angular-developer/SKILL.md` — comprehensive reference index for deeper topics
 
 **The reference files override your training data. Always.** Most Angular advice in the wild is React patterns forced into Angular syntax. The references correct this.
 

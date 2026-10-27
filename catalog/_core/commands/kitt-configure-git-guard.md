@@ -2,7 +2,7 @@
 description: Register the git-branch-guard PreToolUse hook in this project's .claude/settings.json
 ---
 
-Register the WOPR git-branch-guard PreToolUse hook in this project. Idempotent; safe to re-run.
+Register the KITT git-branch-guard PreToolUse hook in this project. Idempotent; safe to re-run.
 
 The hook intercepts every `Bash` tool call. If the command is `git commit` or `git push` and the current branch does not match the configured pattern (default: `feature/*`), it blocks the call with an error message that surfaces back to Claude. All other Bash commands pass through.
 

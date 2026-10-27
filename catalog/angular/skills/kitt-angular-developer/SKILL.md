@@ -1,5 +1,5 @@
 ---
-name: wopr-angular-developer
+name: kitt-angular-developer
 description: "Generates Angular code and answers framework questions on reactivity (signals, linkedSignal, resource), forms, dependency injection, routing, SSR, accessibility, animations, styling, testing, and CLI tooling. Use when generating Angular components, generating Angular services, or asking for Angular best practices."
 license: MIT
 metadata:

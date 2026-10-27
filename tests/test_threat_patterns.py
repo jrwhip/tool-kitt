@@ -1,4 +1,4 @@
-"""Tests for ``wopr.tools._threat_patterns``.
+"""Tests for ``kitt.tools._threat_patterns``.
 
 This is the shared credential/secret pattern library behind both
 ``_skill_guard.py`` and ``_leak_vet.py`` (item 12 of the cannibalize plan).
@@ -12,7 +12,7 @@ as a mysterious regression in one of the consumers.
 
 from __future__ import annotations
 
-from wopr.tools._threat_patterns import (
+from kitt.tools._threat_patterns import (
     CREDENTIAL_PATTERNS,
     LEAK_VET,
     SKILL_GUARD,

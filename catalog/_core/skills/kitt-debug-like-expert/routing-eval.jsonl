@@ -1,9 +1,9 @@
-{"intent": "our standard troubleshooting fails and this bug refuses to reproduce", "expected_skill": "wopr-debug-like-expert"}
-{"intent": "let's escalate this when issues require systematic root cause analysis", "expected_skill": "wopr-debug-like-expert"}
-{"intent": "standard troubleshooting fails here, the stack trace is lying to us", "expected_skill": "wopr-debug-like-expert"}
-{"intent": "four hours in and standard troubleshooting fails, go deep on this one", "expected_skill": "wopr-debug-like-expert"}
-{"intent": "this is one of those when issues require systematic root cause analysis moments", "expected_skill": "wopr-debug-like-expert"}
-{"intent": "when issues require systematic root cause analysis I want evidence before hypotheses", "expected_skill": "wopr-debug-like-expert"}
+{"intent": "our standard troubleshooting fails and this bug refuses to reproduce", "expected_skill": "kitt-debug-like-expert"}
+{"intent": "let's escalate this when issues require systematic root cause analysis", "expected_skill": "kitt-debug-like-expert"}
+{"intent": "standard troubleshooting fails here, the stack trace is lying to us", "expected_skill": "kitt-debug-like-expert"}
+{"intent": "four hours in and standard troubleshooting fails, go deep on this one", "expected_skill": "kitt-debug-like-expert"}
+{"intent": "this is one of those when issues require systematic root cause analysis moments", "expected_skill": "kitt-debug-like-expert"}
+{"intent": "when issues require systematic root cause analysis I want evidence before hypotheses", "expected_skill": "kitt-debug-like-expert"}
 {"intent": "please rename this variable for clarity", "expected_skill": null}
 {"intent": "add a console log to this function", "expected_skill": null}
 {"intent": "the test is red, fix the assertion", "expected_skill": null}

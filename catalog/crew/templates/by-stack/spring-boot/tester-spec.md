@@ -153,7 +153,7 @@ Never report `gate: PASS` without a fresh `mvn clean verify` measurement.
 
 ## Spec Maintenance
 
-When `spec_writes` is ON (`wopr.yml` `specs.spec_writes`; default OFF), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
+When `spec_writes` is ON (`kitt.yml` `specs.spec_writes`; default OFF), amend this spec when a new coverage shape or fixture idiom emerges. Examples:
 
 - A new Testcontainers idiom (a shared base class for a specific service).
 - A coverage rule for a new test category (parameterized JUnit 5 tests).

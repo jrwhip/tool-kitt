@@ -1,5 +1,5 @@
 ---
-name: wopr-build-angular-apps
+name: kitt-build-angular-apps
 description: "Build professional Angular applications following the platform architecture with signals, RxJS, standalone components, and OnPush change detection. Use when architecting an Angular application, reviewing Angular architecture, or migrating React-flavored patterns to idiomatic Angular."
 ---
 

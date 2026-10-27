@@ -1,7 +1,7 @@
 # Golden-REQ-2 post-slimming run 1
 
 - Date: 2026-08-21
-- Under test: slimmed agent specs at commit 5dd537a (auditor 64 / scout 59 / coder 50 / tester 45 lines; 1,016 -> 324 with wopr-crew.md deleted); orchestrator 119-line skill unchanged from baseline
+- Under test: slimmed agent specs at commit 5dd537a (auditor 64 / scout 59 / coder 50 / tester 45 lines; 1,016 -> 324 with kitt-crew.md deleted); orchestrator 119-line skill unchanged from baseline
 - Dispatch: same method as baseline, with merged-dispatch instructions now carried by the spec instead of the prompt
 - Scratch: /tmp/gr2-post-1; CRAG: empty corpus, evaluator skipped
 - Pass condition: see baseline-summary.md

@@ -11,10 +11,10 @@ Deliberately NOT parameterized here, because they are packaging or
 content identity rather than runtime identity, and a constant would
 only hide the literal from a reviewer:
 
-* the Python package name (``src/wopr``, ``from wopr import ...``) and
+* the Python package name (``src/kitt``, ``from kitt import ...``) and
   the console-script names in ``pyproject.toml``;
-* catalog file and directory names (``catalog/_core/commands/wopr-*``);
-* MCP tool names (``propose_wopr_yml``) and the ``mcp__wopr__`` spelling
+* catalog file and directory names (``catalog/_core/commands/kitt-*``);
+* MCP tool names (``propose_kitt_yml``) and the ``mcp__kitt__`` spelling
   the catalog uses, which :mod:`build_plugins` derives from
   :data:`MCP_SERVER_KEY` at build time;
 * prose.
@@ -25,10 +25,10 @@ values, and the test suite is what proves the pass was complete.
 
 from __future__ import annotations
 
-PRODUCT = "wopr"
+PRODUCT = "kitt"
 """Lowercase product name. Root of every derived name below."""
 
-PRODUCT_TITLE = "WOPR"
+PRODUCT_TITLE = "KITT"
 """How the product is written in user-facing text."""
 
 CLI_PROG = PRODUCT

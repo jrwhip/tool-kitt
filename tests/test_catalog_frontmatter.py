@@ -2,12 +2,12 @@
 
 Not a nice-to-have. The skill ``name`` and ``description`` in this block are
 what every CLI indexes for auto-selection, what ``to_copilot_skill`` requires
-to be non-empty, and where the ``wopr-loading:`` tier declaration lives. YAML
+to be non-empty, and where the ``kitt-loading:`` tier declaration lives. YAML
 that does not parse produces no error anywhere -- every consumer just sees a
 skill with no name and no description.
 
-That is not hypothetical: ``wopr-run-crew`` shipped with an unquoted colon
-inside its description (``... configured with `wopr.yml`: net-new ...``),
+That is not hypothetical: ``kitt-run-crew`` shipped with an unquoted colon
+inside its description (``... configured with `kitt.yml`: net-new ...``),
 which YAML reads as a nested mapping and rejects. The crew pack's flagship
 skill was invisible to every frontmatter consumer, silently, until this test
 existed.
@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from wopr.converters import parse_claude
+from kitt.converters import parse_claude
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,7 +27,7 @@ class TestCatalogFrontmatterIsParseable:
 
     Not a nice-to-have: the tier declaration, the resolver's one-liner,
     and every CLI's own skill index all come from this frontmatter. One
-    catalog skill (``wopr-run-crew``) shipped with an unquoted colon in
+    catalog skill (``kitt-run-crew``) shipped with an unquoted colon in
     its description, which made the whole block unparseable YAML -- so
     every consumer saw a skill with no name and no description, silently.
     """

@@ -1,7 +1,7 @@
-"""Shared pytest fixtures for the WOPR test suite.
+"""Shared pytest fixtures for the KITT test suite.
 
 Consolidates the ``workspace`` fixture (``tmp_path / "ws"`` +
-``ServerContext`` reset + ``WOPR_HOME`` env override) and the
+``ServerContext`` reset + ``KITT_HOME`` env override) and the
 ``FakeMcp`` registration-recording helper that several test modules
 would otherwise each inline.
 
@@ -20,9 +20,9 @@ from typing import Any
 
 import pytest
 
-from wopr import catalog
-from wopr.config import ENV_WOPR_HOME, ServerConfig
-from wopr.context import ServerContext
+from kitt import catalog
+from kitt.config import ENV_KITT_HOME, ServerConfig
+from kitt.context import ServerContext
 
 _REAL_HOME = Path.home().resolve()
 
@@ -43,25 +43,25 @@ def _rebind_everywhere(
 
 
 @pytest.fixture(autouse=True)
-def _wopr_home_never_points_at_the_real_home(
+def _kitt_home_never_points_at_the_real_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Make it impossible for a test to read or write the real ``~/.wopr``.
+    """Make it impossible for a test to read or write the real ``~/.kitt``.
 
-    Everything WOPR keeps globally -- learnings, the workspace registry,
+    Everything KITT keeps globally -- learnings, the workspace registry,
     the skill-usage sidecar -- is
     addressed through :func:`catalog.get_global_home`, which falls back to
-    ``$HOME/.wopr`` when ``WOPR_HOME`` is unset. A test that forgets the
+    ``$HOME/.kitt`` when ``KITT_HOME`` is unset. A test that forgets the
     ``workspace`` / ``isolated_env`` fixture therefore does not fail: it
     silently mutates the operator's real state. That is not hypothetical
     either -- ``test_multi_workspace_tools`` used a bare ``tmp_path`` and
-    accumulated dozens of ``wopr-local`` invocations in the developer's
-    ``~/.wopr/skill-usage.json`` before anyone noticed, because
+    accumulated dozens of ``kitt-local`` invocations in the developer's
+    ``~/.kitt/skill-usage.json`` before anyone noticed, because
     ``run_skill`` records telemetry as a side effect.
 
     Two layers, because either one alone leaves a hole:
 
-    1. Default ``WOPR_HOME`` to a per-test tmp dir, so a test that never
+    1. Default ``KITT_HOME`` to a per-test tmp dir, so a test that never
        thinks about global state still gets isolation. Fixtures and tests
        that set their own value run after this and win.
     2. Guard :func:`get_global_home` itself, so an explicit override --
@@ -70,7 +70,7 @@ def _wopr_home_never_points_at_the_real_home(
        instead of corrupting state, which is the only acceptable outcome
        for a leak nobody would otherwise see.
     """
-    monkeypatch.setenv(ENV_WOPR_HOME, str(tmp_path / "wopr-home"))
+    monkeypatch.setenv(ENV_KITT_HOME, str(tmp_path / "kitt-home"))
 
     real = catalog.get_global_home
 
@@ -80,7 +80,7 @@ def _wopr_home_never_points_at_the_real_home(
             raise AssertionError(
                 f"get_global_home() resolved to {home}, inside the real home "
                 f"({_REAL_HOME}). A test is about to read or write the "
-                f"operator's actual WOPR state; set WOPR_HOME to a tmp dir "
+                f"operator's actual KITT state; set KITT_HOME to a tmp dir "
                 f"(the `workspace` / `isolated_env` fixtures already do)."
             )
         return home
@@ -93,12 +93,12 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]
     """Provide an isolated workspace with a wired-up ServerContext.
 
     Creates ``tmp_path / "ws"`` as the workspace, initializes a fresh
-    ``ServerContext`` pointing at it, and isolates ``WOPR_HOME`` to a
+    ``ServerContext`` pointing at it, and isolates ``KITT_HOME`` to a
     sibling tmp dir so tests cannot leak into the operator's real
-    ``~/.wopr``. Resets the singleton on both entry and exit so a
+    ``~/.kitt``. Resets the singleton on both entry and exit so a
     crashing test cannot bleed state into the next one.
 
-    Tests that need both the workspace AND the WOPR_HOME path can use
+    Tests that need both the workspace AND the KITT_HOME path can use
     :func:`isolated_env` instead.
     """
     ws = tmp_path / "ws"
@@ -106,7 +106,7 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]
     ServerContext.reset()
     ctx = ServerContext.init(ServerConfig(cli_type="claude"))
     ctx.workspace = ws
-    monkeypatch.setenv("WOPR_HOME", str(tmp_path / "wopr-home"))
+    monkeypatch.setenv("KITT_HOME", str(tmp_path / "kitt-home"))
     yield ws
     ServerContext.reset()
 
@@ -115,7 +115,7 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]
 def isolated_env(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> Iterator[tuple[Path, Path]]:
-    """Like :func:`workspace`, but also yields the ``WOPR_HOME`` path.
+    """Like :func:`workspace`, but also yields the ``KITT_HOME`` path.
 
     Tests that exercise the cross-workspace registry need the home
     path directly; tests that only care about the workspace use the
@@ -123,12 +123,12 @@ def isolated_env(
     """
     ws = tmp_path / "ws"
     ws.mkdir()
-    home = tmp_path / "wopr-home"
+    home = tmp_path / "kitt-home"
     home.mkdir()
     ServerContext.reset()
     ctx = ServerContext.init(ServerConfig(cli_type="claude"))
     ctx.workspace = ws
-    monkeypatch.setenv("WOPR_HOME", str(home))
+    monkeypatch.setenv("KITT_HOME", str(home))
     yield ws, home
     ServerContext.reset()
 

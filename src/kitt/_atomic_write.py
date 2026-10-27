@@ -1,7 +1,7 @@
 """Shared atomic-write helpers for tool modules.
 
 Tool modules persist operator state (TO-DOs, notes, time tracking,
-handoff documents) and generated artifacts (wopr.yml, spec stubs,
+handoff documents) and generated artifacts (kitt.yml, spec stubs,
 LEARNINGS.md). A naive ``path.write_text`` is non-atomic: a crash
 between truncation and full write leaves a partial file, and
 concurrent writers race the bytes. The cost of a partial write
@@ -23,14 +23,14 @@ Caveats this module does NOT solve:
   caller needs the directory metadata durable (release artifacts,
   lock files, etc.), it must fsync the parent dir itself.
 * No signal handling. A SIGTERM between ``tmp.open()`` and
-  ``os.replace()`` orphans the temp file. WOPR is interactive; a
+  ``os.replace()`` orphans the temp file. KITT is interactive; a
   background sweep of ``.<name>.*.tmp`` is left to the operator if
   it ever matters.
 * No cross-process locking. Two concurrent writers race the replace
-  calls; last writer wins silently. WOPR is single-operator, so this
+  calls; last writer wins silently. KITT is single-operator, so this
   is out of scope.
 
-These are the same caveats the original ``wopr_yml`` writer carried
+These are the same caveats the original ``kitt_yml`` writer carried
 in its inline docstring; extracting the helper means every module
 benefits from the same explicit posture rather than each module
 reinventing it (or, worse, not).
@@ -63,7 +63,7 @@ def atomic_write_text(target: Path, content: str, *, fsync: bool = True) -> None
         target: Destination path. Its parent directory must already
             exist; this helper does not create parents because the
             caller usually owns the directory contract (workspace
-            root, ~/.wopr, etc.) and creating parents implicitly here
+            root, ~/.kitt, etc.) and creating parents implicitly here
             could mask a misconfiguration.
         content: UTF-8 text to write.
         fsync: When True (the default), flush and ``os.fsync`` the

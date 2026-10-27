@@ -1,6 +1,6 @@
 # Crew skill rewrite: eval-gate comparison
 
-The 473-line `wopr-run-crew/SKILL.md` was rewritten to 119 lines (75% cut). Per the slimming method, the rewrite only lands because these four golden-REQ runs prove no behavioral regression. All four runs: same fixture REQ, empty learnings corpus, identical dispatch method, same models per role.
+The 473-line `kitt-run-crew/SKILL.md` was rewritten to 119 lines (75% cut). Per the slimming method, the rewrite only lands because these four golden-REQ runs prove no behavioral regression. All four runs: same fixture REQ, empty learnings corpus, identical dispatch method, same models per role.
 
 ## Pass condition (from baseline-summary.md) and result
 

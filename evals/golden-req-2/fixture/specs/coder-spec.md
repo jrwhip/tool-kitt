@@ -1,8 +1,8 @@
-# Coder Spec - WOPR Golden Fixture
+# Coder Spec - KITT Golden Fixture
 
 > **Target stack:** Python 3.11 + FastAPI + uvicorn, managed with uv
 > **Legacy stack:** none; greenfield fixture
-> **Project:** wopr-golden-fixture. A deterministic, minimal FastAPI app used as the WOPR crew skill's golden-REQ evaluation fixture. Not a product codebase.
+> **Project:** kitt-golden-fixture. A deterministic, minimal FastAPI app used as the KITT crew skill's golden-REQ evaluation fixture. Not a product codebase.
 
 ---
 
@@ -95,7 +95,7 @@ for it.
 - **Spec generation tool and version:** FastAPI itself generates the
   OpenAPI document from route decorators and type-annotated parameters;
   there is no separate annotation library (no springdoc equivalent). Pinned
-  version: `fastapi 0.141.1` (see `wopr.yml` `openapi.pinned_generator_version`).
+  version: `fastapi 0.141.1` (see `kitt.yml` `openapi.pinned_generator_version`).
 - **Annotation syntax:** plain FastAPI path-operation decorators plus
   standard Python type hints and `Query(...)` / `Path(...)` / Pydantic
   models for request and response shapes. No extra annotation layer.
@@ -315,4 +315,4 @@ If any condition fails, the REQ stays `🔄` and the failure is logged in
 - `app/main.py` - the entire application: FastAPI instance and all route
   handlers.
 - `pyproject.toml` - dependencies, ruff config, pytest config.
-- `wopr.yml` - project configuration read by every crew agent.
+- `kitt.yml` - project configuration read by every crew agent.

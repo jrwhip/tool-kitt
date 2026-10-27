@@ -1,7 +1,7 @@
 ---
 description: Apply expert debugging methodology to investigate a specific issue
 argument-hint: [issue description]
-allowed-tools: Skill(wopr-debug-like-expert)
+allowed-tools: Skill(kitt-debug-like-expert)
 ---
 
 <objective>

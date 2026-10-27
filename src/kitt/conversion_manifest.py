@@ -1,5 +1,5 @@
 """
-Conversion manifest for WOPR.
+Conversion manifest for KITT.
 
 Classifies commands and agents into tiers for multi-CLI conversion:
 - Tier 1: No Claude references, convert as-is
@@ -20,30 +20,30 @@ from typing import Literal, TypeAlias
 
 ResourceType: TypeAlias = Literal["command", "agent"]
 
-# Commands by tier (all use wopr- prefix)
+# Commands by tier (all use kitt- prefix)
 COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
     "tier1": [
         # Mental models. The 12 per-framework commands collapsed into one
         # argument-routed command in P2; the frameworks themselves are in
         # its `<frameworks>` block, not in 12 files.
-        "wopr-consider",
+        "kitt-consider",
         # Other generic commands
-        "wopr-audit-skill",
-        "wopr-audit-slash-command",
-        "wopr-audit-subagent",
-        "wopr-create-plan",
-        "wopr-create-slash-command",
-        "wopr-debug",
-        "wopr-heal-skill",
-        "wopr-run-plan",
+        "kitt-audit-skill",
+        "kitt-audit-slash-command",
+        "kitt-audit-subagent",
+        "kitt-create-plan",
+        "kitt-create-slash-command",
+        "kitt-debug",
+        "kitt-heal-skill",
+        "kitt-run-plan",
         # Now convertible via MCP tools
-        "wopr-add-to-todos",
+        "kitt-add-to-todos",
         # Alignment/intervention
-        "wopr-realign",
+        "kitt-realign",
     ],
     "tier2": [
         # Path references only - need replacement
-        "wopr-check-todos",
+        "kitt-check-todos",
     ],
     "tier3": {
         # Skill-tool wrappers: the body is a one-line ``Skill(...)``
@@ -51,24 +51,24 @@ COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
         # Copilot gets these back via CLI_EXTRA_CONVERTIBLE_COMMANDS +
         # SKILL_WRAPPER_COMMANDS (the invocation is rewritten to the
         # native /skill-name form).
-        "wopr-create-agent-skill": (
-            "wraps Claude's Skill tool (Skill(wopr-create-agent-skills)); "
+        "kitt-create-agent-skill": (
+            "wraps Claude's Skill tool (Skill(kitt-create-agent-skills)); "
             "rewritten to native /skill-name form for Copilot only"
         ),
-        "wopr-create-hook": (
-            "wraps Claude's Skill tool (Skill(wopr-create-hooks)); "
+        "kitt-create-hook": (
+            "wraps Claude's Skill tool (Skill(kitt-create-hooks)); "
             "rewritten to native /skill-name form for Copilot only"
         ),
-        "wopr-create-meta-prompt": (
-            "wraps Claude's Skill tool (Skill(wopr-create-meta-prompts)); "
+        "kitt-create-meta-prompt": (
+            "wraps Claude's Skill tool (Skill(kitt-create-meta-prompts)); "
             "rewritten to native /skill-name form for Copilot only"
         ),
-        "wopr-create-subagent": (
-            "wraps Claude's Skill tool (Skill(wopr-create-subagents)); "
+        "kitt-create-subagent": (
+            "wraps Claude's Skill tool (Skill(kitt-create-subagents)); "
             "rewritten to native /skill-name form for Copilot only"
         ),
-        "wopr-capture": (
-            "wraps Claude's Skill tool (Skill(wopr-capture-skill)); "
+        "kitt-capture": (
+            "wraps Claude's Skill tool (Skill(kitt-capture-skill)); "
             "rewritten to native /skill-name form for Copilot only"
         ),
         # Claude-CLI-specific hook configurators: their whole purpose is
@@ -77,28 +77,28 @@ COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
         # corrupt the literal `.claude/settings.json` instructions or
         # ship instructions for a hook mechanism the target CLI does not
         # have. Expressed here explicitly rather than by omission.
-        "wopr-configure-capture-skill-hook": (
+        "kitt-configure-capture-skill-hook": (
             "Claude Code-specific: registers a Stop hook in "
             ".claude/settings.json; path replacement would corrupt the "
             "literal .claude/ paths it must keep"
         ),
-        "wopr-configure-git-guard": (
+        "kitt-configure-git-guard": (
             "Claude Code-specific: registers a PreToolUse hook in "
             ".claude/settings.json; path replacement would corrupt the "
             "literal .claude/ paths it must keep"
         ),
-        "wopr-configure-prompt-log": (
+        "kitt-configure-prompt-log": (
             "Claude Code-specific: registers a Stop hook in "
             ".claude/settings.json; path replacement would corrupt the "
             "literal .claude/ paths it must keep"
         ),
-        "wopr-configure-skill-usage-hook": (
+        "kitt-configure-skill-usage-hook": (
             "Claude Code-specific: registers a Stop hook in "
             ".claude/settings.json, and the hook it registers parses "
             "Claude Code's own transcript shape; neither the wiring nor "
             "the parser transfers to another CLI"
         ),
-        "wopr-configure-token-usage-hook": (
+        "kitt-configure-token-usage-hook": (
             "Claude Code-specific: registers a Stop hook in "
             ".claude/settings.json, and the hook it registers joins "
             "Claude Code's per-turn usage objects to its tool_use/"
@@ -108,19 +108,19 @@ COMMAND_TIERS: dict[str, list[str] | dict[str, str]] = {
     },
 }
 
-# Agents by tier (all use wopr- prefix)
+# Agents by tier (all use kitt- prefix)
 AGENT_TIERS: dict[str, list[str] | dict[str, str]] = {
     "tier1": [
         # Generic agents
-        "wopr-architect",
-        "wopr-code-auditor",
-        "wopr-code-reviewer",
-        "wopr-mentor",
-        "wopr-refactor",
+        "kitt-architect",
+        "kitt-code-auditor",
+        "kitt-code-reviewer",
+        "kitt-mentor",
+        "kitt-refactor",
         # Auditors - work via file reading, convertible
-        "wopr-skill-auditor",
-        "wopr-slash-command-auditor",
-        "wopr-subagent-auditor",
+        "kitt-skill-auditor",
+        "kitt-slash-command-auditor",
+        "kitt-subagent-auditor",
         # Crew pack: convertible across all CLIs. The four role
         # agents are terminal workers (no subagent dispatch from
         # within); the orchestrator and evaluator dispatch other
@@ -130,28 +130,28 @@ AGENT_TIERS: dict[str, list[str] | dict[str, str]] = {
         # of `custom-agent`) per `to_copilot_agent`'s tool_map, giving
         # Copilot subagent parity with Claude / Gemini's Task-based
         # dispatch.
-                "wopr-crew-scout",
-        "wopr-crew-coder",
-        "wopr-crew-tester",
-        "wopr-crew-auditor",
-        "wopr-crew-evaluator",
+                "kitt-crew-scout",
+        "kitt-crew-coder",
+        "kitt-crew-tester",
+        "kitt-crew-auditor",
+        "kitt-crew-evaluator",
     ],
     "tier2": [
         # Path references only (skill reference files under
         # `skills/...` or `.ai-cli/shared/skills/...`)
-        "wopr-angular-perfectionist-reviewer",
-        "wopr-angular-architect",
-        "wopr-java-architect",
-        "wopr-python-architect",
-        "wopr-ios-architect",
-        "wopr-accessibility-architect",
-        "wopr-accessibility-perfectionist-reviewer",
-        "wopr-java-perfectionist-reviewer",
-        "wopr-python-perfectionist-reviewer",
-        "wopr-security-architect",
-        "wopr-security-perfectionist-reviewer",
-        "wopr-vanilla-web-architect",
-        "wopr-vanilla-web-perfectionist-reviewer",
+        "kitt-angular-perfectionist-reviewer",
+        "kitt-angular-architect",
+        "kitt-java-architect",
+        "kitt-python-architect",
+        "kitt-ios-architect",
+        "kitt-accessibility-architect",
+        "kitt-accessibility-perfectionist-reviewer",
+        "kitt-java-perfectionist-reviewer",
+        "kitt-python-perfectionist-reviewer",
+        "kitt-security-architect",
+        "kitt-security-perfectionist-reviewer",
+        "kitt-vanilla-web-architect",
+        "kitt-vanilla-web-perfectionist-reviewer",
     ],
     "tier3": {
         # None currently - all agents are convertible
@@ -168,33 +168,33 @@ AGENT_TIERS: dict[str, list[str] | dict[str, str]] = {
 # into generated Copilot skills. Data-driven so adding a wrapper is one
 # entry here plus its tier-3 reason above.
 SKILL_WRAPPER_COMMANDS: dict[str, dict[str, str]] = {
-    "wopr-create-agent-skill": {
-        "skill": "wopr-create-agent-skills",
+    "kitt-create-agent-skill": {
+        "skill": "kitt-create-agent-skills",
         "description": (
             "Create or edit Agent Skills with expert guidance on structure "
             "and best practices"
         ),
     },
-    "wopr-create-hook": {
-        "skill": "wopr-create-hooks",
+    "kitt-create-hook": {
+        "skill": "kitt-create-hooks",
         "description": (
             "Invoke the create-hooks skill for expert guidance on hook "
             "development"
         ),
     },
-    "wopr-create-meta-prompt": {
-        "skill": "wopr-create-meta-prompts",
+    "kitt-create-meta-prompt": {
+        "skill": "kitt-create-meta-prompts",
         "description": (
             "Create optimized prompts for agent-to-agent pipelines "
             "(research -> plan -> implement)"
         ),
     },
-    "wopr-create-subagent": {
-        "skill": "wopr-create-subagents",
+    "kitt-create-subagent": {
+        "skill": "kitt-create-subagents",
         "description": "Create specialized subagents with expert guidance",
     },
-    "wopr-capture": {
-        "skill": "wopr-capture-skill",
+    "kitt-capture": {
+        "skill": "kitt-capture-skill",
         "description": (
             "Capture hard-won knowledge from this session as a reusable "
             "skill (project-scoped or user-level)"
@@ -216,20 +216,20 @@ CLI_EXTRA_CONVERTIBLE_COMMANDS: dict[str, frozenset[str]] = {
 # The rule: a command-skill is explicit-invocation-only when its value
 # comes from the operator deliberately choosing it, not from topical
 # relevance --
-#   - wopr-consider is a lens the operator applies on demand; auto-
+#   - kitt-consider is a lens the operator applies on demand; auto-
 #     selection would inject a decision framework the operator did not
 #     ask for into unrelated conversations;
-#   - wopr-realign is a frustration-reset the *operator* triggers; a
+#   - kitt-realign is a frustration-reset the *operator* triggers; a
 #     model deciding to "realign" itself defeats the point;
 #   - the skill wrappers are aliases for skills that already carry
 #     their own auto-selection descriptions; letting both auto-select
 #     would double-register the same trigger surface.
 #
 # Listed by name rather than derived from a prefix: the 12
-# wopr-consider-* commands collapsed into one, so a prefix rule would
+# kitt-consider-* commands collapsed into one, so a prefix rule would
 # now match nothing and silently stop marking anything.
 EXPLICIT_INVOCATION_ONLY_COMMANDS: frozenset[str] = frozenset(
-    {"wopr-consider", "wopr-realign"}
+    {"kitt-consider", "kitt-realign"}
 ) | frozenset(SKILL_WRAPPER_COMMANDS)
 
 # Path replacements per CLI
@@ -264,11 +264,11 @@ PATH_REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
         # hidden behind a NUL sentinel and restored after the generic
         # rule has run. NUL cannot occur in catalog markdown, so the
         # sentinel is collision-free.
-        (".claude/commands/", "\x00WOPR-KEEP-CLAUDE-COMMANDS\x00"),
+        (".claude/commands/", "\x00KITT-KEEP-CLAUDE-COMMANDS\x00"),
         (".claude/skills/", ".github/skills/"),
         (".claude/agents/", ".github/agents/"),
         (".claude/", ".github/"),
-        ("\x00WOPR-KEEP-CLAUDE-COMMANDS\x00", ".claude/commands/"),
+        ("\x00KITT-KEEP-CLAUDE-COMMANDS\x00", ".claude/commands/"),
         ("CLAUDE.md", ".github/copilot-instructions.md"),
     ],
 }

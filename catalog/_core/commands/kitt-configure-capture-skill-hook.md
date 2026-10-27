@@ -2,9 +2,9 @@
 description: Register the capture-skill-trigger Stop hook in this project's .claude/settings.json
 ---
 
-Register the WOPR capture-skill-trigger Stop hook in this project. Idempotent; safe to re-run.
+Register the KITT capture-skill-trigger Stop hook in this project. Idempotent; safe to re-run.
 
-The hook fires at the end of every turn. Once a session has crossed a threshold of tool calls since the last check (default 8), it injects a nudge asking the agent to consider running `wopr-capture-skill` if the stretch of work produced a genuinely hard-won, reusable lesson. It does not capture anything itself and does not force a stop — it puts the question in front of the agent instead of relying on a human remembering to say "capture this." The hook is a silent no-op wherever `wopr-capture-skill` is not installed (project-local `.claude/skills/` or user-level `~/.claude/skills/`), so it is safe to register globally.
+The hook fires at the end of every turn. Once a session has crossed a threshold of tool calls since the last check (default 8), it injects a nudge asking the agent to consider running `kitt-capture-skill` if the stretch of work produced a genuinely hard-won, reusable lesson. It does not capture anything itself and does not force a stop — it puts the question in front of the agent instead of relying on a human remembering to say "capture this." The hook is a silent no-op wherever `kitt-capture-skill` is not installed (project-local `.claude/skills/` or user-level `~/.claude/skills/`), so it is safe to register globally.
 
 **Preview without making changes:**
 
@@ -34,4 +34,4 @@ Reads `.claude/settings.json` (creates it if missing) and appends the Stop hook 
 
 **Idempotent.** Re-running is safe. Already-registered hooks are reported as `ok`.
 
-**Required:** [uv](https://docs.astral.sh/uv/) on PATH. This command runs `configure_hook.py` inside the `wopr-core` plugin's bundled server environment via `uv run --project`, which resolves the `wopr` package (for `wopr.hook_manifest`) the same way the MCP server itself does; nothing needs to be pip-installed separately.
+**Required:** [uv](https://docs.astral.sh/uv/) on PATH. This command runs `configure_hook.py` inside the `kitt-core` plugin's bundled server environment via `uv run --project`, which resolves the `kitt` package (for `kitt.hook_manifest`) the same way the MCP server itself does; nothing needs to be pip-installed separately.

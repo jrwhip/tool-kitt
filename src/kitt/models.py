@@ -1,4 +1,4 @@
-"""Typed data structures for WOPR.
+"""Typed data structures for KITT.
 
 Replaces raw dicts with TypedDicts for JSON-persisted structures.
 Provides type safety for mypy and IDE support without runtime overhead.
@@ -14,7 +14,7 @@ from typing import TypedDict
 
 
 class LockFileData(TypedDict, total=False):
-    """Data stored in wopr.lock.yaml."""
+    """Data stored in kitt.lock.yaml."""
 
     version: str
     installed_packs: list[str]

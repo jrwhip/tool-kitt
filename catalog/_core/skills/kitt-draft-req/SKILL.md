@@ -1,14 +1,14 @@
 ---
-name: wopr-draft-req
+name: kitt-draft-req
 description: "Write executable requirement documents from decided scope, stored as REQ files, Jira issues, or GitHub issues. Use when drafting a new requirement, writing acceptance criteria for a decided feature, adding a REQ to an existing backlog, or choosing where requirements live."
 ---
 
 <purpose>
-Turns decided scope into requirement documents an agent crew can execute and an auditor can verify. Used by wopr-wargame's formalize phase, or standalone to add one REQ to an existing backlog. Scoping decisions are the operator's and arrive already made; this skill owns the format, the quality bar, and where the documents live.
+Turns decided scope into requirement documents an agent crew can execute and an auditor can verify. Used by kitt-wargame's formalize phase, or standalone to add one REQ to an existing backlog. Scoping decisions are the operator's and arrive already made; this skill owns the format, the quality bar, and where the documents live.
 </purpose>
 
 <storage>
-Ask once per project, before drafting anything, and record the answer in the tracking document and `wopr.yml`:
+Ask once per project, before drafting anything, and record the answer in the tracking document and `kitt.yml`:
 
 | Store | Crew support | Tradeoff |
 |---|---|---|

@@ -12,7 +12,7 @@
 
 > **Created:** [YYYY-MM-DD]
 > **Audience:** Frontend team migrating from the legacy backend to the [STACK: target stack] rewrite
-> **Purpose:** Documents every new, changed, or removed API surface item introduced in this rewrite. Every entry has a REQ ID linking back to the extracted-requirements document and a contract reference linking forward to the API contract (`api_contract` in `wopr.yml`: a JSON Pointer into the OpenAPI document, or an operation / type name in the GraphQL schema). The contract is the source of truth; this document is a human-readable work breakdown for the frontend team, not a duplicate contract.
+> **Purpose:** Documents every new, changed, or removed API surface item introduced in this rewrite. Every entry has a REQ ID linking back to the extracted-requirements document and a contract reference linking forward to the API contract (`api_contract` in `kitt.yml`: a JSON Pointer into the OpenAPI document, or an operation / type name in the GraphQL schema). The contract is the source of truth; this document is a human-readable work breakdown for the frontend team, not a duplicate contract.
 > **API contract (kind and location):** `[STACK: e.g. openapi at https://api.example.com/v3/api-docs; openapi at specs/openapi.json committed in <backend-repo>; graphql at amplify/data/resource.ts]`
 > **Spec version:** `[STACK: e.g. 4.2.1]` (as of [YYYY-MM-DD])
 > **Generator version pinned:** `[STACK: e.g. openapi-generator-cli 7.21.0, aws-amplify 6.20.0]`

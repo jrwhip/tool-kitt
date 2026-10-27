@@ -31,7 +31,7 @@ The sidecar carries three arrays plus a metadata block:
 - ``ids``: ``object`` array of entry IDs in the same row order as
   ``vectors``.
 - ``meta``: a ``uint8`` array of JSON-encoded bytes for
-  ``{model_name, corpus_hash, wopr_version, created_at,
+  ``{model_name, corpus_hash, kitt_version, created_at,
   format_version}``.
 
 The sidecar is regenerated on demand. Source of truth is the markdown
@@ -44,7 +44,7 @@ and merge conflicts on a file that should never be committed).
 ``tools._gitignore.ensure_sidecar_gitignored`` runs after every
 in-workspace ``append_learnings`` / ``seed_learnings`` call and adds
 ``LEARNINGS.embeddings.npz`` to ``<workspace>/.gitignore`` under a
-labelled WOPR section. Idempotent.
+labelled KITT section. Idempotent.
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ class SidecarPayload:
     vectors: np.ndarray  # type: ignore[name-defined]
     model_name: str
     corpus_hash: str
-    wopr_version: str
+    kitt_version: str
     created_at: str
     format_version: int
     #: Vector column count the sidecar was built with. ``0`` on
@@ -234,7 +234,7 @@ def load_sidecar(path: Path) -> SidecarPayload | None:
         vectors=vectors,
         model_name=str(meta.get("model_name", "")),
         corpus_hash=str(meta.get("corpus_hash", "")),
-        wopr_version=str(meta.get("wopr_version", "")),
+        kitt_version=str(meta.get("kitt_version", "")),
         created_at=str(meta.get("created_at", "")),
         format_version=int(meta.get("format_version", 0)),
         dimensions=dimensions,
@@ -275,7 +275,7 @@ def save_sidecar(
     meta: dict[str, Any] = {
         "model_name": model_name,
         "corpus_hash": sidecar_corpus_hash,
-        "wopr_version": __version__,
+        "kitt_version": __version__,
         "created_at": datetime.now(tz=timezone.utc).isoformat(),
         "format_version": EMBEDDINGS_SIDECAR_FORMAT_VERSION,
         "dimensions": (

@@ -1,4 +1,4 @@
-"""Tests for ``wopr build-plugins``: the marketplace generator.
+"""Tests for ``kitt build-plugins``: the marketplace generator.
 
 Four things have to hold, and each one has a class below:
 
@@ -27,8 +27,8 @@ from pathlib import Path
 
 import pytest
 
-from wopr import __version__
-from wopr.build_plugins import (
+from kitt import __version__
+from kitt.build_plugins import (
     BUNDLED_RESOURCES,
     CLI_PROG,
     EXCLUDED_FILE_NAMES,
@@ -82,7 +82,7 @@ def built(tmp_path_factory: pytest.TempPathFactory) -> BuildResult:
     Module-scoped on purpose: the tree is ~300 files and every shape
     assertion below reads the same tree. Nothing here mutates it.
     """
-    out = tmp_path_factory.mktemp("marketplace") / "wopr-plugins"
+    out = tmp_path_factory.mktemp("marketplace") / "kitt-plugins"
     return build_plugins(out, REPO_ROOT)
 
 
@@ -106,7 +106,7 @@ class TestOutputDirSafety:
     """The wipe-and-rewrite contract must never touch a foreign directory."""
 
     def test_creates_a_missing_directory(self, tmp_path: Path):
-        out = tmp_path / "nested" / "wopr-plugins"
+        out = tmp_path / "nested" / "kitt-plugins"
         build_plugins(out, REPO_ROOT)
         assert (out / MARKER_NAME).is_file()
 
@@ -136,11 +136,11 @@ class TestOutputDirSafety:
             build_plugins(out, REPO_ROOT)
 
     def test_rewrites_a_marked_directory_and_drops_stale_files(self, tmp_path: Path):
-        out = tmp_path / "wopr-plugins"
+        out = tmp_path / "kitt-plugins"
         build_plugins(out, REPO_ROOT)
-        stale_file = out / "wopr-core" / "commands" / "gone-from-catalog.md"
+        stale_file = out / "kitt-core" / "commands" / "gone-from-catalog.md"
         stale_file.write_text("stale", encoding="utf-8")
-        stale_dir = out / "wopr-obsolete"
+        stale_dir = out / "kitt-obsolete"
         stale_dir.mkdir()
 
         build_plugins(out, REPO_ROOT)
@@ -193,15 +193,15 @@ class TestVersionMapping:
 
 
 class TestPluginNaming:
-    def test_core_pack_becomes_wopr_core(self):
-        assert plugin_name_for_pack("_core") == "wopr-core"
+    def test_core_pack_becomes_kitt_core(self):
+        assert plugin_name_for_pack("_core") == "kitt-core"
 
-    def test_meta_authoring_pack_becomes_wopr_meta(self):
-        assert plugin_name_for_pack("meta-authoring") == "wopr-meta"
+    def test_meta_authoring_pack_becomes_kitt_meta(self):
+        assert plugin_name_for_pack("meta-authoring") == "kitt-meta"
 
     def test_other_packs_take_the_default_rule(self):
-        assert plugin_name_for_pack("angular") == "wopr-angular"
-        assert plugin_name_for_pack("crew") == "wopr-crew"
+        assert plugin_name_for_pack("angular") == "kitt-angular"
+        assert plugin_name_for_pack("crew") == "kitt-crew"
 
 
 class TestMarketplaceManifest:
@@ -236,12 +236,12 @@ class TestMarketplaceManifest:
 
     def test_the_expected_six_plugins_are_emitted(self, built: BuildResult):
         assert [plan.name for plan in built.plugins] == [
-            "wopr-core",
-            "wopr-angular",
-            "wopr-auditors",
-            "wopr-crew",
-            "wopr-meta",
-            "wopr-python",
+            "kitt-core",
+            "kitt-angular",
+            "kitt-auditors",
+            "kitt-crew",
+            "kitt-meta",
+            "kitt-python",
         ]
 
 
@@ -265,22 +265,22 @@ class TestPluginManifests:
             manifest_dir = plugin_dir / ".claude-plugin"
             assert sorted(p.name for p in manifest_dir.iterdir()) == ["plugin.json"]
 
-    def test_only_wopr_core_declares_an_mcp_server(self, out_dir: Path):
+    def test_only_kitt_core_declares_an_mcp_server(self, out_dir: Path):
         with_mcp = [
             p.name for p in _plugin_dirs(out_dir) if (p / ".mcp.json").is_file()
         ]
-        assert with_mcp == ["wopr-core"]
+        assert with_mcp == ["kitt-core"]
 
     def test_mcp_config_launches_the_shim_with_the_plugin_root_in_env(
         self, out_dir: Path
     ):
-        config = _read_json(out_dir / "wopr-core" / ".mcp.json")
-        server = config["mcpServers"]["wopr"]
+        config = _read_json(out_dir / "kitt-core" / ".mcp.json")
+        server = config["mcpServers"]["kitt"]
         assert server["command"] == (
             "${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-serve.sh"
         )
-        assert server["env"] == {"WOPR_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}"}
-        assert (out_dir / "wopr-core" / "scripts" / "bootstrap-serve.sh").is_file()
+        assert server["env"] == {"KITT_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}"}
+        assert (out_dir / "kitt-core" / "scripts" / "bootstrap-serve.sh").is_file()
 
 
 class TestCatalogDrift:
@@ -349,11 +349,11 @@ class TestCatalogDrift:
             out_dir / "README.md",
             out_dir / MARKER_NAME,
             out_dir / ".claude-plugin" / "marketplace.json",
-            out_dir / "wopr-core" / ".mcp.json",
+            out_dir / "kitt-core" / ".mcp.json",
         }
         for plugin_dir in _plugin_dirs(out_dir):
             generated.add(plugin_dir / ".claude-plugin" / "plugin.json")
-        server_dir = out_dir / "wopr-core" / "server"
+        server_dir = out_dir / "kitt-core" / "server"
 
         unaccounted = [
             str(path)
@@ -362,7 +362,7 @@ class TestCatalogDrift:
             and path not in expected
             and path not in generated
             and server_dir not in path.parents
-            and path != out_dir / "wopr-core" / "scripts" / "bootstrap-serve.sh"
+            and path != out_dir / "kitt-core" / "scripts" / "bootstrap-serve.sh"
         ]
         assert not unaccounted, unaccounted[:5]
 
@@ -374,18 +374,18 @@ class TestCatalogDrift:
         assert not list(out_dir.rglob("routing-eval.jsonl"))
 
     def test_pack_readmes_are_not_shipped(self, out_dir: Path):
-        """Pack-root READMEs document the retired `wopr add` install path."""
+        """Pack-root READMEs document the retired `kitt add` install path."""
         assert (CATALOG_ROOT / "crew" / "README.md").is_file()
-        assert not (out_dir / "wopr-crew" / "README.md").exists()
+        assert not (out_dir / "kitt-crew" / "README.md").exists()
 
     def test_core_context_docs_are_not_shipped(self, out_dir: Path):
         """`get_shared_context` retired in P1; nothing reads these now."""
         assert (CATALOG_ROOT / "_core" / "context").is_dir()
-        assert not (out_dir / "wopr-core" / "context").exists()
+        assert not (out_dir / "kitt-core" / "context").exists()
 
     def test_skills_keep_their_kebab_case_directory_names(self, out_dir: Path):
-        names = sorted(p.name for p in (out_dir / "wopr-core" / "skills").iterdir())
-        assert "wopr-create-agent-skills" in names
+        names = sorted(p.name for p in (out_dir / "kitt-core" / "skills").iterdir())
+        assert "kitt-create-agent-skills" in names
         assert all(
             re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) for name in names
         ), names
@@ -397,7 +397,7 @@ class TestCatalogDrift:
 
 
 class TestToolNameRewrite:
-    """The catalog spells tools ``mcp__wopr__x``; the runtime does not.
+    """The catalog spells tools ``mcp__kitt__x``; the runtime does not.
 
     A plugin-provided MCP server is namespaced
     ``mcp__plugin_<plugin>_<server-key>__<tool>``. An agent ``tools:``
@@ -409,37 +409,37 @@ class TestToolNameRewrite:
     """
 
     def test_prefix_is_derived_from_the_plugin_and_the_server_key(self):
-        assert server_plugin_name() == "wopr-core"
-        assert runtime_tool_prefix() == "mcp__plugin_wopr-core_wopr__"
-        assert runtime_tool_prefix("wopr-elsewhere") == (
-            "mcp__plugin_wopr-elsewhere_wopr__"
+        assert server_plugin_name() == "kitt-core"
+        assert runtime_tool_prefix() == "mcp__plugin_kitt-core_kitt__"
+        assert runtime_tool_prefix("kitt-elsewhere") == (
+            "mcp__plugin_kitt-elsewhere_kitt__"
         )
         assert runtime_tool_prefix("p", "srv") == "mcp__plugin_p_srv__"
 
     def test_prefix_agrees_with_the_emitted_mcp_config(self, out_dir: Path):
         """The generator must not learn the server key in two places."""
-        config = _read_json(out_dir / "wopr-core" / ".mcp.json")
+        config = _read_json(out_dir / "kitt-core" / ".mcp.json")
         (server_key,) = config["mcpServers"].keys()
         assert server_key == MCP_SERVER_KEY
-        assert runtime_tool_prefix() == f"mcp__plugin_wopr-core_{server_key}__"
+        assert runtime_tool_prefix() == f"mcp__plugin_kitt-core_{server_key}__"
 
     def test_rewrites_a_frontmatter_tools_list(self):
         source = (
             "---\nname: crew-auditor\ntools:\n  - Read\n"
-            "  - mcp__wopr__append_learnings\n---\n"
+            "  - mcp__kitt__append_learnings\n---\n"
         )
         assert rewrite_tool_names(source) == (
             "---\nname: crew-auditor\ntools:\n  - Read\n"
-            "  - mcp__plugin_wopr-core_wopr__append_learnings\n---\n"
+            "  - mcp__plugin_kitt-core_kitt__append_learnings\n---\n"
         )
 
     def test_rewrites_prose_including_backticked_and_bare_mentions(self):
         source = (
-            "Call `mcp__wopr__detect_stack`, then mcp__wopr__write_wopr_yml.\n"
+            "Call `mcp__kitt__detect_stack`, then mcp__kitt__write_kitt_yml.\n"
         )
         assert rewrite_tool_names(source) == (
-            "Call `mcp__plugin_wopr-core_wopr__detect_stack`, then "
-            "mcp__plugin_wopr-core_wopr__write_wopr_yml.\n"
+            "Call `mcp__plugin_kitt-core_kitt__detect_stack`, then "
+            "mcp__plugin_kitt-core_kitt__write_kitt_yml.\n"
         )
 
     def test_leaves_other_servers_alone(self):
@@ -453,11 +453,11 @@ class TestToolNameRewrite:
 
     def test_a_bare_prefix_mention_is_not_rewritten(self):
         """Prose about the naming scheme is not a tool reference."""
-        source = "tools are named `mcp__wopr__` plus the tool name\n"
+        source = "tools are named `mcp__kitt__` plus the tool name\n"
         assert rewrite_tool_names(source) == source
 
     def test_is_idempotent(self):
-        once = rewrite_tool_names("`mcp__wopr__seed_learnings`")
+        once = rewrite_tool_names("`mcp__kitt__seed_learnings`")
         assert rewrite_tool_names(once) == once
 
     def test_no_source_form_survives_anywhere_in_the_emitted_tree(
@@ -469,7 +469,7 @@ class TestToolNameRewrite:
         ``converters.py`` discuss the source form in comments, and
         rewriting Python would be the generator editing itself.
         """
-        server_src = out_dir / "wopr-core" / "server" / "src"
+        server_src = out_dir / "kitt-core" / "server" / "src"
         offenders = [
             f"{path.relative_to(out_dir)}"
             for path in sorted(out_dir.rglob("*.md"))
@@ -490,7 +490,7 @@ class TestToolNameRewrite:
 
     def test_the_auditors_learnings_grant_is_live(self, out_dir: Path):
         """The specific grant whose silence killed the CRAG write path."""
-        auditor = out_dir / "wopr-crew" / "agents" / "wopr-crew-auditor.md"
+        auditor = out_dir / "kitt-crew" / "agents" / "kitt-crew-auditor.md"
         text = auditor.read_text(encoding="utf-8")
         frontmatter = text.split("---")[1]
         assert (
@@ -498,14 +498,14 @@ class TestToolNameRewrite:
         ), frontmatter
 
     def test_non_core_plugins_get_the_core_plugins_prefix(self, out_dir: Path):
-        """`wopr` is the marketplace's only server; every plugin calls it."""
-        crew = out_dir / "wopr-crew"
+        """`kitt` is the marketplace's only server; every plugin calls it."""
+        crew = out_dir / "kitt-crew"
         assert not (crew / ".mcp.json").exists()
-        text = (crew / "agents" / "wopr-crew-auditor.md").read_text(
+        text = (crew / "agents" / "kitt-crew-auditor.md").read_text(
             encoding="utf-8"
         )
-        assert "mcp__plugin_wopr-core_wopr__" in text
-        assert "mcp__plugin_wopr-crew_wopr__" not in text
+        assert "mcp__plugin_kitt-core_kitt__" in text
+        assert "mcp__plugin_kitt-crew_kitt__" not in text
 
 
 class TestCollisionDetection:
@@ -528,21 +528,21 @@ class TestCollisionDetection:
     @pytest.mark.parametrize("kind", ["commands", "agents", "skills"])
     def test_a_shared_component_name_fails_generation(self, kind: str):
         plans = [
-            self._plan("wopr-a", **{kind: ["wopr-thing"]}),
-            self._plan("wopr-b", **{kind: ["wopr-thing"]}),
+            self._plan("kitt-a", **{kind: ["kitt-thing"]}),
+            self._plan("kitt-b", **{kind: ["kitt-thing"]}),
         ]
         with pytest.raises(PluginCollisionError) as excinfo:
             check_collisions(plans)
         message = str(excinfo.value)
-        assert "wopr-thing" in message
-        assert "wopr-a" in message and "wopr-b" in message
+        assert "kitt-thing" in message
+        assert "kitt-a" in message and "kitt-b" in message
         assert kind[:-1] in message
 
     def test_distinct_names_pass(self):
         check_collisions(
             [
-                self._plan("wopr-a", commands=["one"], skills=["s1"]),
-                self._plan("wopr-b", commands=["two"], skills=["s2"]),
+                self._plan("kitt-a", commands=["one"], skills=["s1"]),
+                self._plan("kitt-b", commands=["two"], skills=["s2"]),
             ]
         )
 
@@ -556,8 +556,8 @@ class TestCollisionDetection:
                 encoding="utf-8",
             )
         plans = [
-            self._plan("wopr-a", skills=["skill-one"]),
-            self._plan("wopr-b", skills=["skill-two"]),
+            self._plan("kitt-a", skills=["skill-one"]),
+            self._plan("kitt-b", skills=["skill-two"]),
         ]
         with pytest.raises(PluginCollisionError) as excinfo:
             check_skill_descriptions(catalog, plans)
@@ -575,12 +575,12 @@ class TestPackSelection:
 
         plans = plan_plugins(catalog, tmp_path / "catalog.yaml")
 
-        assert [plan.name for plan in plans] == ["wopr-real-pack"]
+        assert [plan.name for plan in plans] == ["kitt-real-pack"]
 
 
 class TestServerBundle:
     def test_ships_a_lock_that_matches_its_pyproject(self, out_dir: Path):
-        server_dir = out_dir / "wopr-core" / "server"
+        server_dir = out_dir / "kitt-core" / "server"
         assert (server_dir / SERVER_LOCK_NAME).is_file()
         result = subprocess.run(
             ["uv", "lock", "--check", "--project", str(server_dir)],
@@ -595,7 +595,7 @@ class TestServerBundle:
     ):
         out = tmp_path / "marketplace"
         first = build_plugins(out, REPO_ROOT)
-        lock = out / "wopr-core" / "server" / SERVER_LOCK_NAME
+        lock = out / "kitt-core" / "server" / SERVER_LOCK_NAME
         marker = b"# sentinel: previous lock survives the wipe\n"
         lock.write_bytes(marker + lock.read_bytes())
         build_plugins(out, REPO_ROOT)
@@ -603,13 +603,13 @@ class TestServerBundle:
         assert lock.read_bytes().startswith(marker)
 
     def test_package_source_is_present(self, out_dir: Path):
-        package = out_dir / "wopr-core" / "server" / "src" / "wopr"
+        package = out_dir / "kitt-core" / "server" / "src" / "kitt"
         assert (package / "server.py").is_file()
         assert (package / "cli.py").is_file()
         assert (package / "tools" / "learnings.py").is_file()
 
     def test_no_dev_time_files_ride_along(self, out_dir: Path):
-        server_dir = out_dir / "wopr-core" / "server"
+        server_dir = out_dir / "kitt-core" / "server"
         offenders = [
             str(path)
             for path in server_dir.rglob("*")
@@ -628,12 +628,12 @@ class TestServerBundle:
     def test_pyproject_declares_runtime_deps_and_the_serve_entry_point(
         self, out_dir: Path
     ):
-        text = (out_dir / "wopr-core" / "server" / "pyproject.toml").read_text(
+        text = (out_dir / "kitt-core" / "server" / "pyproject.toml").read_text(
             encoding="utf-8"
         )
         for dep in SERVER_DEPENDENCIES:
             assert f'"{dep}"' in text
-        assert f'{SERVER_ENTRY_POINT} = "wopr.cli:serve"' in text
+        assert f'{SERVER_ENTRY_POINT} = "kitt.cli:serve"' in text
         assert to_semver(__version__) in text
         # The embeddings deps ship deliberately (Phase 1): the local
         # semantic-search provider is the default and must work out of
@@ -668,7 +668,7 @@ class TestServerBundle:
         assert list(SERVER_DEPENDENCIES) == declared
 
     def test_runtime_resources_are_bundled(self, out_dir: Path):
-        resources = out_dir / "wopr-core" / "server" / "resources"
+        resources = out_dir / "kitt-core" / "server" / "resources"
         assert (resources / "catalog.yaml").is_file()
         for parts in BUNDLED_RESOURCES:
             assert resources.joinpath(*parts).is_dir()
@@ -680,7 +680,7 @@ class TestServerBundle:
         ).is_file()
 
     def test_bundled_resources_match_the_catalog(self, out_dir: Path):
-        resources = out_dir / "wopr-core" / "server" / "resources"
+        resources = out_dir / "kitt-core" / "server" / "resources"
         for parts in BUNDLED_RESOURCES:
             source_dir = CATALOG_ROOT.joinpath(*parts)
             for source in sorted(source_dir.rglob("*")):
@@ -696,7 +696,7 @@ class TestServerBundle:
 
 @pytest.fixture(scope="module")
 def shim(out_dir: Path) -> Path:
-    return out_dir / "wopr-core" / "scripts" / "bootstrap-serve.sh"
+    return out_dir / "kitt-core" / "scripts" / "bootstrap-serve.sh"
 
 
 class TestBootstrapShim:
@@ -738,7 +738,7 @@ class TestBootstrapShim:
 class TestMarkerFile:
     def test_marker_records_the_generator_and_version(self, out_dir: Path):
         marker = _read_json(out_dir / MARKER_NAME)
-        assert marker["generator"] == "wopr build-plugins"
+        assert marker["generator"] == "kitt build-plugins"
         assert marker["generator_version"] == to_semver(__version__)
         assert marker["marketplace"] == MARKETPLACE_NAME
 

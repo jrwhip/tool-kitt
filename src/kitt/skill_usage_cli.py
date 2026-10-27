@@ -1,14 +1,14 @@
-"""``wopr skill-usage`` subcommand: record, report, pin, unpin.
+"""``kitt skill-usage`` subcommand: record, report, pin, unpin.
 
 Two audiences, one store (:mod:`tools._skill_usage`):
 
 * **Hooks.** The Claude Code ``skill-usage-hook.py`` Stop hook runs as a
-  standalone stdlib script in its own process and cannot import WOPR.
+  standalone stdlib script in its own process and cannot import KITT.
   Rather than reimplement the sidecar schema there (which guarantees the
-  two copies drift), the hook shells out to ``wopr skill-usage record``.
-  ``wopr`` being on PATH is already a hard requirement of every install
-  -- the MCP registrations write ``"command": "wopr"`` with no path.
-* **Operators.** ``wopr skill-usage report`` answers "which skills does
+  two copies drift), the hook shells out to ``kitt skill-usage record``.
+  ``kitt`` being on PATH is already a hard requirement of every install
+  -- the MCP registrations write ``"command": "kitt"`` with no path.
+* **Operators.** ``kitt skill-usage report`` answers "which skills does
   anyone actually use" from a terminal, and ``pin``/``unpin`` set the
   never-mark-stale opt-out without needing an agent session.
 
@@ -31,10 +31,10 @@ logger = logging.getLogger(LOGGER_NAME)
 
 USAGE = (
     "Usage:\n"
-    "  wopr skill-usage report                  # observed usage per skill\n"
-    "  wopr skill-usage record <source> <name>... # count invocations\n"
-    "  wopr skill-usage pin <name>              # never mark stale\n"
-    "  wopr skill-usage unpin <name>\n"
+    "  kitt skill-usage report                  # observed usage per skill\n"
+    "  kitt skill-usage record <source> <name>... # count invocations\n"
+    "  kitt skill-usage pin <name>              # never mark stale\n"
+    "  kitt skill-usage unpin <name>\n"
     f"\nValid sources: {', '.join(sorted(_skill_usage.KNOWN_SOURCES))}"
 )
 
@@ -147,7 +147,7 @@ def _cmd_pin(args: list[str], pinned: bool) -> int:
 
 
 def cmd_skill_usage(args: list[str], workspace: Path | None = None) -> int:
-    """Dispatch ``wopr skill-usage <action> [args...]``."""
+    """Dispatch ``kitt skill-usage <action> [args...]``."""
     if not args:
         logger.error("%s", USAGE)
         return 1

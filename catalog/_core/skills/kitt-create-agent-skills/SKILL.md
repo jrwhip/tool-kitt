@@ -1,5 +1,5 @@
 ---
-name: wopr-create-agent-skills
+name: kitt-create-agent-skills
 description: Expert guidance for creating, writing, building, and refining Agent Skills. Use when working with SKILL.md files, authoring new skills, improving existing skills, or understanding skill structure and best practices.
 ---
 

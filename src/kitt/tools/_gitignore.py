@@ -1,4 +1,4 @@
-"""Idempotent ``.gitignore`` maintenance for WOPR-managed sidecar files.
+"""Idempotent ``.gitignore`` maintenance for KITT-managed sidecar files.
 
 The embeddings sidecar (``LEARNINGS.embeddings.npz``) is a machine-
 specific binary that must NOT land in source control: the file is
@@ -6,7 +6,7 @@ specific binary that must NOT land in source control: the file is
 model's version, and committing it produces noisy diffs and merge
 conflicts on something every developer regenerates locally anyway.
 
-WOPR generates the sidecar transparently whenever a search runs and
+KITT generates the sidecar transparently whenever a search runs and
 the markdown corpus has changed. The operator should never have to
 think about it. This module makes sure the file is `.gitignore`-d
 without the operator having to know it exists.
@@ -14,8 +14,8 @@ without the operator having to know it exists.
 Idempotent: a fresh project gets a ``.gitignore`` with the entry; a
 project that already gitignores the file is a no-op; a project that
 already has a ``.gitignore`` for other reasons gets the entry
-appended under a labelled WOPR section so the operator can see what
-WOPR added and why.
+appended under a labelled KITT section so the operator can see what
+KITT added and why.
 
 Failures here are logged at WARNING and swallowed. The auditor's
 append to LEARNINGS.md already succeeded; the gitignore not being
@@ -33,12 +33,12 @@ from ._embeddings import EMBEDDINGS_SIDECAR_FILENAME
 
 logger = logging.getLogger(LOGGER_NAME)
 
-# Section header used when WOPR creates a new ``.gitignore`` or appends
+# Section header used when KITT creates a new ``.gitignore`` or appends
 # entries to an existing one. Matched on read to detect whether a
-# previous WOPR run already wrote the section, so the second call is
+# previous KITT run already wrote the section, so the second call is
 # a no-op rather than a duplicate append.
-_WOPR_GITIGNORE_HEADER = "# WOPR (do not edit between markers)"
-_WOPR_GITIGNORE_FOOTER = "# /WOPR"
+_KITT_GITIGNORE_HEADER = "# KITT (do not edit between markers)"
+_KITT_GITIGNORE_FOOTER = "# /KITT"
 
 
 def _gitignore_has_entry(text: str, entry: str) -> bool:
@@ -47,7 +47,7 @@ def _gitignore_has_entry(text: str, entry: str) -> bool:
     Tolerates leading ``/`` (anchored paths), trailing whitespace, and
     comment lines. Does NOT do glob matching; an entry like ``*.npz``
     in the gitignore would not be detected as covering
-    ``LEARNINGS.embeddings.npz``, so WOPR would append the literal entry
+    ``LEARNINGS.embeddings.npz``, so KITT would append the literal entry
     redundantly. The current corpus is too small for that to matter;
     revisit if a project actually carries an ``*.npz`` glob.
     """
@@ -69,13 +69,13 @@ def ensure_sidecar_gitignored(workspace: Path) -> None:
     :func:`learnings.seed_learnings` after the first write to the
     workspace's LEARNINGS.md. Outside-workspace mode skips this
     helper entirely because there is no project repo to gitignore in
-    (the global LEARNINGS.md and sidecar live under ``~/.wopr/``).
+    (the global LEARNINGS.md and sidecar live under ``~/.kitt/``).
 
     Behavior:
     - If ``<workspace>/.gitignore`` does not exist, create it with a
-      WOPR-labelled section containing the sidecar entry.
+      KITT-labelled section containing the sidecar entry.
     - If the file exists but does not list the sidecar, append the
-      WOPR-labelled section.
+      KITT-labelled section.
     - If the file already lists the sidecar (literal entry), no-op.
 
     All filesystem errors are logged at WARNING and swallowed.
@@ -99,20 +99,20 @@ def ensure_sidecar_gitignored(workspace: Path) -> None:
         return
 
     section = (
-        f"{_WOPR_GITIGNORE_HEADER}\n"
+        f"{_KITT_GITIGNORE_HEADER}\n"
         f"{entry}\n"
-        f"{_WOPR_GITIGNORE_FOOTER}\n"
+        f"{_KITT_GITIGNORE_FOOTER}\n"
     )
 
     if existing:
-        # File exists; append the WOPR section with a leading blank
+        # File exists; append the KITT section with a leading blank
         # line so it sits visibly apart from the operator's content.
         new_text = existing
         if not new_text.endswith("\n"):
             new_text += "\n"
         new_text += "\n" + section
     else:
-        # Fresh ``.gitignore``; the WOPR section is the entire file.
+        # Fresh ``.gitignore``; the KITT section is the entire file.
         new_text = section
 
     try:

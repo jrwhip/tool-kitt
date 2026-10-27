@@ -1,6 +1,6 @@
 # Agent-spec slimming: eval-gate comparison
 
-Crew agent specs cut 1,016 to 324 lines (auditor 291->64, scout 188->59, coder 109->50, tester 107->45; evaluator unchanged; the 215-line wopr-crew.md agent-mode duplicate deleted). Gate: 2 golden-REQ-2 runs before and after, plus a REQ-1 smoke.
+Crew agent specs cut 1,016 to 324 lines (auditor 291->64, scout 188->59, coder 109->50, tester 107->45; evaluator unchanged; the 215-line kitt-crew.md agent-mode duplicate deleted). Gate: 2 golden-REQ-2 runs before and after, plus a REQ-1 smoke.
 
 ## Verdict: PASS, with one disclosed caveat
 

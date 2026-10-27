@@ -4,10 +4,10 @@ Ported idea from gbrain's ``skills/brain-taxonomist/routing-eval.jsonl`` +
 ``src/core/routing-eval.ts`` (Check 5 of its "skillify checklist"): a JSONL
 fixture of ``intent -> expected_skill`` pairs asserting that, given a user's
 natural-language request, the skill whose description should fire is the
-one that actually would. This is WOPR's first efficacy measurement of any
-kind — everything else in the test suite checks that WOPR's *mechanics*
+one that actually would. This is KITT's first efficacy measurement of any
+kind — everything else in the test suite checks that KITT's *mechanics*
 work (files land in the right place, conversions round-trip); nothing
-until now checked whether the *content* WOPR ships routes correctly.
+until now checked whether the *content* KITT ships routes correctly.
 
 CRITICAL SCOPE — read this before trusting a "pass" from this module
 ----------------------------------------------------------------------
@@ -53,7 +53,7 @@ docstring says its CLI is "ready" for but hasn't built either.
 Trigger-phrase extraction, adapted for prose
 ---------------------------------------------
 gbrain has a dedicated ``RESOLVER.md`` table: one row per skill, an
-explicit trigger-phrase cell. WOPR has no such table — the routing
+explicit trigger-phrase cell. KITT has no such table — the routing
 signal a real CLI reads is the ``description:`` field in each skill's
 own frontmatter, written as prose. :func:`extract_trigger_phrases`
 adapts gbrain's algorithm (normalize, split on quoted phrases or commas)
@@ -69,7 +69,7 @@ A skill whose description has no recognizable cue phrase yields an
 empty trigger list — it simply doesn't participate in structural
 matching, the same way a skill missing from gbrain's resolver table
 doesn't participate in its structural layer. That is a real, disclosed
-coverage gap (see ``docs/llms.txt`` and the WOPR test suite for the
+coverage gap (see ``docs/llms.txt`` and the KITT test suite for the
 current count), not silently-total coverage.
 
 Within a trigger clause, gbrain's own dual-mode extraction is kept
@@ -216,7 +216,7 @@ def scan_catalog_skills(catalog_root: Path) -> list[CatalogSkill]:
     """Walk ``catalog_root`` for every ``SKILL.md`` and parse its frontmatter.
 
     Identity is the frontmatter ``name`` field (falling back to the
-    parent directory name), matching how the rest of WOPR treats skill
+    parent directory name), matching how the rest of KITT treats skill
     identity (``resources.list_shared_skills`` keys by directory name;
     fixtures written against this harness should use the same value).
     """
@@ -293,7 +293,7 @@ def structural_route_match(intent: str, index: TriggerIndex) -> StructuralMatchR
     """Layer A: which skills' trigger phrases are substrings of the intent.
 
     No model. Direct port of gbrain's ``structuralRouteMatch``, minus the
-    hardcoded "always-on skills" exemption — WOPR has no equivalent
+    hardcoded "always-on skills" exemption — KITT has no equivalent
     concept baked into the catalog, so legitimate co-firing is declared
     per-fixture via ``ambiguous_with`` instead (see :func:`run_routing_eval`).
     """

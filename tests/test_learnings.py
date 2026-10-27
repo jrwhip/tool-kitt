@@ -11,8 +11,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from wopr.tools import learnings
-from wopr.tools.learnings import (
+from kitt.tools import learnings
+from kitt.tools.learnings import (
     LEARNINGS_ARCHIVE_FILENAME,
     LearningEntry,
     _parse_entries,
@@ -72,7 +72,7 @@ def _make_entry(
 
 
 def _mark_in_workspace(workspace: Path) -> None:
-    (workspace / "wopr.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
+    (workspace / "kitt.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
 
 
 class TestEntryParsing:
@@ -296,7 +296,7 @@ class TestAppendLearnings:
     async def test_named_target_that_resolves_to_nothing_is_an_error(
         self, isolated_env
     ):
-        """Was: silently wrote to ~/.wopr/LEARNINGS.md.
+        """Was: silently wrote to ~/.kitt/LEARNINGS.md.
 
         The caller named a directory. If that directory belongs to no
         workspace, the honest answer is to say so and name the
@@ -304,7 +304,7 @@ class TestAppendLearnings:
         somewhere the caller will never look for it.
         """
         workspace, home = isolated_env
-        # No wopr.yml and no LEARNINGS.md anywhere up the tree.
+        # No kitt.yml and no LEARNINGS.md anywhere up the tree.
         result = await append_learnings(str(workspace), entry_markdown=_make_entry())
         assert result.startswith("Error")
         assert "no workspace root found" in result
@@ -386,7 +386,7 @@ class TestLearningsSearch:
         self, isolated_env, tmp_path: Path
     ):
         _workspace, home = isolated_env
-        # No wopr.yml in workspace -> outside mode.
+        # No kitt.yml in workspace -> outside mode.
         today = datetime.now(tz=timezone.utc).date().isoformat()
         # System file.
         home.mkdir(parents=True, exist_ok=True)
@@ -397,7 +397,7 @@ class TestLearningsSearch:
         # Registered foreign workspace.
         foreign = tmp_path / "foreign-workspace"
         foreign.mkdir()
-        (foreign / "wopr.yml").write_text("project:\n  slug: f\n", encoding="utf-8")
+        (foreign / "kitt.yml").write_text("project:\n  slug: f\n", encoding="utf-8")
         (foreign / "LEARNINGS.md").write_text(
             _make_entry(entry_date=today, letter="b", title="Foreign"),
             encoding="utf-8",
@@ -429,7 +429,7 @@ class TestLearningsSearch:
         assert "System" in result
 
     async def test_empty_when_no_files_present(self, isolated_env):
-        # No wopr.yml, no system file. Should return empty string, not crash.
+        # No kitt.yml, no system file. Should return empty string, not crash.
         result = await learnings_search(req_id="", stack_tags=["spring-boot"])
         assert result == ""
 
@@ -624,7 +624,7 @@ class TestCurateLearnings:
     async def test_named_target_that_resolves_to_nothing_is_an_error(
         self, isolated_env
     ):
-        """Was: silently curated ~/.wopr/LEARNINGS.md.
+        """Was: silently curated ~/.kitt/LEARNINGS.md.
 
         Curation rewrites a corpus. Rewriting the wrong one because the
         named target did not resolve is strictly worse than refusing.
@@ -768,7 +768,7 @@ class TestGoldenFixtureCorpusExercisesTheEvaluator:
         before = corpus.read_bytes()
         replica = tmp_path / "golden-req-2"
         replica.mkdir()
-        for name in ("wopr.yml", "LEARNINGS.md"):
+        for name in ("kitt.yml", "LEARNINGS.md"):
             (replica / name).write_bytes((GOLDEN_REQ_2_FIXTURE / name).read_bytes())
 
         found = await learnings_search(

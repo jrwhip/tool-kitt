@@ -1,5 +1,5 @@
 ---
-name: wopr-create-hooks
+name: kitt-create-hooks
 description: Expert guidance for creating, configuring, and using hooks. Use when working with hooks, setting up event listeners, validating commands, automating workflows, adding notifications, or understanding hook types.
 ---
 

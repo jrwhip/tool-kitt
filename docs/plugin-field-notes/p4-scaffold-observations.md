@@ -1,21 +1,21 @@
-# P4 scaffold: first-hand notes on using WOPR
+# P4 scaffold: first-hand notes on using KITT
 
-> Recorded by the main-loop agent during the WOPR Arcade scaffold, 2026-08-21.
+> Recorded by the main-loop agent during the KITT Arcade scaffold, 2026-08-21.
 > Companion files: `footprint.md` (token cost), `naked-baseline.md` (control arm).
 > Every claim here is something that happened during this session, with the file
 > or command that produced it. Nothing is inferred from reading the catalog.
 
 ## The headline
 
-The WOPR **content** (templates, schema doc, seed learnings, the golden fixture)
-did most of the work and was worth its weight. The WOPR **tooling surface** was
+The KITT **content** (templates, schema doc, seed learnings, the golden fixture)
+did most of the work and was worth its weight. The KITT **tooling surface** was
 either unreachable, wrong about this project, or actively misleading about where
-it wrote files. Not one `mcp__wopr__*` tool was called in this session, because
+it wrote files. Not one `mcp__kitt__*` tool was called in this session, because
 the server wired into the live session is a stale build (see `footprint.md`).
-Every WOPR function used here was called by importing the Python module directly
+Every KITT function used here was called by importing the Python module directly
 out of the clean-room repo.
 
-That split is the finding. WOPR's value in this session was as a **library of
+That split is the finding. KITT's value in this session was as a **library of
 opinions**, not as an **MCP tool surface**.
 
 ---
@@ -24,13 +24,13 @@ opinions**, not as an **MCP tool surface**.
 
 | Artifact | What it saved |
 |---|---|
-| `docs/wopr-yml-schema.md` | Settled the two-project question in one read. The field tables made it obvious that one `wopr.yml` describes exactly one source root, so backend and front end each needed their own. The control arm never faced this question and produced no config at all. |
+| `docs/kitt-yml-schema.md` | Settled the two-project question in one read. The field tables made it obvious that one `kitt.yml` describes exactly one source root, so backend and front end each needed their own. The control arm never faced this question and produced no config at all. |
 | `catalog/crew/templates/by-stack/{fastapi,angular}/` | Four spec files that were 70% correct before editing. They carry real opinions (routers hold no logic, `AsyncSession` is per-request, OnPush everywhere, `.spec.ts` not `.test.ts`) that would otherwise have to be re-derived or, worse, left implicit. |
 | `catalog/crew/data/learnings-seed/` | 10 entries seeded before a line of feature code exists. The CRAG pre-step has something to retrieve on the first crew run instead of an empty corpus. |
-| `evals/golden-req-2/fixture/` | The single most useful file in the repo for this task. A working `wopr.yml` for a FastAPI project answered more questions faster than the schema doc did, because it showed a real filled-in `openapi` section rather than a field table. |
+| `evals/golden-req-2/fixture/` | The single most useful file in the repo for this task. A working `kitt.yml` for a FastAPI project answered more questions faster than the schema doc did, because it showed a real filled-in `openapi` section rather than a field table. |
 | `detect_stack` | Correctly identified both targets and, notably, that Angular 22's test runner is Vitest. That is a post-cutoff fact the detector got right. |
 
-The control arm's biggest failure mode is the one WOPR's content directly
+The control arm's biggest failure mode is the one KITT's content directly
 prevents: it **fabricated 14 dependency version pins from memory and got 10
 wrong**, including a non-existent `httpx>=0.29`. Templates that name real
 versions, and a `uv.lock`, are the fix for exactly that.
@@ -39,14 +39,14 @@ versions, and a `uv.lock`, are the fix for exactly that.
 
 ## What got in the way
 
-### 1. The generated `wopr.yml` needed correcting in five of six sections
+### 1. The generated `kitt.yml` needed correcting in five of six sections
 
-`propose_wopr_yml` output versus what shipped:
+`propose_kitt_yml` output versus what shipped:
 
 | Field | Generated | Correct | Why it was wrong |
 |---|---|---|---|
 | `project.slug` | `backend` | `arcade-api` | Derived from the directory basename. |
-| `project.name` | `Backend` | `WOPR Arcade API` | Same. |
+| `project.name` | `Backend` | `KITT Arcade API` | Same. |
 | `target_source_root` | `src` | `src/arcade_api` | Stops at `src/`, does not look inside for the package. |
 | `requirements.local.path` | `requirements` | `../requirements` | Cannot express a shared requirements directory. |
 | `openapi` | (absent) | `/openapi.json` + pin | No section emitted at all, though FastAPI was detected. |
@@ -71,17 +71,17 @@ what a workspace is:
 - `seed_learnings` writes to `<workspace>/LEARNINGS.md` unconditionally
   (`learnings.py`, `target_file = workspace / LEARNINGS_FILENAME`).
 - `append_learnings` routes through `_resolve_write_path`, which requires
-  `wopr.yml` at the workspace root and otherwise falls back to
-  `~/.wopr/LEARNINGS.md`.
+  `kitt.yml` at the workspace root and otherwise falls back to
+  `~/.kitt/LEARNINGS.md`.
 
-Arcade has `wopr.yml` in `backend/` and `frontend/`, not at the root. So
+Arcade has `kitt.yml` in `backend/` and `frontend/`, not at the root. So
 `seed_learnings` happily created `arcade/LEARNINGS.md` with 10 entries, and the
 three entries appended right afterward went to the system corpus instead. They
 had to be moved by hand.
 
 Worse, `_resolve_read_paths` uses the same check, so `arcade/LEARNINGS.md` is
 currently **unreachable**: never written by append, never read by search, and
-`_ensure_workspace_registered` is a no-op without the root `wopr.yml`, so it is
+`_ensure_workspace_registered` is a no-op without the root `kitt.yml`, so it is
 not in the registry either. It is an orphan file that looks correct.
 
 `seed_learnings` also returned the string "Workspace registered." in that exact
@@ -94,16 +94,16 @@ root. Needs a decision before P4 rehearsals.
 
 > **Update, 2026-08-21 (fixed).** The observation above stands as recorded; this
 > is what changed in response. Workspace-root resolution is now one shared
-> function, `find_workspace_root` in `src/wopr/tools/_workspace_root.py`, used by
+> function, `find_workspace_root` in `src/kitt/tools/_workspace_root.py`, used by
 > seed, append, search and curate alike: walk up from the target path, accept the
-> nearest directory carrying `wopr.yml` **or** `LEARNINGS.md`, stop at the git
+> nearest directory carrying `kitt.yml` **or** `LEARNINGS.md`, stop at the git
 > toplevel. `LEARNINGS.md` counting as a marker is what closes the loop for a
 > repo like Arcade, and `seed_learnings` writing that file at the target is what
 > establishes it. Appends and searches from the Arcade root now both resolve to
 > `arcade/LEARNINGS.md`; the file is no longer an orphan. Nearest match still
 > wins, so a call naming `arcade/backend` resolves to `arcade/backend`, which has
-> its own `wopr.yml`: target the repo root to keep one corpus for the repo. The
-> `~/.wopr` fallback survives only for calls that name no target at all; a named
+> its own `kitt.yml`: target the repo root to keep one corpus for the repo. The
+> `~/.kitt` fallback survives only for calls that name no target at all; a named
 > target that resolves to nothing is now an error listing every searched path.
 > `seed_learnings` reports what registration actually did rather than asserting
 > "Workspace registered." unconditionally (item 2 of the improvement list below).
@@ -122,7 +122,7 @@ that open with a "For pack users:" preamble explaining what the template is, the
 repeat the `# [PROJECT NAME]` title. The 138-line handoff contract is shaped
 entirely around a legacy migration ("Clean-Break Notice", "legacy path aliases")
 and was replaced wholesale for a greenfield project. The 113-line tracking stub
-was deleted outright: the 33-line one produced by `wopr-wargame` in P2e was
+was deleted outright: the 33-line one produced by `kitt-wargame` in P2e was
 better in every respect.
 
 ### 6. Both spec templates carried client-shaped residue
@@ -142,9 +142,9 @@ merely dead weight, it is negative value.
 
 ### 8. Six stale path references to the old repo
 
-`webteam-ai-tools/docs/wopr-yml-schema.md` appeared in `wopr_yml.py` (baked into
-every generated config header), `wopr-create-yml/SKILL.md`, `crew/README.md`,
-`templates/README.md`, and `wopr.example.yml`. Fixed in this session; 673 tests
+`webteam-ai-tools/docs/kitt-yml-schema.md` appeared in `kitt_yml.py` (baked into
+every generated config header), `kitt-create-yml/SKILL.md`, `crew/README.md`,
+`templates/README.md`, and `kitt.example.yml`. Fixed in this session; 673 tests
 still pass. A dangling reference to `webteam-ai-tools/docs/perpetual-learning.md`
 remains in `crew/README.md`: that document did not port, so the pointer is dead.
 
@@ -160,7 +160,7 @@ lose the ability to point at a repo-level tracking doc.
 
 ## Where the plugin was simply absent
 
-Nothing in WOPR had an opinion on any of these, and all three cost real time:
+Nothing in KITT had an opinion on any of these, and all three cost real time:
 
 1. **Postgres 18 moved its volume mount point.** The container exited 1 on first
    start. The control arm hit the identical wall independently, which makes it a
@@ -180,11 +180,11 @@ and the corpus had none of them.
 ## Improvements this suggests, in rough priority order
 
 1. **Reconcile workspace resolution across the learnings tools.** One rule, one
-   corpus. A repo whose projects each carry a `wopr.yml` is still one workspace.
+   corpus. A repo whose projects each carry a `kitt.yml` is still one workspace.
    Blocking for the demo close.
 2. **Stop asserting outcomes that were skipped.** "Workspace registered." must
    not print when registration was a no-op.
-3. **Fix `propose_wopr_yml` to emit the `openapi` section** for a detected
+3. **Fix `propose_kitt_yml` to emit the `openapi` section** for a detected
    FastAPI or Angular target, and to look inside `src/` for the package.
 4. **Teach `detect_stack` to read what it already opened:** uv versus pip,
    pytest, framework version, producer versus consumer.
@@ -195,7 +195,7 @@ and the corpus had none of them.
 7. **Move `tracking_doc` and `handoff_contract` out of `legacy-migration`** into
    a shared section, or into `specs`.
 8. **Reconsider what the eager tier buys.** Per `footprint.md`, adopting
-   wopr-core raises the current session floor rather than lowering it, and 82% of
+   kitt-core raises the current session floor rather than lowering it, and 82% of
    that tier is MCP tool definitions. The 67-to-23 tool cut halved tool-definition
    tokens, but mean tokens per tool went up: descriptions grew as the count fell.
 

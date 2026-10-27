@@ -14,7 +14,7 @@ Providers
   :mod:`_embeddings`; zero behavior change from the pre-provider code.
 - ``bedrock`` (:class:`BedrockTitanProvider`) — Amazon Titan Text
   Embeddings V2 via the AWS Bedrock runtime. boto3 is soft-imported and
-  never a hard dependency (``pip install 'wopr[bedrock]'``). Without
+  never a hard dependency (``pip install 'kitt[bedrock]'``). Without
   boto3, credentials, or a region, ``available()`` is False and search
   degrades to the deterministic prefilter. No AWS call is ever made
   unless the operator explicitly selected this provider.
@@ -26,9 +26,9 @@ Selection
 
 Resolution order (first hit wins):
 
-1. Env var ``WOPR_EMBEDDING_PROVIDER`` (``local`` | ``bedrock`` |
+1. Env var ``KITT_EMBEDDING_PROVIDER`` (``local`` | ``bedrock`` |
    ``none``). Machine-level override; wins everywhere.
-2. ``wopr.yml`` key ``learnings.embeddings.provider`` in the workspace
+2. ``kitt.yml`` key ``learnings.embeddings.provider`` in the workspace
    root that owns the corpus (the directory holding LEARNINGS.md).
 3. ``local``.
 
@@ -69,9 +69,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(LOGGER_NAME)
 
-PROVIDER_ENV_VAR = "WOPR_EMBEDDING_PROVIDER"
+PROVIDER_ENV_VAR = "KITT_EMBEDDING_PROVIDER"
 """Env override for the provider choice. Values: ``local`` | ``bedrock``
-| ``none``. Wins over ``wopr.yml``."""
+| ``none``. Wins over ``kitt.yml``."""
 
 PROVIDER_LOCAL = "local"
 PROVIDER_BEDROCK = "bedrock"
@@ -80,7 +80,7 @@ KNOWN_PROVIDERS = frozenset({PROVIDER_LOCAL, PROVIDER_BEDROCK, PROVIDER_NONE})
 
 DEFAULT_PROVIDER = PROVIDER_LOCAL
 
-WOPR_YML_FILENAME = CONFIG_FILENAME
+KITT_YML_FILENAME = CONFIG_FILENAME
 
 LOCAL_PROVIDER_NAME = f"local:{_embeddings.EMBEDDING_MODEL}"
 """Provider-qualified model name the local provider stamps into sidecar
@@ -91,7 +91,7 @@ format-version bump's suspenders)."""
 BEDROCK_MODEL_ID = "amazon.titan-embed-text-v2:0"
 BEDROCK_PROVIDER_NAME = f"bedrock:{BEDROCK_MODEL_ID}"
 BEDROCK_DIMENSIONS = 1024
-"""Titan V2 supports 256/512/1024 output dimensions; WOPR pins 1024 and
+"""Titan V2 supports 256/512/1024 output dimensions; KITT pins 1024 and
 requests it explicitly on every call so the sidecar column count can
 never depend on an AWS-side default change."""
 
@@ -204,7 +204,7 @@ class BedrockTitanProvider:
                 self._client_init_failed = True
                 logger.warning(
                     "Bedrock embedding provider selected but boto3 is not "
-                    "installed. Install with: pip install 'wopr[bedrock]'. "
+                    "installed. Install with: pip install 'kitt[bedrock]'. "
                     "Semantic search disabled for this process; the "
                     "deterministic prefilter still works."
                 )
@@ -278,8 +278,8 @@ def _provider_name_from_env() -> str | None:
     return value
 
 
-def _provider_name_from_wopr_yml(config_dir: Path) -> str | None:
-    yml_path = config_dir / WOPR_YML_FILENAME
+def _provider_name_from_kitt_yml(config_dir: Path) -> str | None:
+    yml_path = config_dir / KITT_YML_FILENAME
     if not yml_path.is_file():
         return None
     data = safe_load_yaml(yml_path)
@@ -308,9 +308,9 @@ def _provider_name_from_wopr_yml(config_dir: Path) -> str | None:
 
 
 def resolve_provider_name(config_dir: Path | None = None) -> str:
-    """Resolve the configured provider name: env, then wopr.yml, then default.
+    """Resolve the configured provider name: env, then kitt.yml, then default.
 
-    ``config_dir`` is the directory whose ``wopr.yml`` speaks for the
+    ``config_dir`` is the directory whose ``kitt.yml`` speaks for the
     corpus — the workspace root holding LEARNINGS.md. ``None`` skips the
     file lookup (outside-workspace mode).
     """
@@ -318,7 +318,7 @@ def resolve_provider_name(config_dir: Path | None = None) -> str:
     if from_env is not None:
         return from_env
     if config_dir is not None:
-        from_yml = _provider_name_from_wopr_yml(config_dir)
+        from_yml = _provider_name_from_kitt_yml(config_dir)
         if from_yml is not None:
             return from_yml
     return DEFAULT_PROVIDER

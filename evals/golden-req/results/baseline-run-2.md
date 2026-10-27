@@ -1,10 +1,10 @@
 # Golden-REQ baseline run 2
 
 - Date: 2026-08-21
-- Crew skill version: catalog/crew/skills/wopr-run-crew/SKILL.md at commit 44aae80 (473 lines, pre-rewrite)
+- Crew skill version: catalog/crew/skills/kitt-run-crew/SKILL.md at commit 44aae80 (473 lines, pre-rewrite)
 - Dispatch method: general-purpose subagents instructed to read and follow their agent spec file; models per the skill's table (scout haiku, coder/tester/auditor sonnet)
 - Scratch workspace: /tmp/golden-run-2 (copy of evals/golden-req/fixture)
-- CRAG pre-step: learnings_search returned empty for REQ-GOLD-1 with stack tags [fastapi, python] against isolated WOPR_HOME; substep 2 short-circuit, evaluator skipped, empty relevant_learnings for all steps
+- CRAG pre-step: learnings_search returned empty for REQ-GOLD-1 with stack tags [fastapi, python] against isolated KITT_HOME; substep 2 short-circuit, evaluator skipped, empty relevant_learnings for all steps
 
 ## Step results
 

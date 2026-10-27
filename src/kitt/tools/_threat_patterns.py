@@ -12,7 +12,7 @@ Ported idea, narrower scope than the source
 --------------------------------------------
 Modeled on Hermes Agent's ``tools/threat_patterns.py``, which centralizes
 its *entire* prompt-injection/exfiltration/C2 pattern set behind an
-``"all"/"context"/"strict"`` scope system shared by several scanners. WOPR's
+``"all"/"context"/"strict"`` scope system shared by several scanners. KITT's
 two consumers don't need that: skill-guard's injection/destructive/
 persistence/network/obfuscation patterns have no leak-vet equivalent
 (leak-vet isn't scanning for reverse shells), and leak-vet's identity
@@ -30,7 +30,7 @@ both is defined exactly once and both consumers pull the same compiled
 regex — that's the actual duplication this module removes. A pattern used
 by only one consumer is *still* defined here rather than inline in that
 consumer's module, so the full inventory of credential-shaped detectors
-WOPR ships is visible in one file even though today only one caller applies
+KITT ships is visible in one file even though today only one caller applies
 each of them.
 
 Coverage gaps closed 2026-08-03 (operator decision)

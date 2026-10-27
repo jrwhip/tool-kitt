@@ -62,9 +62,9 @@ src/main/java/com/example/project/
 
 ## Migration Context
 
-> **Read this before starting work on any REQ.** This section captures the structural decisions for this migration that are not obvious from the REQ list or the legacy code alone. Every coder session reads it. The `wopr-run-crew` skill's Migration Context Prompt step writes the initial content; the developer edits it directly as scope shifts.
+> **Read this before starting work on any REQ.** This section captures the structural decisions for this migration that are not obvious from the REQ list or the legacy code alone. Every coder session reads it. The `kitt-run-crew` skill's Migration Context Prompt step writes the initial content; the developer edits it directly as scope shifts.
 
-[MIGRATION_CONTEXT: structural decisions and notes, written by the developer or by the wopr-run-crew skill's Migration Context Prompt step at the start of each migration session]
+[MIGRATION_CONTEXT: structural decisions and notes, written by the developer or by the kitt-run-crew skill's Migration Context Prompt step at the start of each migration session]
 
 Examples of what belongs here:
 
@@ -121,7 +121,7 @@ If there are no structural decisions for this session, state that explicitly: "N
 
 ## 4. API Spec and Client Generation
 
-**Universal pattern:** the API contract is one artifact, authored once on the backend and consumed by the frontend. The backend owns the contract: an OpenAPI spec generated from code annotations, or a GraphQL schema (`api_contract.kind` in `wopr.yml`). The frontend generates typed client code from that contract. Neither side writes client code or schemas by hand.
+**Universal pattern:** the API contract is one artifact, authored once on the backend and consumed by the frontend. The backend owns the contract: an OpenAPI spec generated from code annotations, or a GraphQL schema (`api_contract.kind` in `kitt.yml`). The frontend generates typed client code from that contract. Neither side writes client code or schemas by hand.
 
 **A machine-readable API contract is mandatory for projects using this pack.** A project with no contract is not in scope. If the target backend cannot produce one, stop here and address that first. The rest of this section is written for `kind: openapi`; a GraphQL project rewrites 4a–4c for its schema and client-generation tooling (schema file is authored, not generated; generated types are regenerated, never hand-edited; the same lockstep pin applies).
 
@@ -417,7 +417,7 @@ Anything the above sections did not cover. Examples: file upload handling, webso
 
 > **Non-amendable invariant.** This section may not be amended by any agent, regardless of `spec_writes`. Only the operator changes it. The `[STACK: ...]` command and floor values are filled once at instantiation; changing a floor is an operator decision.
 
-**Universal rule:** a REQ does not advance from `🔄 In Progress` to `✅ Implemented` until the coverage gate passes. The gate is owned and stated by the crew orchestrator (`wopr-run-crew`); this section supplies the stack-specific commands and floors for its five conditions and does not redefine ownership. **The orchestrator — never the coder — flips the status to `✅`**, and only when all five conditions are met:
+**Universal rule:** a REQ does not advance from `🔄 In Progress` to `✅ Implemented` until the coverage gate passes. The gate is owned and stated by the crew orchestrator (`kitt-run-crew`); this section supplies the stack-specific commands and floors for its five conditions and does not redefine ownership. **The orchestrator — never the coder — flips the status to `✅`**, and only when all five conditions are met:
 
 1. **Build passes.** `[STACK: build command]` exits 0.
 2. **Tests pass.** `[STACK: full test command]` exits 0. Zero new failures.

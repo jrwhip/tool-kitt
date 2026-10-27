@@ -5,16 +5,16 @@ Current design as shipped. The original (pre-slimming) design this evolved from 
 ## Corpora and workspace resolution
 
 - **Workspace corpus:** `LEARNINGS.md` at a workspace root, intended to be committed with the project.
-- **System corpus:** `~/.wopr/LEARNINGS.md`, machine-local, used only when a call names no target at all.
-- **Registry:** `~/.wopr/workspaces.txt`, consulted for outside-workspace aggregated reads.
+- **System corpus:** `~/.kitt/LEARNINGS.md`, machine-local, used only when a call names no target at all.
+- **Registry:** `~/.kitt/workspaces.txt`, consulted for outside-workspace aggregated reads.
 
-A workspace root is resolved by one shared function, `find_workspace_root` (`src/wopr/tools/_workspace_root.py`): walk up from the target, nearest directory containing `wopr.yml` **or** `LEARNINGS.md` wins, bounded by the git toplevel. Seed, append, search, and curate all use it, so reads and writes address the same file by construction. A named target that resolves to nothing is an **error naming every searched path**, never a silent fallback. Multi-package repos resolve per package (nearest `wopr.yml`), so each package carries its own corpus; a root corpus exists only where one was deliberately seeded, and the seeded file itself becomes the root marker.
+A workspace root is resolved by one shared function, `find_workspace_root` (`src/kitt/tools/_workspace_root.py`): walk up from the target, nearest directory containing `kitt.yml` **or** `LEARNINGS.md` wins, bounded by the git toplevel. Seed, append, search, and curate all use it, so reads and writes address the same file by construction. A named target that resolves to nothing is an **error naming every searched path**, never a silent fallback. Multi-package repos resolve per package (nearest `kitt.yml`), so each package carries its own corpus; a root corpus exists only where one was deliberately seeded, and the seeded file itself becomes the root marker.
 
 ## Entry format and writers
 
 Entries are `## LRN-YYYY-MM-DD-<letter>: <title>` with a fenced `meta` block (date, project, stack tags, req list, provenance, severity, optional `seed: true`) and three labeled paragraphs: What happened / Why it matters / Pattern to encode. Append-only; the format is validated on write.
 
-Writers: the **crew auditor** (sole writer during crew runs, 0-3 distilled entries per gate, distillation gates in its agent spec), `seed_learnings` (curated starter entries at project init, `catalog/crew/data/learnings-seed/`), and `wopr learnings append` (CLI, for Bash-capable agents and operators). Seed entries carry verified post-cutoff facts on purpose: carrying facts the model cannot know is the corpus's highest-value job.
+Writers: the **crew auditor** (sole writer during crew runs, 0-3 distilled entries per gate, distillation gates in its agent spec), `seed_learnings` (curated starter entries at project init, `catalog/crew/data/learnings-seed/`), and `kitt learnings append` (CLI, for Bash-capable agents and operators). Seed entries carry verified post-cutoff facts on purpose: carrying facts the model cannot know is the corpus's highest-value job.
 
 ## Retrieval and the CRAG pre-step
 

@@ -73,7 +73,7 @@ If the project uses pip directly, replace `uv run <cmd>` with `<cmd>` inside the
 
 ## OpenAPI
 
-FastAPI generates the OpenAPI spec automatically from routes + Pydantic schemas. The pinned spec version lives in `wopr.yml` (`api_contract.pinned_generator_version`).
+FastAPI generates the OpenAPI spec automatically from routes + Pydantic schemas. The pinned spec version lives in `kitt.yml` (`api_contract.pinned_generator_version`).
 
 - Every router endpoint has `summary` and `description`.
 - Every public Pydantic field has `description` and `examples`.

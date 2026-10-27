@@ -1,5 +1,5 @@
 """
-Pack inspection commands for WOPR.
+Pack inspection commands for KITT.
 
 Handles the read-only ``list`` and ``catalog`` subcommands. The
 mutating ``add`` / ``remove`` pair lived here too in the prior toolset;

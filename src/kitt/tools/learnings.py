@@ -1,27 +1,27 @@
-"""LEARNINGS retrieval and append for the WOPR crew.
+"""LEARNINGS retrieval and append for the KITT crew.
 
 Implements the workspace-vs-system memory model and the deterministic
 pre-filter used by Corrective RAG (CRAG). The crew auditor calls
-:func:`append_learnings` at end of every gate; the ``wopr-run-crew``
+:func:`append_learnings` at end of every gate; the ``kitt-run-crew``
 orchestrator calls :func:`learnings_search` once per crew run, before
 Step 1, and hands the result to the ``crew-evaluator`` agent for grading
 only when the prefilter returns more than five candidates.
 
 Single source of truth per entry. No mirroring. Workspace mode reads only the
-workspace's ``LEARNINGS.md``; outside-workspace mode aggregates ``~/.wopr/LEARNINGS.md``
-plus every registered workspace's file via ``~/.wopr/workspaces.txt``.
+workspace's ``LEARNINGS.md``; outside-workspace mode aggregates ``~/.kitt/LEARNINGS.md``
+plus every registered workspace's file via ``~/.kitt/workspaces.txt``.
 
 Workspace identity is resolved by :func:`._workspace_root.find_workspace_root`,
 which every tool in this module shares: seed, append, curate and the read
 path all ask the same question and get the same answer. A directory is a
-workspace root when it carries ``wopr.yml`` **or** ``LEARNINGS.md``; otherwise
+workspace root when it carries ``kitt.yml`` **or** ``LEARNINGS.md``; otherwise
 the search walks up parent by parent, nearest match wins, stopping at the git
 toplevel. That module's docstring is the authority on the algorithm and on the
-multi-package repository loop (``wopr.yml`` in subpackages, corpus at the repo
-root) it exists to close. ``wopr.yml`` here is the crew pack's source of truth,
-distinct from ``catalog.read_wopr_config``'s ``.wopr.yaml`` catalog config.
+multi-package repository loop (``kitt.yml`` in subpackages, corpus at the repo
+root) it exists to close. ``kitt.yml`` here is the crew pack's source of truth,
+distinct from ``catalog.read_kitt_config``'s ``.kitt.yaml`` catalog config.
 
-When resolution fails, these tools say so. ``~/.wopr/LEARNINGS.md`` is used
+When resolution fails, these tools say so. ``~/.kitt/LEARNINGS.md`` is used
 only when the caller named no target at all; a caller who named a directory
 that does not resolve gets an error listing the searched paths, never a
 silent write somewhere else.
@@ -67,7 +67,7 @@ from ._learnings_sidecar import (
 )
 from ._workspace_root import (
     MARKER_FILENAMES,
-    WOPR_YML_FILENAME,
+    KITT_YML_FILENAME,
     WorkspaceRoot,
     find_workspace_root,
     has_marker,
@@ -95,7 +95,7 @@ if TYPE_CHECKING:
 __all__ = [
     "LEARNINGS_FILENAME",
     "MARKER_FILENAMES",
-    "WOPR_YML_FILENAME",
+    "KITT_YML_FILENAME",
     "WORKSPACES_REGISTRY_FILENAME",
     "LearningEntry",
     "append_learnings",
@@ -127,7 +127,7 @@ class _CorpusTarget:
     file: Path
 
     #: The workspace root that owns ``file``, or ``None`` when ``file``
-    #: is the system corpus under ``~/.wopr``. Callers use this to decide
+    #: is the system corpus under ``~/.kitt``. Callers use this to decide
     #: whether registration and the ``.gitignore`` touch-up apply: both
     #: are workspace concepts and neither means anything for the system
     #: corpus.
@@ -144,7 +144,7 @@ def _resolve_corpus_target(
     failure by returning ``Error: ...`` rather than raising).
 
     The asymmetry between the two failure paths is the whole point of
-    the function. ``~/.wopr/LEARNINGS.md`` is a reasonable home for an
+    the function. ``~/.kitt/LEARNINGS.md`` is a reasonable home for an
     entry when the caller named no target: there is no expectation to
     violate. It is never a reasonable home for an entry when the caller
     DID name a target that turned out not to resolve, because the entry
@@ -165,15 +165,15 @@ def _unresolved_workspace_error(workspace: Path, resolution: WorkspaceRoot) -> s
     """Error text for a named target that resolves to no workspace root.
 
     Deliberately verbose. This replaces a silent fallback to
-    ``~/.wopr/LEARNINGS.md`` that produced a corpus nobody could find,
+    ``~/.kitt/LEARNINGS.md`` that produced a corpus nobody could find,
     so the message has to name the searched paths and the fix.
     """
     return (
         f"Error: no workspace root found for {workspace}, so nothing was "
-        f"written. {resolution.explain()} Create wopr.yml or LEARNINGS.md at "
+        f"written. {resolution.explain()} Create kitt.yml or LEARNINGS.md at "
         "the directory that should own the corpus (seed_learnings writes "
         "LEARNINGS.md and is the supported way to do this for a repo whose "
-        "wopr.yml files live in subpackages), or pass a target path inside "
+        "kitt.yml files live in subpackages), or pass a target path inside "
         "an existing workspace."
     )
 
@@ -210,7 +210,7 @@ def _resolve_read_paths(root: Path | None) -> list[Path]:
 
 
 def _ensure_workspace_registered(workspace: Path) -> RegistrationResult:
-    """Append ``workspace`` to ``~/.wopr/workspaces.txt`` if not already present.
+    """Append ``workspace`` to ``~/.kitt/workspaces.txt`` if not already present.
 
     Callers pass an already-resolved workspace root. The marker check
     is kept as a guard so a path that carries no marker is skipped
@@ -289,7 +289,7 @@ def _registration_note(result: RegistrationResult, workspace: Path) -> str:
         )
     return (
         "Registration failed: the workspace registry could not be updated "
-        "(see the WOPR log). Cross-workspace search will not see this "
+        "(see the KITT log). Cross-workspace search will not see this "
         "workspace until a later call succeeds."
     )
 
@@ -409,16 +409,16 @@ async def append_learnings(
 
     Where it lands: the workspace root that owns ``target_workspace_path``
     is resolved by walking up from that path to the nearest directory
-    carrying ``wopr.yml`` or ``LEARNINGS.md``, stopping at the git toplevel
+    carrying ``kitt.yml`` or ``LEARNINGS.md``, stopping at the git toplevel
     (see :mod:`._workspace_root`). That root's ``LEARNINGS.md`` gets the
     entry. When no root is found, the outcome depends on how the call was
     made: a call that named ``target_workspace_path`` gets an error naming
     every directory searched and writes nothing, while a call that named no
-    target at all falls back to the system file at ``~/.wopr/LEARNINGS.md``.
+    target at all falls back to the system file at ``~/.kitt/LEARNINGS.md``.
     An entry is never quietly diverted away from a workspace the caller
     named.
 
-    Concurrency posture: WOPR is operator-driven, so the auditor's
+    Concurrency posture: KITT is operator-driven, so the auditor's
     append is effectively single-writer per gate. The function does
     not take a cross-process lock; two concurrent appenders (rare,
     only possible if two crew runs land at the exact same instant)
@@ -536,7 +536,7 @@ async def learnings_search(
     In-workspace mode reads ``<workspace root>/LEARNINGS.md`` only, where the
     root is resolved by the same walk-up ``append_learnings`` uses, so reads
     and writes always address the same file. Outside-workspace mode (no root
-    resolved) aggregates ``~/.wopr/LEARNINGS.md`` plus every registered
+    resolved) aggregates ``~/.kitt/LEARNINGS.md`` plus every registered
     workspace's ``<path>/LEARNINGS.md``.
 
     Two candidate paths run in parallel and the results are unioned:
@@ -774,7 +774,7 @@ async def learnings_path(
     listed.
 
     Also reports the semantic layer's state: the active embedding
-    provider (env override / ``wopr.yml`` / default), whether it is
+    provider (env override / ``kitt.yml`` / default), whether it is
     available, and the write path's sidecar (presence, entry count,
     dimensions). See :func:`_embeddings_status_lines`.
     """
@@ -871,7 +871,7 @@ def _embeddings_status_lines(root: Path | None, write_path: Path | None) -> list
     """Embeddings half of the ``learnings_path`` diagnostic.
 
     Reports the resolved provider (same resolution ``learnings_search``
-    uses: env override, then the workspace root's ``wopr.yml``, then
+    uses: env override, then the workspace root's ``kitt.yml``, then
     the ``local`` default), whether it is currently available, and the
     state of the write path's paired sidecar. Together these answer
     "why did my search return deterministic-only results" without the
@@ -892,7 +892,7 @@ def _embeddings_status_lines(root: Path | None, write_path: Path | None) -> list
         )
     else:
         lines.append(
-            "  provider_available: False (provider not ready — see the WOPR "
+            "  provider_available: False (provider not ready — see the KITT "
             "log; deterministic prefilter only)"
         )
     if write_path is None:
@@ -957,7 +957,7 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
     That is deliberate and load-bearing: ``LEARNINGS.md`` is itself a
     workspace-root marker, so seeding a directory is how an operator
     declares which directory owns the corpus. For a repository whose
-    ``wopr.yml`` files live in subpackages, seeding the repo root is
+    ``kitt.yml`` files live in subpackages, seeding the repo root is
     what makes later ``append_learnings`` and ``learnings_search``
     calls from the repo root resolve there (see
     :mod:`._workspace_root`).
@@ -965,7 +965,7 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
     Args:
         target_workspace_path: Absolute path to the directory that
             should own the corpus, normally the project's workspace
-            root (the directory containing ``wopr.yml``, or the repo
+            root (the directory containing ``kitt.yml``, or the repo
             root of a multi-package repo). Required; this tool does
             NOT infer the workspace.
         stack_tags: List of stack identifiers to seed. Known values:
@@ -978,7 +978,7 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
         Status string. Begins with ``Seeded`` on success listing the
         number of entries appended and the stacks included, or
         ``Error:`` on failure. The status ends with what registration
-        in ``~/.wopr/workspaces.txt`` actually did on this call:
+        in ``~/.kitt/workspaces.txt`` actually did on this call:
         registered, already registered, skipped, or failed. It never
         claims an outcome the code did not reach.
     """
@@ -1087,7 +1087,7 @@ async def curate_learnings(
     Curates the same file ``append_learnings`` writes and
     ``learnings_search`` reads, resolved the same way, and refuses on the
     same terms: a named target that resolves to no workspace root is an
-    error, not a quiet redirect to ``~/.wopr/LEARNINGS.md``. Curation
+    error, not a quiet redirect to ``~/.kitt/LEARNINGS.md``. Curation
     rewrites a corpus, so curating the wrong one is worse than curating
     none.
 

@@ -1,16 +1,16 @@
-# wopr.yml example: two worked configurations
+# kitt.yml example: two worked configurations
 #
 # This file shows TWO complete configurations: one for a Spring Boot backend project
 # and one for an Angular frontend project that consumes the backend's API contract.
 #
 # In a real project, only ONE of these blocks would appear at the project root,
-# named exactly `wopr.yml`. They are colocated here for reference.
+# named exactly `kitt.yml`. They are colocated here for reference.
 #
-# Schema reference: wopr-yml-schema.md (ships alongside this file in the crew pack)
+# Schema reference: kitt-yml-schema.md (ships alongside this file in the crew pack)
 
 # ============================================================================
 # Example A: Spring Boot backend project (legacy migration)
-# Lives at:  <project-root>/wopr.yml  (e.g. /path/to/demo-api-poc/wopr.yml)
+# Lives at:  <project-root>/kitt.yml  (e.g. /path/to/demo-api-poc/kitt.yml)
 # ============================================================================
 
 project:
@@ -52,9 +52,9 @@ api_contract:
 #   embeddings:
 #     # local (default) | bedrock | none.
 #     #   local   - bundled fastembed model; works offline after first download.
-#     #   bedrock - Amazon Titan Text Embeddings V2; needs wopr[bedrock] + AWS creds.
+#     #   bedrock - Amazon Titan Text Embeddings V2; needs kitt[bedrock] + AWS creds.
 #     #   none    - opt out of semantic search; deterministic prefilter only.
-#     # The WOPR_EMBEDDING_PROVIDER env var overrides this field.
+#     # The KITT_EMBEDDING_PROVIDER env var overrides this field.
 #     provider: local
 
 legacy-migration:
@@ -98,7 +98,7 @@ legacy-migration:
 
 # ============================================================================
 # Example B: Angular frontend project (consumes the backend's API contract)
-# Lives at:  <monorepo-root>/apps/<app-name>/wopr.yml
+# Lives at:  <monorepo-root>/apps/<app-name>/kitt.yml
 # ============================================================================
 #
 # project:

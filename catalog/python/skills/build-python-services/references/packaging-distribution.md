@@ -67,7 +67,7 @@ asyncio_mode = "auto"
 
 | Backend | When to Use |
 |---------|------------|
-| **Hatch** (hatchling) | Default choice. Used by WOPR. Good for most projects. Handles src layout, force-include, versioning. |
+| **Hatch** (hatchling) | Default choice. Used by KITT. Good for most projects. Handles src layout, force-include, versioning. |
 | **setuptools** | Legacy projects migrating from setup.py. Works but more configuration needed. |
 | **flit** | Simple pure-Python packages with minimal config. |
 
@@ -155,7 +155,7 @@ Single source of truth. Pick one location:
 version = "1.0.0"
 ```
 
-**Option B: In `__init__.py` (dynamic, used by WOPR)**
+**Option B: In `__init__.py` (dynamic, used by KITT)**
 ```python
 # src/my_package/__init__.py
 __version__ = "1.0.0"
@@ -195,7 +195,7 @@ pipx install .
 `pipx` installs Python CLI tools in isolated environments. Use it for tools you want available globally without polluting your project's venv.
 
 ```bash
-pipx install wopr
+pipx install kitt
 pipx install ruff
 pipx install mypy
 ```

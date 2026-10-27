@@ -4,11 +4,11 @@
 **License:** MIT (Copyright 2026 Google LLC)
 **Date Downloaded:** 2026-03-30
 
-These files are copied from the official Angular skills repository maintained by the Angular team at Google. WOPR-specific modifications:
+These files are copied from the official Angular skills repository maintained by the Angular team at Google. KITT-specific modifications:
 
-- The skill directory (and `name` frontmatter) is renamed from `angular-developer` to `wopr-angular-developer`.
-- `routing-eval.jsonl` is a WOPR addition (routing-eval fixtures for `check_routing_evals`); it does not exist upstream.
-- Routing cues in the skill description have been edited for WOPR's skill-routing conventions.
+- The skill directory (and `name` frontmatter) is renamed from `angular-developer` to `kitt-angular-developer`.
+- `routing-eval.jsonl` is a KITT addition (routing-eval fixtures for `check_routing_evals`); it does not exist upstream.
+- Routing cues in the skill description have been edited for KITT's skill-routing conventions.
 
 The reference content itself is otherwise unmodified from upstream.
 

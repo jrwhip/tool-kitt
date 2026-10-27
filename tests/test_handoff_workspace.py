@@ -4,7 +4,7 @@
 an explicit ``target_workspace_path`` wins, else the per-CLI ambient
 default (``CLAUDE_PROJECT_DIR`` on Claude Code), else a loud error. There
 is no fallback to the server's launch directory, and a missing or stale
-``WOPR_WORKSPACE`` fails loud instead of silently binding to whatever
+``KITT_WORKSPACE`` fails loud instead of silently binding to whatever
 worktree the process spawned in (the failure mode that once overwrote an
 unrelated project's handoff).
 """
@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pytest
 
-from wopr.config import ServerConfig
-from wopr.context import ServerContext, WorkspaceNotConfiguredError
-from wopr.tools.handoff import create_handoff, get_handoff
+from kitt.config import ServerConfig
+from kitt.context import ServerContext, WorkspaceNotConfiguredError
+from kitt.tools.handoff import create_handoff, get_handoff
 
 
 class TestCreateHandoff:
@@ -115,7 +115,7 @@ class TestResolveWorkspace:
         dead = tmp_path / "deleted-workspace"  # never created
         assert not dead.exists()
         ServerContext.reset()
-        ServerContext.init(ServerConfig(cli_type="claude", wopr_workspace=str(dead)))
+        ServerContext.init(ServerConfig(cli_type="claude", kitt_workspace=str(dead)))
         try:
             with pytest.raises(WorkspaceNotConfiguredError):
                 _ = ServerContext.get().workspace
@@ -136,7 +136,7 @@ class TestResolveWorkspace:
         live.mkdir()
         ServerContext.reset()
         ctx = ServerContext.init(
-            ServerConfig(cli_type="claude", wopr_workspace=str(live))
+            ServerConfig(cli_type="claude", kitt_workspace=str(live))
         )
         try:
             assert ctx.workspace == live

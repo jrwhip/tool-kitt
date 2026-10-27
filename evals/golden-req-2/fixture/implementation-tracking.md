@@ -1,11 +1,11 @@
-# WOPR Golden Fixture - Implementation Tracking
+# KITT Golden Fixture - Implementation Tracking
 
 > **Last updated:** 2026-08-21 (initial fixture build)
 > **Scope:** A single `GET /health` endpoint plus whatever REQ-GOLD REQs are
 > run against this fixture for crew-skill evaluation. Nothing else.
 > **Status legend:** `⏳ Pending`, `🔄 In Progress`, `✅ Implemented`, `❌ Out of Scope`
 > **Spec version pinned:** `openapi.json @ fastapi 0.141.1, served at /openapi.json at runtime`
-> **Generator version pinned:** `fastapi 0.141.1` (see `wopr.yml` `openapi.pinned_generator_version`)
+> **Generator version pinned:** `fastapi 0.141.1` (see `kitt.yml` `openapi.pinned_generator_version`)
 > **Migration Context summary:** No structural changes; greenfield fixture. Hooks declined.
 
 ---

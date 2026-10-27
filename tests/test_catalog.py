@@ -6,8 +6,8 @@ from typing import Any
 import pytest
 import yaml
 
-from wopr import __version__
-from wopr.catalog import read_lock_file, resolve_packs, write_lock_file
+from kitt import __version__
+from kitt.catalog import read_lock_file, resolve_packs, write_lock_file
 
 CATALOG_ROOT = Path(__file__).resolve().parents[1] / "catalog"
 
@@ -66,7 +66,7 @@ class TestLockFile:
         assert not lock_dir.exists()  # Confirms the dir is the missing piece.
         write_lock_file(lock_dir, ["_core"])
         assert lock_dir.is_dir()
-        assert (lock_dir / "wopr.lock.yaml").is_file()
+        assert (lock_dir / "kitt.lock.yaml").is_file()
 
 
 class TestResolvePacks:
@@ -104,7 +104,7 @@ class TestResolvePacks:
 class TestCatalogYamlExamplesParse:
     """Every YAML file shipped under ``catalog/`` must parse.
 
-    `catalog/crew/templates/wopr.example.yml` previously had a broken
+    `catalog/crew/templates/kitt.example.yml` previously had a broken
     example: a bracketed scrub placeholder directly against a bare
     scalar (``slug: [placeholder]-api``) parses as a flow sequence
     followed by a trailing scalar, which YAML rejects outright. Nothing

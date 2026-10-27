@@ -25,11 +25,11 @@ import pytest
 
 numpy = pytest.importorskip("numpy")
 
-from wopr.tools import _embeddings, learnings  # noqa: E402 - import after skip
-from wopr.tools._embedding_providers import (  # noqa: E402 - import after skip
+from kitt.tools import _embeddings, learnings  # noqa: E402 - import after skip
+from kitt.tools._embedding_providers import (  # noqa: E402 - import after skip
     LOCAL_PROVIDER_NAME,
 )
-from wopr.tools._embeddings import (  # noqa: E402 - import after skip
+from kitt.tools._embeddings import (  # noqa: E402 - import after skip
     EMBEDDING_MODEL,
     EMBEDDINGS_AVAILABLE,
     EMBEDDINGS_SIDECAR_FILENAME,
@@ -166,7 +166,7 @@ class TestSidecarSaveLoad:
     ):
         path = tmp_path / EMBEDDINGS_SIDECAR_FILENAME
         path.write_bytes(b"not a real npz file")
-        with caplog.at_level("WARNING", logger="wopr"):
+        with caplog.at_level("WARNING", logger="kitt"):
             assert load_sidecar(path) is None
         assert any("Cannot load sidecar" in r.message for r in caplog.records)
 
@@ -207,7 +207,7 @@ class TestSidecarSaveLoad:
         meta_bytes = _json.dumps({
             "model_name": EMBEDDING_MODEL,
             "corpus_hash": "x",
-            "wopr_version": "test",
+            "kitt_version": "test",
             "created_at": "test",
             "format_version": EMBEDDINGS_SIDECAR_FORMAT_VERSION,
         }).encode("utf-8")
@@ -220,7 +220,7 @@ class TestSidecarSaveLoad:
         )
         path.write_bytes(buf.getvalue())
 
-        with caplog.at_level("WARNING", logger="wopr"):
+        with caplog.at_level("WARNING", logger="kitt"):
             assert load_sidecar(path) is None
         assert any("inconsistent shape" in r.message for r in caplog.records)
 
@@ -251,7 +251,7 @@ class TestEmbedderFailureRecovery:
         monkeypatch.setattr(_embeddings, "_embedder_instance", None)
         monkeypatch.setattr(_embeddings, "_embedder_init_failed", False)
 
-        with caplog.at_level("WARNING", logger="wopr"):
+        with caplog.at_level("WARNING", logger="kitt"):
             first = _embeddings._get_embedder()
             second = _embeddings._get_embedder()
             third = _embeddings._get_embedder()
@@ -467,7 +467,7 @@ class TestLoadOrRebuildSidecar:
             learnings_path.read_text(encoding="utf-8") + "\n" + _make_entry_markdown(letter="b"),
             encoding="utf-8",
         )
-        with caplog.at_level("INFO", logger="wopr"):
+        with caplog.at_level("INFO", logger="kitt"):
             payload = learnings._load_or_rebuild_sidecar(learnings_path)
         assert payload is not None
         assert payload.ids == ["LRN-2026-05-13-a", "LRN-2026-05-13-b"]
@@ -492,7 +492,7 @@ class TestLoadOrRebuildSidecar:
         meta_bytes = _json.dumps({
             "model_name": LOCAL_PROVIDER_NAME,
             "corpus_hash": corpus_hash(["LRN-2026-05-13-a"]),
-            "wopr_version": "test",
+            "kitt_version": "test",
             "created_at": "test",
             "format_version": 1,
             "dimensions": _FakeTextEmbedding.EMBED_DIM,
@@ -509,7 +509,7 @@ class TestLoadOrRebuildSidecar:
         sidecar_path = tmp_path / EMBEDDINGS_SIDECAR_FILENAME
         sidecar_path.write_bytes(buf.getvalue())
 
-        with caplog.at_level("INFO", logger="wopr"):
+        with caplog.at_level("INFO", logger="kitt"):
             payload = learnings._load_or_rebuild_sidecar(learnings_path)
         assert payload is not None
         assert payload.format_version == EMBEDDINGS_SIDECAR_FORMAT_VERSION
@@ -534,7 +534,7 @@ class TestLoadOrRebuildSidecar:
             model_name="some-stale-model",
             sidecar_corpus_hash=corpus_hash(["LRN-2026-05-13-a"]),
         )
-        with caplog.at_level("INFO", logger="wopr"):
+        with caplog.at_level("INFO", logger="kitt"):
             payload = learnings._load_or_rebuild_sidecar(learnings_path)
         assert payload is not None
         assert payload.model_name == LOCAL_PROVIDER_NAME
@@ -548,16 +548,16 @@ class TestLoadOrRebuildSidecar:
 
 @pytest.fixture
 def learnings_workspace(tmp_path: Path, monkeypatch):
-    """Workspace fixture with a wopr.yml so learnings is in-workspace mode."""
-    from wopr.config import ServerConfig
-    from wopr.context import ServerContext
+    """Workspace fixture with a kitt.yml so learnings is in-workspace mode."""
+    from kitt.config import ServerConfig
+    from kitt.context import ServerContext
 
     workspace = tmp_path / "ws"
     workspace.mkdir()
-    (workspace / "wopr.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
-    home = tmp_path / "wopr-home"
+    (workspace / "kitt.yml").write_text("project:\n  slug: test\n", encoding="utf-8")
+    home = tmp_path / "kitt-home"
     home.mkdir()
-    monkeypatch.setenv("WOPR_HOME", str(home))
+    monkeypatch.setenv("KITT_HOME", str(home))
     ServerContext.reset()
     ctx = ServerContext.init(ServerConfig(cli_type="claude"))
     ctx.workspace = workspace
@@ -674,9 +674,9 @@ class TestAppendLearningsUpdatesSidecar:
 # learnings_path embeddings diagnostics
 # -----------------------------------------------------------------------------
 #
-# Replaces the retired ``wopr.tools.doctor`` status/warning helpers:
+# Replaces the retired ``kitt.tools.doctor`` status/warning helpers:
 # embeddings observability now lives in the ``learnings_path`` MCP tool
-# (the wopr-doctor skill calls it and relays the ``embeddings:`` block).
+# (the kitt-doctor skill calls it and relays the ``embeddings:`` block).
 # -----------------------------------------------------------------------------
 
 
@@ -722,7 +722,7 @@ class TestLearningsPathEmbeddingsStatus:
     async def test_reports_provider_none(
         self, learnings_workspace: Path, fake_embedder, monkeypatch
     ):
-        monkeypatch.setenv("WOPR_EMBEDDING_PROVIDER", "none")
+        monkeypatch.setenv("KITT_EMBEDDING_PROVIDER", "none")
         result = await learnings.learnings_path(str(learnings_workspace))
         assert "provider: none" in result
         assert "disabled by configuration" in result
@@ -748,7 +748,7 @@ class TestLearningsPathEmbeddingsStatus:
 @pytest.mark.slow
 @pytest.mark.skipif(
     not EMBEDDINGS_AVAILABLE,
-    reason="embeddings extra not installed; install with pip install 'wopr[embeddings]'",
+    reason="embeddings extra not installed; install with pip install 'kitt[embeddings]'",
 )
 class TestRealModelCrossStackMatch:
     async def test_pokemon_catch_matches_fastapi_exception_query(

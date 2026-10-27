@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from mcp.types import ListRootsResult, Root
 
-from wopr.config import ServerConfig
-from wopr.context import ServerContext
-from wopr.tools._workspace_target import (
+from kitt.config import ServerConfig
+from kitt.context import ServerContext
+from kitt.tools._workspace_target import (
     InvalidTargetWorkspaceError,
     resolve_request_workspace,
 )
@@ -79,7 +79,7 @@ async def test_no_request_workspace_fails_without_legacy_fallback() -> None:
 async def test_legacy_workspace_remains_compatible(tmp_path: Path) -> None:
     ServerContext.reset()
     ServerContext.init(
-        ServerConfig(cli_type="claude", wopr_workspace=str(tmp_path))
+        ServerConfig(cli_type="claude", kitt_workspace=str(tmp_path))
     )
     try:
         assert await resolve_request_workspace(ctx=_FakeContext([])) == tmp_path
@@ -92,7 +92,7 @@ async def test_copilot_does_not_fall_back_to_pinned_workspace(
 ) -> None:
     ServerContext.reset()
     ServerContext.init(
-        ServerConfig(cli_type="copilot", wopr_workspace=str(tmp_path))
+        ServerConfig(cli_type="copilot", kitt_workspace=str(tmp_path))
     )
     try:
         with pytest.raises(InvalidTargetWorkspaceError):

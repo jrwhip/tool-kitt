@@ -1,8 +1,8 @@
-""":command:`wopr learnings` subcommands: ``append`` and ``search``.
+""":command:`kitt learnings` subcommands: ``append`` and ``search``.
 
 Thin wrappers over the MCP tool functions in :mod:`.tools.learnings`.
 The point is reach, not new behavior: an agent with Bash but without
-the WOPR MCP server (a crew role running under a stripped tool
+the KITT MCP server (a crew role running under a stripped tool
 allowlist, a hook, a CI step, a shell) can still write to and read from
 the learnings corpus. Every validation the MCP path applies applies
 here too, because this IS the MCP path: the same coroutines, called

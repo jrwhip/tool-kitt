@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from wopr.config import ServerConfig
-from wopr.context import ServerContext
-from wopr.server import create_app
+from kitt.config import ServerConfig
+from kitt.context import ServerContext
+from kitt.server import create_app
 
 
 @pytest.fixture(autouse=True)
@@ -41,7 +41,7 @@ EXPECTED_TOOLS = [
     "learnings_search",
     "list_pack_templates",
     "pin_skill",
-    "propose_wopr_yml",
+    "propose_kitt_yml",
     "scan_skill_directory",
     "seed_learnings",
     "skill_usage_report",
@@ -49,7 +49,7 @@ EXPECTED_TOOLS = [
     "write_handoff_contract_stub",
     "write_spec_stubs",
     "write_tracking_doc_stub",
-    "write_wopr_yml",
+    "write_kitt_yml",
 ]
 
 
@@ -63,7 +63,7 @@ class TestCreateApp:
     def test_returns_fastmcp_instance(self, tmp_path):
         config = ServerConfig(cli_type="claude")
         app = create_app(config=config, workspace=str(tmp_path))
-        assert app.name == "wopr"
+        assert app.name == "kitt"
 
     def test_accepts_custom_config(self, tmp_path):
         config = ServerConfig(cli_type="gemini", toggl_api_key="test-key")
@@ -140,7 +140,7 @@ class TestGetWorkspaceInfo:
             "handoff",
             "learnings",
             "todos",
-            "wopr_yml",
+            "kitt_yml",
         ]
 
     async def test_still_reports_workspace_and_local_counters(self, tmp_path):

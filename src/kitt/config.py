@@ -1,4 +1,4 @@
-"""Centralized environment variable access for WOPR."""
+"""Centralized environment variable access for KITT."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ CliType: TypeAlias = Literal["claude", "copilot", "gemini", "unknown"]
 # Environment variable names
 # ============================================================================
 #
-# Every environment variable WOPR reads, named in one place. Other
+# Every environment variable KITT reads, named in one place. Other
 # modules that genuinely cannot route through ``ServerConfig`` (CLI
 # subcommand entry points that run before ``ServerContext.init``) should
 # import the relevant constant from here rather than hard-coding the
@@ -24,16 +24,16 @@ CliType: TypeAlias = Literal["claude", "copilot", "gemini", "unknown"]
 
 ENV_AI_CLI_TYPE = "AI_CLI_TYPE"
 ENV_AI_CLI_WORKSPACE = "AI_CLI_WORKSPACE"
-ENV_WOPR_WORKSPACE = f"{ENV_PREFIX}WORKSPACE"
-# Legacy alias for ``WOPR_WORKSPACE``. Kept for back-compat with
+ENV_KITT_WORKSPACE = f"{ENV_PREFIX}WORKSPACE"
+# Legacy alias for ``KITT_WORKSPACE``. Kept for back-compat with
 # operator shells that still export the old name. Drop once the
 # 0.x → 1.0 migration window closes.
 ENV_TOOL_KITT_WORKSPACE = "TOOL_KITT_WORKSPACE"
-ENV_WOPR_CATALOG = f"{ENV_PREFIX}CATALOG"
-ENV_WOPR_HOME = f"{ENV_PREFIX}HOME"
-# Set by the generated ``wopr-core/.mcp.json`` to ``${CLAUDE_PLUGIN_ROOT}``.
+ENV_KITT_CATALOG = f"{ENV_PREFIX}CATALOG"
+ENV_KITT_HOME = f"{ENV_PREFIX}HOME"
+# Set by the generated ``kitt-core/.mcp.json`` to ``${CLAUDE_PLUGIN_ROOT}``.
 # Present only when the server runs from a Claude Code plugin install.
-ENV_WOPR_PLUGIN_ROOT = f"{ENV_PREFIX}PLUGIN_ROOT"
+ENV_KITT_PLUGIN_ROOT = f"{ENV_PREFIX}PLUGIN_ROOT"
 
 ENV_CLAUDE_CODE_ENTRYPOINT = "CLAUDE_CODE_ENTRYPOINT"
 ENV_GITHUB_COPILOT_TOKEN = "GITHUB_COPILOT_TOKEN"
@@ -47,7 +47,7 @@ ENV_TOGGL_API_KEY = "TOGGL_API_KEY"
 # Plugin install layout
 # ============================================================================
 #
-# ``wopr build-plugins`` emits the server INSIDE the wopr-core plugin.
+# ``kitt build-plugins`` emits the server INSIDE the kitt-core plugin.
 # These two names are the contract between the generator and the
 # runtime: change them here and both sides move together.
 
@@ -58,7 +58,7 @@ PLUGIN_RESOURCES_DIRNAME = "resources"
 def plugin_resources_root() -> Path | None:
     """Return the bundled resources directory of a plugin install.
 
-    ``None`` when ``WOPR_PLUGIN_ROOT`` is unset, which is every
+    ``None`` when ``KITT_PLUGIN_ROOT`` is unset, which is every
     non-plugin context (source checkout, editable install, pip
     install). Callers treat that as "fall back to the existing
     repo-then-package path arithmetic".
@@ -71,7 +71,7 @@ def plugin_resources_root() -> Path | None:
     immutable, so there is nothing for a config object to add beyond
     an import cycle.
     """
-    raw = os.environ.get(ENV_WOPR_PLUGIN_ROOT, "").strip()
+    raw = os.environ.get(ENV_KITT_PLUGIN_ROOT, "").strip()
     if not raw:
         return None
     return (
@@ -113,7 +113,7 @@ class ServerConfig:
 
     # Workspace paths (checked in priority order by ServerContext)
     ai_cli_workspace: str | None = None
-    wopr_workspace: str | None = None
+    kitt_workspace: str | None = None
 
     # Detected CLI type
     cli_type: CliType = "unknown"
@@ -121,9 +121,9 @@ class ServerConfig:
     # Catalog
     catalog_path: str | None = None
 
-    # WOPR home directory (where global packs, ~/.wopr/LEARNINGS.md, and
-    # ~/.wopr/workspaces.txt live). ``None`` falls back to ``~/.wopr``.
-    wopr_home: str | None = None
+    # KITT home directory (where global packs, ~/.kitt/LEARNINGS.md, and
+    # ~/.kitt/workspaces.txt live). ``None`` falls back to ``~/.kitt``.
+    kitt_home: str | None = None
 
     # External services
     toggl_api_key: str | None = None
@@ -141,12 +141,12 @@ class ServerConfig:
 
         return cls(
             ai_cli_workspace=os.environ.get(ENV_AI_CLI_WORKSPACE),
-            wopr_workspace=(
-                os.environ.get(ENV_WOPR_WORKSPACE)
+            kitt_workspace=(
+                os.environ.get(ENV_KITT_WORKSPACE)
                 or os.environ.get(ENV_TOOL_KITT_WORKSPACE)
             ),
             cli_type=_detect_cli_type(explicit_cli, claude_entrypoint, copilot_token, gemini_key),
-            catalog_path=os.environ.get(ENV_WOPR_CATALOG),
-            wopr_home=os.environ.get(ENV_WOPR_HOME),
+            catalog_path=os.environ.get(ENV_KITT_CATALOG),
+            kitt_home=os.environ.get(ENV_KITT_HOME),
             toggl_api_key=os.environ.get(ENV_TOGGL_API_KEY),
         )
