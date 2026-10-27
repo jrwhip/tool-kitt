@@ -1,0 +1,12 @@
+# Append each turn's prompt + one-line action summary to PROMPT_LOG.md.
+#
+# Claude-only: the handler reads Claude Code's transcript JSONL shape and
+# resolves ~/.claude/projects/<encoded-cwd>/. Neither has a verified
+# Copilot equivalent, so no copilot target is declared.
+name: prompt-log
+description: Append every prompt and response summary to PROMPT_LOG.md (Stop).
+handler: prompt-log-hook.py
+targets:
+  claude:
+    event: Stop
+    matcher: ""

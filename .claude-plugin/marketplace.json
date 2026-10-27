@@ -1,0 +1,70 @@
+{
+  "name": "kitt-marketplace",
+  "owner": {
+    "name": "Jared Whipple"
+  },
+  "description": "KITT: a right-sized agent harness for Claude Code, shipped as one plugin per pack.",
+  "version": "1.0.0-dev.5",
+  "plugins": [
+    {
+      "name": "kitt-core",
+      "source": "./plugins/kitt-core",
+      "description": "Foundation tools: mental models, debugging, todo management, planning",
+      "version": "1.0.0-dev.5"
+    },
+    {
+      "name": "kitt-angular",
+      "source": "./plugins/kitt-angular",
+      "description": "Angular development: component patterns, testing, code review",
+      "version": "1.0.0-dev.5",
+      "keywords": [
+        "frontend",
+        "typescript",
+        "angular"
+      ]
+    },
+    {
+      "name": "kitt-auditors",
+      "source": "./plugins/kitt-auditors",
+      "description": "Skill, command, and subagent quality auditors",
+      "version": "1.0.0-dev.5",
+      "keywords": [
+        "meta",
+        "quality"
+      ]
+    },
+    {
+      "name": "kitt-crew",
+      "source": "./plugins/kitt-crew",
+      "description": "Universal four-role agent crew (scout, coder, tester, auditor): one REQ per run, API-contract-first (OpenAPI or GraphQL), spec-files-as-authority, coverage-gated. For any disciplined dev project (net-new, ongoing iteration, blocker fix, or frontend handoff).",
+      "version": "1.0.0-dev.5",
+      "keywords": [
+        "crew",
+        "workflow",
+        "audit"
+      ]
+    },
+    {
+      "name": "kitt-meta",
+      "source": "./plugins/kitt-meta",
+      "description": "Tools for creating new commands, skills, agents, and hooks, plus capturing hard-won knowledge as reusable skills",
+      "version": "1.0.0-dev.5",
+      "keywords": [
+        "meta",
+        "authoring"
+      ]
+    },
+    {
+      "name": "kitt-python",
+      "source": "./plugins/kitt-python",
+      "description": "Python development: FastAPI, AI integrations (Bedrock, Vertex, Pinecone), testing, packaging",
+      "version": "1.0.0-dev.5",
+      "keywords": [
+        "backend",
+        "python",
+        "ai",
+        "fastapi"
+      ]
+    }
+  ]
+}
