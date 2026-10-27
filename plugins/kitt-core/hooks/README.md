@@ -9,7 +9,7 @@ guaranteed to carry a server bundle for it to run inside via `uv run
 command and `kitt-create-hooks` skill; this directory is the machinery
 those author *for*.
 
-**Scope:** `[CLAUDE]` only. Copilot CLI and Gemini CLI both have real hook systems, and a Copilot port of the capture-skill trigger existed here until P2; it was removed with the rest of KITT's Copilot surface and remains in the quarry if Copilot support returns.
+**Scope:** `[CLAUDE]` only. Copilot CLI and Gemini CLI both have real hook systems, and a Copilot port of the capture-skill trigger existed here until P2; it was removed with the rest of KITT's Copilot surface and can be restored from history if Copilot support returns.
 
 Porting a Claude hook to another CLI is not a config change: the event name, config file, input field casing, output schema, and (for anything that reads the transcript) the transcript format all differ, and none of them are things another CLI's own comments should be trusted to describe accurately. Budget a port as a second program, not a rename.
 
