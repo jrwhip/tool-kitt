@@ -33,8 +33,9 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .product import CLI_PROG, HOME_DIRNAME, LOGGER_NAME, PRODUCT_TITLE
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def _configure_logging() -> None:
@@ -78,7 +79,7 @@ def _workspace_options(*, suppress_defaults: bool) -> argparse.ArgumentParser:
         dest="is_global",
         action="store_true",
         default=argparse.SUPPRESS if suppress_defaults else False,
-        help="Inspect the global install (~/.wopr) instead of the workspace",
+        help=f"Inspect the global install (~/{HOME_DIRNAME}) instead of the workspace",
     )
     return parent
 
@@ -88,17 +89,17 @@ def build_parser() -> argparse.ArgumentParser:
     top_level = _workspace_options(suppress_defaults=False)
     common = _workspace_options(suppress_defaults=True)
     parser = argparse.ArgumentParser(
-        prog="wopr",
+        prog=CLI_PROG,
         parents=[top_level],
         description=(
-            "WOPR: a right-sized agent harness for Claude Code. "
+            f"{PRODUCT_TITLE}: a right-sized agent harness for Claude Code. "
             "Runs as an MCP server when given no subcommand."
         ),
     )
     parser.add_argument(
         "--version", "-v",
         action="version",
-        version=f"wopr {__version__}",
+        version=f"{CLI_PROG} {__version__}",
     )
 
     subparsers = parser.add_subparsers(dest="subcommand", metavar="SUBCOMMAND")

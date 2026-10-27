@@ -20,6 +20,7 @@ from mcp.server.fastmcp import FastMCP
 from .catalog import read_lock_file
 from .config import ServerConfig
 from .context import ServerContext, ToolContext
+from .product import CONFIG_FILENAME, LOGGER_NAME, MCP_SERVER_KEY, PLUGIN_PREFIX
 from .tools import (
     crew_contracts,
     handoff,
@@ -38,7 +39,7 @@ from .tools._workspace_target import (
     resolve_request_workspace,
 )
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 # ============================================================================
@@ -114,9 +115,9 @@ def _register_server_tools(mcp: FastMCP) -> None:
         global_counts = {
             "claude": {
                 "skills": _count_skills_in(home / ".claude" / "skills"),
-                "agents": _count_in_dir(home / ".claude" / "agents", "wopr-*.md"),
+                "agents": _count_in_dir(home / ".claude" / "agents", f"{PLUGIN_PREFIX}*.md"),
                 "commands": _count_in_dir(
-                    home / ".claude" / "commands", "wopr-*.md", recurse=True
+                    home / ".claude" / "commands", f"{PLUGIN_PREFIX}*.md", recurse=True
                 ),
             },
         }
@@ -161,7 +162,7 @@ def _register_server_tools(mcp: FastMCP) -> None:
                 "learnings": (workspace / "LEARNINGS.md").exists(),
                 "agents_md": (workspace / "AGENTS.md").exists(),
                 "claude_md": (workspace / "CLAUDE.md").exists(),
-                "wopr_yml": (workspace / "wopr.yml").exists(),
+                "wopr_yml": (workspace / CONFIG_FILENAME).exists(),
             },
         }
 
@@ -219,7 +220,7 @@ def create_app(
 
     logger.info("Detected CLI type: %s", ctx.cli_type)
 
-    mcp = FastMCP("wopr")
+    mcp = FastMCP(MCP_SERVER_KEY)
 
     # Every tool module registers unconditionally. The prior toolset
     # gated a block of utility tools on an ``extras`` pack lock entry;

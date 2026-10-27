@@ -51,12 +51,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from ..product import LOGGER_NAME
 from ._safe_load import safe_load_json as _safe_load_json
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 _OSV_ENDPOINT = "https://api.osv.dev/v1/query"
 

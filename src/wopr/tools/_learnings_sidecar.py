@@ -36,12 +36,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .. import __version__
+from ..product import LOGGER_NAME
 from . import _embeddings
 from ._embedding_providers import EmbeddingProvider, get_active_provider
 from ._embeddings import SidecarPayload
 from ._learnings_format import LearningEntry, parse_entries
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def _resolve_provider(

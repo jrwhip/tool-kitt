@@ -22,13 +22,14 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from ..product import LOGGER_NAME
 from ._safe_load import safe_load_json as _safe_load_json
 from ._safe_load import safe_load_yaml as _safe_load_yaml
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 # -----------------------------------------------------------------------------

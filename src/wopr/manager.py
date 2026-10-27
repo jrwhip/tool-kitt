@@ -18,8 +18,9 @@ from .catalog import (
     read_lock_file,
     resolve_install_target,
 )
+from .product import LOGGER_NAME
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def cmd_list(workspace: Path, *, is_global: bool = False) -> int:

@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from .._atomic_write import atomic_write_text
 from ..catalog import get_global_home
 from ..context import ToolContext
+from ..product import LOGGER_NAME
 from . import _curator, _embeddings
 from ._data_paths import candidate_data_paths
 from ._embedding_providers import (
@@ -83,7 +84,7 @@ from ._workspace_target import (
 # fixture / runtime / test stories all converge on a single source of
 # truth.
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP

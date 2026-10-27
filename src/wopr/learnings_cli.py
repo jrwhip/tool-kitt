@@ -22,9 +22,10 @@ import logging
 import sys
 from pathlib import Path
 
+from .product import LOGGER_NAME
 from .tools.learnings import append_learnings, learnings_search
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 # ``append_learnings`` and ``learnings_search`` report failure by
 # returning a string that starts with this prefix rather than raising,

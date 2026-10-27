@@ -60,13 +60,14 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
+from ..product import CONFIG_FILENAME, LOGGER_NAME
 from . import _embeddings
 from ._safe_load import safe_load_yaml
 
 if TYPE_CHECKING:
     import numpy as np
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 PROVIDER_ENV_VAR = "WOPR_EMBEDDING_PROVIDER"
 """Env override for the provider choice. Values: ``local`` | ``bedrock``
@@ -79,7 +80,7 @@ KNOWN_PROVIDERS = frozenset({PROVIDER_LOCAL, PROVIDER_BEDROCK, PROVIDER_NONE})
 
 DEFAULT_PROVIDER = PROVIDER_LOCAL
 
-WOPR_YML_FILENAME = "wopr.yml"
+WOPR_YML_FILENAME = CONFIG_FILENAME
 
 LOCAL_PROVIDER_NAME = f"local:{_embeddings.EMBEDDING_MODEL}"
 """Provider-qualified model name the local provider stamps into sidecar

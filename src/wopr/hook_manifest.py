@@ -69,8 +69,9 @@ from typing import Any, Literal
 import yaml
 
 from ._atomic_write import atomic_write_text
+from .product import LOGGER_NAME
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 MANIFEST_SUFFIX = ".HOOK.yaml"
 

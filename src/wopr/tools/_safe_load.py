@@ -25,7 +25,9 @@ from typing import Any
 
 import yaml
 
-logger = logging.getLogger("wopr")
+from ..product import LOGGER_NAME
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def safe_load_json(path: Path) -> dict[str, Any] | None:

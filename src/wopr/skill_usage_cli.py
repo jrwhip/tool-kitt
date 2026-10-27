@@ -24,9 +24,10 @@ from pathlib import Path
 
 from .config import ServerConfig
 from .context import ServerContext
+from .product import LOGGER_NAME
 from .tools import _skill_usage
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 USAGE = (
     "Usage:\n"

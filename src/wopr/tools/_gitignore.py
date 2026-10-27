@@ -28,9 +28,10 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from ..product import LOGGER_NAME
 from ._embeddings import EMBEDDINGS_SIDECAR_FILENAME
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 # Section header used when WOPR creates a new ``.gitignore`` or appends
 # entries to an existing one. Matched on read to detect whether a

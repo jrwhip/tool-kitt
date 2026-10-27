@@ -66,30 +66,32 @@ import yaml
 
 from . import __version__
 from .config import PLUGIN_RESOURCES_DIRNAME, PLUGIN_SERVER_DIRNAME
-from .tools._routing_eval import find_duplicate_descriptions, scan_catalog_skills
 
 # ---------------------------------------------------------------------------
 # Constants: the shape of the emitted tree
 # ---------------------------------------------------------------------------
+from .product import (  # noqa: E402  re-exported for callers and tests
+    CLI_PROG,
+    MARKER_NAME,
+    MARKETPLACE_DESCRIPTION,
+    MARKETPLACE_NAME,
+    MARKETPLACE_OWNER,
+    MCP_SERVER_KEY,
+    PLUGIN_PREFIX,
+    SERVER_ENTRY_POINT,
+)
+from .tools._routing_eval import find_duplicate_descriptions, scan_catalog_skills
 
-MARKER_NAME = ".wopr-generated"
 """Marker file at the marketplace root. Its presence is the ONLY thing
 that authorizes this generator to wipe an existing directory."""
 
-MARKETPLACE_NAME = "wopr-marketplace"
-MARKETPLACE_OWNER = "Jerry"
-MARKETPLACE_DESCRIPTION = (
-    "WOPR: a right-sized agent harness for Claude Code, shipped as one "
-    "plugin per pack."
-)
 PLUGIN_LICENSE = "MIT"
 
 PLUGIN_MANIFEST_DIR = ".claude-plugin"
 PLUGIN_MANIFEST_NAME = "plugin.json"
 MARKETPLACE_MANIFEST_NAME = "marketplace.json"
 MCP_CONFIG_NAME = ".mcp.json"
-MCP_SERVER_KEY = "wopr"
-"""The key this generator writes under ``mcpServers`` in ``.mcp.json``.
+"""``MCP_SERVER_KEY``: the key this generator writes under ``mcpServers`` in ``.mcp.json``.
 
 Half of the runtime tool namespace. :func:`runtime_tool_prefix` is the
 other half's only consumer, so the two cannot drift."""
@@ -100,8 +102,8 @@ CORE_PACK = "_core"
 BOOTSTRAP_SCRIPT_REL = "scripts/bootstrap-serve.sh"
 
 PLUGIN_NAME_OVERRIDES: dict[str, str] = {
-    "_core": "wopr-core",
-    "meta-authoring": "wopr-meta",
+    "_core": f"{PLUGIN_PREFIX}core",
+    "meta-authoring": f"{PLUGIN_PREFIX}meta",
 }
 """Pack directory name -> plugin name, where the default rule does not
 apply. Every other pack becomes ``wopr-<pack>``."""
@@ -196,7 +198,6 @@ justify."""
 # Constants: the server bundle
 # ---------------------------------------------------------------------------
 
-SERVER_ENTRY_POINT = "wopr-serve"
 SERVER_DEPENDENCIES: tuple[str, ...] = (
     "mcp[cli]>=1.0.0,<2",
     "pyyaml>=6.0",
@@ -319,7 +320,7 @@ def to_semver(version: str) -> str:
 
 def plugin_name_for_pack(pack: str) -> str:
     """Return the plugin name for a catalog pack directory name."""
-    return PLUGIN_NAME_OVERRIDES.get(pack, f"wopr-{pack}")
+    return PLUGIN_NAME_OVERRIDES.get(pack, f"{PLUGIN_PREFIX}{pack}")
 
 
 def server_plugin_name() -> str:
@@ -658,12 +659,12 @@ def render_marker(version: str) -> str:
     """Render the marker file that authorizes wipe-and-rewrite."""
     return _dump_json(
         {
-            "generator": "wopr build-plugins",
+            "generator": f"{CLI_PROG} build-plugins",
             "generator_version": version,
             "marketplace": MARKETPLACE_NAME,
             "warning": (
                 "This directory is regenerated in full on every "
-                "`wopr build-plugins` run. Every file is overwritten. "
+                f"`{CLI_PROG} build-plugins` run. Every file is overwritten. "
                 "Edit the catalog, not this tree."
             ),
         }
@@ -686,7 +687,7 @@ Marketplace: `{MARKETPLACE_NAME}` (version {version})
 
 ```
 /plugin marketplace add <path-or-repo>
-/plugin install wopr-core@{MARKETPLACE_NAME}
+/plugin install {server_plugin_name()}@{MARKETPLACE_NAME}
 ```
 
 Install `wopr-core` first: it carries the MCP server every other pack's

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from .catalog import get_global_home
 from .config import CliType, ServerConfig
+from .product import LOGGER_NAME
 
 if TYPE_CHECKING:
     from typing import Any, TypeAlias
@@ -39,7 +40,7 @@ else:
 
     ToolContext = Context
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class WorkspaceNotConfiguredError(RuntimeError):

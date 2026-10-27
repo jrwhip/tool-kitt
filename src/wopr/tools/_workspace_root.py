@@ -74,6 +74,7 @@ import contextlib
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..product import CONFIG_FILENAME
 from ._learnings_format import LEARNINGS_FILENAME
 
 __all__ = [
@@ -86,7 +87,7 @@ __all__ = [
     "has_marker",
 ]
 
-WOPR_YML_FILENAME = "wopr.yml"
+WOPR_YML_FILENAME = CONFIG_FILENAME
 
 #: A directory carrying either of these is a workspace root. Order is
 #: presentation order in error messages only; neither marker outranks

@@ -78,8 +78,9 @@ from typing import Any, Literal, TypeAlias
 
 from .._atomic_write import atomic_write_text
 from ..catalog import get_global_home
+from ..product import LOGGER_NAME
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def is_safe_entry_name(name: str) -> bool:

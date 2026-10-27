@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 from .._atomic_write import atomic_create_text, atomic_write_text
+from ..product import LOGGER_NAME
 from ._data_paths import candidate_data_paths
 from ._errors import ERROR_PREFIX
 from ._target_paths import (
@@ -45,7 +46,7 @@ from ._target_paths import (
     slug_from_target as _slug_from_target,
 )
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 # Trust assumption: the pom.xml files this tool parses live inside the
 # operator's own workspace. They are not adversarial input. If this

@@ -60,6 +60,7 @@ from typing import TYPE_CHECKING, Any
 
 from .. import __version__
 from .._atomic_write import atomic_write_bytes
+from ..product import LOGGER_NAME
 
 # Optional dependencies. ``fastembed`` brings ``onnxruntime`` and the
 # embedding model as transitive deps; ``numpy`` is declared explicitly
@@ -82,7 +83,7 @@ if TYPE_CHECKING:
     # ``from __future__ import annotations``).
     import numpy as np
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 # Pinned local embedding model. The sidecar records the ACTIVE
 # provider's qualified name (``local:<this constant>`` via

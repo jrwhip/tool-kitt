@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, TypeAlias
 
+from .product import ENV_PREFIX
+
 CliType: TypeAlias = Literal["claude", "copilot", "gemini", "unknown"]
 
 
@@ -22,16 +24,16 @@ CliType: TypeAlias = Literal["claude", "copilot", "gemini", "unknown"]
 
 ENV_AI_CLI_TYPE = "AI_CLI_TYPE"
 ENV_AI_CLI_WORKSPACE = "AI_CLI_WORKSPACE"
-ENV_WOPR_WORKSPACE = "WOPR_WORKSPACE"
+ENV_WOPR_WORKSPACE = f"{ENV_PREFIX}WORKSPACE"
 # Legacy alias for ``WOPR_WORKSPACE``. Kept for back-compat with
 # operator shells that still export the old name. Drop once the
 # 0.x → 1.0 migration window closes.
 ENV_TOOL_KITT_WORKSPACE = "TOOL_KITT_WORKSPACE"
-ENV_WOPR_CATALOG = "WOPR_CATALOG"
-ENV_WOPR_HOME = "WOPR_HOME"
+ENV_WOPR_CATALOG = f"{ENV_PREFIX}CATALOG"
+ENV_WOPR_HOME = f"{ENV_PREFIX}HOME"
 # Set by the generated ``wopr-core/.mcp.json`` to ``${CLAUDE_PLUGIN_ROOT}``.
 # Present only when the server runs from a Claude Code plugin install.
-ENV_WOPR_PLUGIN_ROOT = "WOPR_PLUGIN_ROOT"
+ENV_WOPR_PLUGIN_ROOT = f"{ENV_PREFIX}PLUGIN_ROOT"
 
 ENV_CLAUDE_CODE_ENTRYPOINT = "CLAUDE_CODE_ENTRYPOINT"
 ENV_GITHUB_COPILOT_TOKEN = "GITHUB_COPILOT_TOKEN"

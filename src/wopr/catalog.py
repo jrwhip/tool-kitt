@@ -23,8 +23,9 @@ from . import __version__
 from ._atomic_write import atomic_write_text
 from .config import plugin_resources_root
 from .models import LockFileData
+from .product import HOME_DIRNAME, LEGACY_CONFIG_FILENAME, LOCK_FILENAME, LOGGER_NAME
 
-logger = logging.getLogger("wopr")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def get_bundled_catalog_dir(pack_name: str = "_core") -> Path:
@@ -92,7 +93,7 @@ def read_wopr_config(workspace: Path) -> dict[str, Any] | None:
     Returns:
         Parsed config dict, or None if no config file exists.
     """
-    config_file = workspace / ".wopr.yaml"
+    config_file = workspace / LEGACY_CONFIG_FILENAME
     if not config_file.exists():
         return None
 
@@ -274,7 +275,7 @@ def get_global_home() -> Path:
     from .config import ENV_WOPR_HOME
 
     return Path(
-        os.environ.get(ENV_WOPR_HOME, str(Path.home() / ".wopr"))
+        os.environ.get(ENV_WOPR_HOME, str(Path.home() / HOME_DIRNAME))
     ).expanduser().resolve()
 
 
@@ -315,7 +316,7 @@ def read_lock_file(lock_dir: Path) -> LockFileData | None:
     Returns:
         Parsed lock file data, or None if no lock file exists.
     """
-    lock_file = lock_dir / "wopr.lock.yaml"
+    lock_file = lock_dir / LOCK_FILENAME
     if not lock_file.exists():
         return None
 
@@ -361,7 +362,7 @@ def write_lock_file(
     if catalog_source:
         lock_data["catalog_source"] = catalog_source
 
-    lock_file = lock_dir / "wopr.lock.yaml"
+    lock_file = lock_dir / LOCK_FILENAME
     # Atomic write: a crash mid-write leaves the operator with a
     # truncated lock file that breaks ``_load_installed_packs`` (logs
     # at DEBUG and silently returns no packs), which then masks the
