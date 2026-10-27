@@ -38,6 +38,7 @@ from wopr.build_plugins import (
     REWRITTEN_SUFFIXES,
     SERVER_DEPENDENCIES,
     SERVER_ENTRY_POINT,
+    SERVER_LOCK_NAME,
     SOURCE_TOOL_PREFIX,
     BuildPluginsError,
     BuildResult,
@@ -578,6 +579,29 @@ class TestPackSelection:
 
 
 class TestServerBundle:
+    def test_ships_a_lock_that_matches_its_pyproject(self, out_dir: Path):
+        server_dir = out_dir / "wopr-core" / "server"
+        assert (server_dir / SERVER_LOCK_NAME).is_file()
+        result = subprocess.run(
+            ["uv", "lock", "--check", "--project", str(server_dir)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
+
+    def test_a_rebuild_carries_the_previous_lock_across_the_wipe(
+        self, tmp_path: Path
+    ):
+        out = tmp_path / "marketplace"
+        first = build_plugins(out, REPO_ROOT)
+        lock = out / "wopr-core" / "server" / SERVER_LOCK_NAME
+        marker = b"# sentinel: previous lock survives the wipe\n"
+        lock.write_bytes(marker + lock.read_bytes())
+        build_plugins(out, REPO_ROOT)
+        assert first.out_dir == out
+        assert lock.read_bytes().startswith(marker)
+
     def test_package_source_is_present(self, out_dir: Path):
         package = out_dir / "wopr-core" / "server" / "src" / "wopr"
         assert (package / "server.py").is_file()
@@ -842,7 +866,25 @@ class TestCommittedTreeIsCurrent:
             "committed plugins/ has a different file set than a fresh build; "
             f"rerun `{CLI_PROG} build-plugins --out plugins --marketplace-root .`"
         )
-        changed = [rel for rel in fresh if fresh[rel] != stale[rel]]
+        # The lock is resolved against the registry, not derived from the
+        # catalog, so a scratch build may legitimately pin newer versions
+        # than the committed one. Its own check follows.
+        lock_rel = f"{server_plugin_name()}/server/{SERVER_LOCK_NAME}"
+        changed = [
+            rel for rel in fresh if rel != lock_rel and fresh[rel] != stale[rel]
+        ]
         assert not changed, f"committed plugins/ is stale: {changed[:10]}"
         assert result.manifest_path is not None
         assert result.manifest_path.read_bytes() == committed_manifest.read_bytes()
+
+    def test_committed_lock_satisfies_the_committed_pyproject(self):
+        server_dir = REPO_ROOT / "plugins" / server_plugin_name() / "server"
+        if not (server_dir / SERVER_LOCK_NAME).is_file():
+            pytest.skip("this checkout does not host a committed plugins/ tree")
+        result = subprocess.run(
+            ["uv", "lock", "--check", "--project", str(server_dir)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr

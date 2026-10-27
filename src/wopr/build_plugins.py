@@ -58,6 +58,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -100,6 +101,15 @@ CORE_PACK = "_core"
 """The pack that carries the server, the shim, and ``.mcp.json``."""
 
 BOOTSTRAP_SCRIPT_REL = "scripts/bootstrap-serve.sh"
+
+SERVER_LOCK_NAME = "uv.lock"
+"""Lock file shipped beside the bundled server's ``pyproject.toml``.
+
+Written at build time by ``uv lock`` so every install resolves the
+same dependency versions, and so first launch never writes into the
+plugin directory (which, for a marketplace served from git, is a
+checkout). A prior tree's lock is carried across the wipe so a rebuild
+re-locks minimally instead of re-resolving from scratch."""
 
 PLUGIN_NAME_OVERRIDES: dict[str, str] = {
     "_core": f"{PLUGIN_PREFIX}core",
@@ -721,8 +731,9 @@ rights, and provisions its own Python, so nothing else is required.
 On Windows, Claude Code bundles Git Bash, so the bootstrap shim and the
 pack scripts run there unchanged.
 
-First MCP launch resolves the server's dependencies and takes a few
-seconds. Later launches reuse the resolved environment.
+The server ships a `uv.lock`, so first MCP launch installs exactly the
+pinned versions and takes a few seconds. Later launches reuse the
+resolved environment.
 """
 
 
@@ -790,11 +801,16 @@ def _emit_file(source: Path, dest: Path, prefix: str) -> None:
 
 
 def _write_server_bundle(
-    core_dir: Path, repo_root: Path, catalog_root: Path, version: str, prefix: str
+    core_dir: Path,
+    repo_root: Path,
+    catalog_root: Path,
+    version: str,
+    prefix: str,
+    previous_lock: bytes | None = None,
 ) -> int:
     """Copy the server into ``wopr-core/server/``. Returns the file count.
 
-    Three parts, in the layout ``uv run --project`` and
+    Four parts, in the layout ``uv run --project`` and
     :func:`wopr.config.plugin_resources_root` expect:
 
     * ``server/src/wopr/`` - the package source, minus caches. Tests,
@@ -808,6 +824,8 @@ def _write_server_bundle(
       template is as dead as one in a skill body.
     * ``server/pyproject.toml`` - runtime dependencies and the
       ``wopr-serve`` entry point.
+    * ``server/uv.lock`` - the pinned resolution of those dependencies,
+      produced by ``uv lock`` (see :data:`SERVER_LOCK_NAME`).
     """
     server_dir = core_dir / PLUGIN_SERVER_DIRNAME
     count = 0
@@ -832,7 +850,46 @@ def _write_server_bundle(
         count += 1
 
     _write_text(server_dir / "pyproject.toml", render_server_pyproject(version))
-    return count + 1
+    _lock_server_bundle(server_dir, previous_lock)
+    return count + 2
+
+
+def _read_previous_lock(out_dir: Path) -> bytes | None:
+    """The lock a prior build left at ``out_dir``, if any, before the wipe."""
+    lock = (
+        out_dir / server_plugin_name() / PLUGIN_SERVER_DIRNAME / SERVER_LOCK_NAME
+    )
+    return lock.read_bytes() if lock.is_file() else None
+
+
+def _lock_server_bundle(server_dir: Path, previous_lock: bytes | None) -> None:
+    """Write ``server/uv.lock`` with ``uv lock``.
+
+    Seeds the directory with the previous lock first so uv keeps the
+    existing resolution wherever the constraints still allow it; a
+    build therefore changes the lock only when ``SERVER_DEPENDENCIES``
+    or the registry's ability to satisfy them changed.
+    """
+    uv = shutil.which("uv")
+    if uv is None:
+        raise BuildPluginsError(
+            "uv was not found on PATH. build-plugins runs `uv lock` to pin "
+            "the bundled server's dependencies. Install uv: "
+            "https://docs.astral.sh/uv/getting-started/installation/"
+        )
+    if previous_lock is not None:
+        (server_dir / SERVER_LOCK_NAME).write_bytes(previous_lock)
+    result = subprocess.run(
+        [uv, "lock", "--project", str(server_dir)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise BuildPluginsError(
+            f"`uv lock` failed for the bundled server at {server_dir}:\n"
+            f"{result.stderr.strip()}"
+        )
 
 
 def _walk_package_files(package_src: Path) -> list[Path]:
@@ -898,6 +955,7 @@ def build_plugins(
             "the MCP server and cannot be skipped."
         )
 
+    previous_lock = _read_previous_lock(out_dir)
     _prepare_output_dir(out_dir)
 
     # One prefix for the whole tree: `wopr` is the marketplace's only
@@ -922,7 +980,7 @@ def build_plugins(
     )
     file_count += 2
     file_count += _write_server_bundle(
-        core_dir, repo_root, catalog_root, version, prefix
+        core_dir, repo_root, catalog_root, version, prefix, previous_lock
     )
 
     _write_text(

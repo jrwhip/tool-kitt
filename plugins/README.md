@@ -38,5 +38,6 @@ rights, and provisions its own Python, so nothing else is required.
 On Windows, Claude Code bundles Git Bash, so the bootstrap shim and the
 pack scripts run there unchanged.
 
-First MCP launch resolves the server's dependencies and takes a few
-seconds. Later launches reuse the resolved environment.
+The server ships a `uv.lock`, so first MCP launch installs exactly the
+pinned versions and takes a few seconds. Later launches reuse the
+resolved environment.
