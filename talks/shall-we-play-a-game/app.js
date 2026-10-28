@@ -149,7 +149,8 @@ class Player {
     this.el("play")?.addEventListener("click", () => this.play());
     this.el("skip")?.addEventListener("click", () => this.finish());
   }
-  el(name) { return $(`[data-r="${name}"]`, this.root); }
+  // Controls (play, skip, model tag) live in the slide header, outside the replay box, so search the whole slide.
+  el(name) { return $(`[data-r="${name}"]`, this.root.closest(".slide") ?? this.root); }
   load() {
     this.rec = REPLAYS()[this.key] ?? null;
     if (this.rec) this.render();
