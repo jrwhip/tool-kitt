@@ -16,6 +16,7 @@ import yaml
 
 from kitt import _atomic_write
 from kitt.tools import kitt_yml
+from kitt.tools._kitt_yml_kind import KittYmlInfo, classify_kitt_yml_data
 
 # ``workspace`` and ``fake_mcp`` fixtures live in tests/conftest.py.
 from kitt.tools.kitt_yml import (
@@ -1218,3 +1219,318 @@ class TestApiContractSummary:
     def test_absent_section_emits_nothing(self, workspace: Path):
         summary = self._summary(workspace, "project: {slug: x}\n")
         assert "api_contract" not in summary
+
+
+# ---------------------------------------------------------------------------
+# Workspace roots: a container of sibling projects with a ``workspace:`` file
+# ---------------------------------------------------------------------------
+
+_WORKSPACE_YML = (
+    "workspace:\n"
+    "  slug: myproduct\n"
+    "  projects:\n"
+    "    - path: backend\n"
+    "      role: backend\n"
+    "    - path: frontend\n"
+    "      role: frontend\n"
+)
+
+
+class TestWriteKittYmlWorkspaceKind:
+    def test_accepts_workspace_kind(self, workspace: Path):
+        result = write_kitt_yml(str(workspace), _WORKSPACE_YML)
+        assert result.startswith("Wrote")
+        assert (workspace / "kitt.yml").read_text(encoding="utf-8") == _WORKSPACE_YML
+
+    def test_rejects_yml_declaring_both_project_and_workspace(self, workspace: Path):
+        result = write_kitt_yml(
+            str(workspace), "project:\n  slug: a\n" + _WORKSPACE_YML
+        )
+        assert result.startswith("Error")
+        assert "both" in result
+        assert not (workspace / "kitt.yml").exists()
+
+    def test_surfaces_classifier_warnings_on_success(self, workspace: Path):
+        result = write_kitt_yml(
+            str(workspace), _WORKSPACE_YML + "specs:\n  coder_spec: a.md\n"
+        )
+        assert result.startswith("Wrote")
+        assert "Warning:" in result and "`specs`" in result
+        assert (workspace / "kitt.yml").is_file()
+
+    def test_no_warning_suffix_on_a_clean_file(self, workspace: Path):
+        result = write_kitt_yml(str(workspace), _WORKSPACE_YML)
+        assert result == f"Wrote {workspace / 'kitt.yml'}"
+
+    def test_rejects_workspace_with_unknown_role(self, workspace: Path):
+        result = write_kitt_yml(
+            str(workspace),
+            "workspace:\n  slug: p\n  projects:\n    - path: x\n      role: db\n",
+        )
+        assert result.startswith("Error")
+        assert "role" in result
+
+
+class TestSpecStubsRefuseAtWorkspaceRoot:
+    def test_refuses_when_root_file_is_workspace_kind(self, workspace: Path):
+        (workspace / "kitt.yml").write_text(_WORKSPACE_YML, encoding="utf-8")
+        (workspace / "backend").mkdir()
+        _write_fastapi_single_app(workspace / "backend")
+        detection = detect_stack(str(workspace))
+        result = kitt_yml.write_spec_stubs(str(workspace), detection, ".")
+        assert result.startswith("Error")
+        assert "workspace root" in result
+        assert "backend" in result
+        assert not (workspace / "specs").exists()
+
+    def test_refuses_from_detection_alone_before_root_file_exists(
+        self, workspace: Path
+    ):
+        """The init flow calls write_spec_stubs with a detection that may
+        predate the root file landing; the detection's own verdict is enough."""
+        (workspace / "backend").mkdir()
+        _write_fastapi_single_app(workspace / "backend")
+        detection = json.loads(detect_stack(str(workspace)))
+        detection["project_type"] = "workspace"
+        detection["workspace"] = {"members": [{"path": "backend"}]}
+        result = kitt_yml.write_spec_stubs(str(workspace), json.dumps(detection), ".")
+        assert result.startswith("Error")
+        assert "backend" in result
+
+    def test_member_target_still_gets_specs(self, workspace: Path):
+        (workspace / "kitt.yml").write_text(_WORKSPACE_YML, encoding="utf-8")
+        backend = workspace / "backend"
+        backend.mkdir()
+        _write_fastapi_single_app(backend)
+        detection = detect_stack(str(workspace))
+        result = kitt_yml.write_spec_stubs(str(backend), detection, "backend")
+        assert result.startswith("Wrote")
+        assert (backend / "specs" / "coder-spec.md").is_file()
+
+
+class TestStubWritersRefuseAtWorkspaceRoot:
+    def test_tracking_doc_stub_refuses(self, workspace: Path):
+        (workspace / "kitt.yml").write_text(_WORKSPACE_YML, encoding="utf-8")
+        result = kitt_yml.write_tracking_doc_stub(str(workspace))
+        assert result.startswith("Error")
+        assert "workspace kitt.yml" in result
+        assert "backend, frontend" in result
+        assert not (workspace / "implementation-tracking.md").exists()
+
+    def test_handoff_contract_stub_refuses(self, workspace: Path):
+        (workspace / "kitt.yml").write_text(_WORKSPACE_YML, encoding="utf-8")
+        result = kitt_yml.write_handoff_contract_stub(str(workspace))
+        assert result.startswith("Error")
+        assert "workspace kitt.yml" in result
+        assert not (workspace / "frontend-handoff-contract.md").exists()
+
+    def test_stub_writers_reject_invalid_project_file(self, workspace: Path):
+        (workspace / "kitt.yml").write_text("existing: true\n", encoding="utf-8")
+        result = kitt_yml.write_tracking_doc_stub(str(workspace))
+        assert result.startswith("Error")
+        assert "project" in result
+
+
+def _write_angular_consumer(app: Path) -> None:
+    """A standalone Angular app that consumes an OpenAPI contract."""
+    app.mkdir(parents=True, exist_ok=True)
+    (app / "package.json").write_text(
+        json.dumps({
+            "name": "ui",
+            "dependencies": {"@angular/core": "^21.0.0"},
+            "devDependencies": {
+                "@openapitools/openapi-generator-cli": "^7.21.0",
+                "vitest": "^1.0.0",
+            },
+        }),
+        encoding="utf-8",
+    )
+
+
+def _classify(text: str) -> KittYmlInfo:
+    return classify_kitt_yml_data(yaml.safe_load(text))
+
+
+class TestYamlScalar:
+    @pytest.mark.parametrize(
+        "value",
+        ["backend", "apps/api", "2024", "1.0", "true", "no", "null", "on", "Yes",
+         "- x", "a ", "api: v2", "#hash", "x\ty"],
+    )
+    def test_round_trips_through_the_parser_as_the_same_string(self, value: str):
+        emitted = kitt_yml._yaml_scalar(value)
+        assert yaml.safe_load(f"k: {emitted}")["k"] == value
+
+    def test_plain_names_stay_unquoted(self):
+        assert kitt_yml._yaml_scalar("backend") == "backend"
+        assert kitt_yml._yaml_scalar("apps/api-v2") == "apps/api-v2"
+
+
+class TestInferMemberRole:
+    def test_contract_producer_is_backend_regardless_of_framework(self):
+        assert kitt_yml._infer_member_role(
+            {"target_path": "svc", "openapi_role": "producer", "framework": "angular"}
+        ) == ("backend", None)
+
+    def test_contract_consumer_is_frontend_regardless_of_framework(self):
+        assert kitt_yml._infer_member_role(
+            {"target_path": "svc", "openapi_role": "consumer", "framework": "fastapi"}
+        ) == ("frontend", None)
+
+    @pytest.mark.parametrize("framework", ["spring-boot", "fastapi", "flask", "django"])
+    def test_backend_frameworks(self, framework: str):
+        assert kitt_yml._infer_member_role(
+            {"target_path": "x", "framework": framework}
+        ) == ("backend", None)
+
+    @pytest.mark.parametrize("framework", ["angular", "react", "vue", "next"])
+    def test_frontend_frameworks(self, framework: str):
+        assert kitt_yml._infer_member_role(
+            {"target_path": "x", "framework": framework}
+        ) == ("frontend", None)
+
+    def test_test_runner_without_framework_is_tests(self):
+        assert kitt_yml._infer_member_role(
+            {"target_path": "checks", "framework": None, "test_runner": "playwright"}
+        ) == ("tests", None)
+
+    @pytest.mark.parametrize("name", ["tests", "e2e", "QA", "acceptance"])
+    def test_test_suite_directory_names_are_tests(self, name: str):
+        assert kitt_yml._infer_member_role({"target_path": f"a/{name}"}) == ("tests", None)
+
+    def test_unknown_is_other_with_a_todo(self):
+        role, todo = kitt_yml._infer_member_role({"target_path": "tool", "language": "rust"})
+        assert role == "other"
+        assert todo is not None and "could not infer" in todo
+
+
+class TestProposeWorkspaceYml:
+    def test_dot_target_on_container_proposes_workspace_yml(self, workspace: Path):
+        (workspace / "backend").mkdir()
+        _write_spring_boot(workspace / "backend")
+        _write_angular_consumer(workspace / "frontend")
+        detection = detect_stack(str(workspace))
+        assert json.loads(detection)["project_type"] == "container"
+
+        proposed = propose_kitt_yml(detection, ".")
+
+        assert not proposed.startswith("Error"), proposed
+        assert "WORKSPACE file" in proposed
+        info = _classify(proposed)
+        assert info.kind == "workspace"
+        assert info.workspace is not None
+        assert info.workspace.slug == "ws"
+        roles = {m.path: m.role for m in info.workspace.members}
+        assert roles == {"backend": "backend", "frontend": "frontend"}
+
+    def test_bare_repo_named_like_a_test_suite_gets_the_tests_role(self, workspace: Path):
+        e2e = workspace / "e2e"
+        e2e.mkdir()
+        (e2e / ".git").mkdir()
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        info = _classify(proposed)
+        assert info.workspace is not None
+        assert info.workspace.members[0].path == "e2e"
+        assert info.workspace.members[0].role == "tests"
+        assert "TODO: could not infer" not in proposed
+
+    def test_unknown_stack_member_gets_other_with_todo(self, workspace: Path):
+        tool = workspace / "tool"
+        tool.mkdir()
+        (tool / "Cargo.toml").write_text('[package]\nname = "tool"\n', encoding="utf-8")
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        info = _classify(proposed)
+        assert info.workspace is not None
+        assert info.workspace.members[0].role == "other"
+        assert "role: other  # TODO" in proposed
+
+    def test_existing_workspace_keeps_declared_roles_and_flags_gaps(
+        self, workspace: Path
+    ):
+        (workspace / "backend").mkdir()
+        _write_spring_boot(workspace / "backend")
+        docs = workspace / "docs-site"
+        docs.mkdir()
+        (docs / "package.json").write_text(json.dumps({"name": "docs"}), encoding="utf-8")
+        (workspace / "kitt.yml").write_text(
+            "workspace:\n"
+            "  slug: declared-slug\n"
+            "  name: Declared Name\n"
+            "  projects:\n"
+            "    - path: backend\n"
+            "      slug: the-api\n"
+            "      role: tests\n"  # deliberately not what inference would say
+            "    - path: gone\n",
+            encoding="utf-8",
+        )
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+
+        info = _classify(proposed)
+        assert info.kind == "workspace", proposed
+        assert info.workspace is not None
+        assert info.workspace.slug == "declared-slug"
+        assert info.workspace.name == "Declared Name"
+        members = {m.path: m for m in info.workspace.members}
+        assert members["backend"].role == "tests"
+        assert members["backend"].slug == "the-api"
+        # The undeclared child is offered with a TODO; the missing one is commented.
+        assert members["docs-site"].role == "other"
+        assert "not declared" in proposed
+        assert "# - path: gone" in proposed
+        assert "gone" not in [m.path for m in info.workspace.members]
+
+    def test_dot_target_on_single_app_still_proposes_project_yml(self, workspace: Path):
+        _write_fastapi_single_app(workspace)
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        assert _classify(proposed).kind == "project"
+
+    def test_member_target_on_workspace_proposes_project_yml(self, workspace: Path):
+        (workspace / "backend").mkdir()
+        _write_fastapi_single_app(workspace / "backend")
+        (workspace / "kitt.yml").write_text(
+            "workspace:\n  slug: p\n  projects:\n    - path: backend\n", encoding="utf-8"
+        )
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), "backend")
+        info = _classify(proposed)
+        assert info.kind == "project"
+        assert yaml.safe_load(proposed)["project"]["slug"] == "backend"
+
+    def test_quotes_a_member_path_that_needs_quoting(self, workspace: Path):
+        odd = workspace / "api: v2"
+        odd.mkdir()
+        _write_fastapi_single_app(odd)
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        info = _classify(proposed)
+        assert info.kind == "workspace", proposed
+        assert info.workspace is not None
+        assert info.workspace.members[0].path == "api: v2"
+
+    def test_members_named_like_yaml_values_round_trip(self, workspace: Path):
+        for name in ("2024", "true"):
+            (workspace / name).mkdir()
+            _write_fastapi_single_app(workspace / name)
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        assert write_kitt_yml(str(workspace), proposed).startswith("Wrote"), proposed
+        info = _classify(proposed)
+        assert info.workspace is not None
+        assert sorted(m.path for m in info.workspace.members) == ["2024", "true"]
+
+    def test_refuses_when_every_declared_member_is_missing(self, workspace: Path):
+        (workspace / "kitt.yml").write_text(
+            "workspace:\n  slug: p\n  projects:\n    - path: gone\n", encoding="utf-8"
+        )
+        result = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        assert result.startswith("Error")
+        assert "gone" in result
+
+    def test_container_round_trip_then_detects_as_workspace(self, workspace: Path):
+        (workspace / "backend").mkdir()
+        _write_spring_boot(workspace / "backend")
+        _write_angular_consumer(workspace / "frontend")
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+
+        assert write_kitt_yml(str(workspace), proposed).startswith("Wrote")
+
+        after = json.loads(detect_stack(str(workspace)))
+        assert after["project_type"] == "workspace"
+        assert [m["path"] for m in after["workspace"]["members"]] == ["backend", "frontend"]

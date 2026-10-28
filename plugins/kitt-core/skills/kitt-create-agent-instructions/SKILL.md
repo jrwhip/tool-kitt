@@ -25,13 +25,15 @@ Do NOT run during a crew run; this is out-of-band setup.
 </when_to_run>
 
 <procedure>
-1. **Resolve the workspace and target from the OPERATOR's current context.** Same rule as `/kitt-create-yml`: the operator's current Claude Code working directory is the only legitimate source. Do NOT rely on any KITT install state or env var.
+1. **Resolve the workspace and target from the OPERATOR's current context.** Same rule as `/kitt-create-yml`: the operator's current Claude Code working directory is the only legitimate source. Do NOT rely on any KITT install state or env var. A target whose `kitt.yml` has a top-level `workspace` key is a workspace root (the workspace-mode rule under "Path conventions" in `kitt-yml-schema.md`) and gets the root variant below.
 
 2. **Print the resolved workspace and target BEFORE doing anything.** One line up front: `Generating agent-instructions for <absolute target path> (workspace <absolute workspace path>).` Stop and ask if the resolution is wrong.
 
 3. **Call `mcp__plugin_kitt-core_kitt__detect_stack`** with the resolved absolute workspace path.
 
 4. **Draft the four files yourself.** There is no proposal tool; compose the content directly from the detection JSON and, when present, the target's `kitt.yml` and specs. `AGENTS.md` follows the outline in `<objective>` above (project identity, build/test/lint commands, the `kitt.yml`-and-specs pointer, framework patterns, key directories). `CLAUDE.md` and `GEMINI.md` are each a one-line `@AGENTS.md` import. `copilot-instructions.md` is a short self-contained reference (not an `@`-import) pointing at `AGENTS.md`.
+
+   **Root variant.** At a workspace root, `AGENTS.md` follows the workspace shape instead of the single-project outline: one line on what the workspace is; a members table (path, role, slug, one-line purpose, build and test commands per member, taken from `detect_stack`'s `workspace.members` and each member's own `kitt.yml`); how the members relate (who owns the API contract, who consumes the generated client, what the test suite exercises); the rules "read a member's own `AGENTS.md` before editing inside it", "every member is its own git repository, commit inside the member", and "the crew writes to one home member per REQ, named by the REQ's `project:` field"; and where the root `kitt.yml`, root `LEARNINGS.md`, and each member's `kitt.yml` live. Build, test, and lint commands are per member, in the table, not at the top. The pointer files are unchanged, and the Copilot file lands at `<workspace_root>/.github/copilot-instructions.md`.
 
 5. **Show the operator each proposed file verbatim** inside its own fenced markdown block. State explicitly where each file will land:
    - `AGENTS.md` -> `<target_dir>/AGENTS.md`
@@ -49,6 +51,7 @@ Do NOT run during a crew run; this is out-of-band setup.
    - `/kitt-create-yml` if `kitt.yml` is still missing for this target.
    - `/plugin install kitt-crew@kitt-marketplace` (plus the stack pack's plugin) if doctor flagged missing packs.
    - Re-run `/kitt-doctor` to confirm readiness.
+   - At a workspace root: each member still needs its own `AGENTS.md`; offer to run this skill per member.
 </procedure>
 
 <output_format>

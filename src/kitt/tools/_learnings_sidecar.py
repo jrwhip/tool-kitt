@@ -234,6 +234,68 @@ def append_to_sidecar(
         )
 
 
+def _sidecar_mismatch(existing: SidecarPayload, provider: EmbeddingProvider) -> str | None:
+    """Why ``existing`` cannot serve ``provider``, or ``None`` when it can.
+
+    The three provider/format checks shared by the rebuilding loader and
+    the read-only loader. The corpus-hash check stays with each caller
+    because only they know whether entries are already in hand.
+    """
+    if existing.format_version != _embeddings.EMBEDDINGS_SIDECAR_FORMAT_VERSION:
+        return (
+            f"format_version {existing.format_version}; expected "
+            f"{_embeddings.EMBEDDINGS_SIDECAR_FORMAT_VERSION}"
+        )
+    if existing.model_name != provider.name:
+        return f"model {existing.model_name!r}; expected {provider.name!r}"
+    if existing.dimensions != provider.dimensions:
+        return (
+            f"{existing.dimensions}-dim vectors; provider {provider.name} "
+            f"produces {provider.dimensions}"
+        )
+    return None
+
+
+def load_sidecar_if_current(
+    learnings_path: Path,
+    entries: list[LearningEntry],
+    provider: EmbeddingProvider,
+) -> SidecarPayload | None:
+    """Load the sidecar paired with ``learnings_path`` only if it is current.
+
+    The read-only counterpart of :func:`load_or_rebuild_sidecar`: the
+    same five staleness checks, but a stale or missing sidecar yields
+    ``None`` instead of a rebuild. Used for corpora the caller may read
+    but must not write, which is every workspace member's corpus when a
+    search runs from the workspace root. A member owns its own sidecar;
+    the root reading it must not rewrite it, and when the member has
+    configured a different embedding provider the two must not keep
+    overwriting each other's file.
+    """
+    if not _embeddings.EMBEDDINGS_AVAILABLE or not learnings_path.is_file():
+        return None
+    if not entries:
+        return None
+    sidecar_path = _embeddings.resolve_sidecar_path(learnings_path)
+    existing = _embeddings.load_sidecar(sidecar_path)
+    if existing is None:
+        logger.info("No sidecar at %s; read-only load skips it.", sidecar_path)
+        return None
+    reason = _sidecar_mismatch(existing, provider)
+    if reason is None and existing.corpus_hash != _embeddings.corpus_hash(
+        [e.id for e in entries]
+    ):
+        reason = "corpus hash changed"
+    if reason is not None:
+        logger.info(
+            "Sidecar at %s is stale (%s); read-only load skips it rather than rebuild.",
+            sidecar_path,
+            reason,
+        )
+        return None
+    return existing
+
+
 def load_or_rebuild_sidecar(
     learnings_path: Path,
     entries: list[LearningEntry] | None = None,
@@ -279,31 +341,9 @@ def load_or_rebuild_sidecar(
     existing = _embeddings.load_sidecar(sidecar_path)
     if existing is None:
         return build_sidecar(learnings_path, entries=entries, provider=provider)
-    if existing.format_version != _embeddings.EMBEDDINGS_SIDECAR_FORMAT_VERSION:
-        logger.info(
-            "Sidecar at %s has format_version %d; expected %d. Rebuilding.",
-            sidecar_path,
-            existing.format_version,
-            _embeddings.EMBEDDINGS_SIDECAR_FORMAT_VERSION,
-        )
-        return build_sidecar(learnings_path, entries=entries, provider=provider)
-    if existing.model_name != provider.name:
-        logger.info(
-            "Sidecar at %s uses model %r; expected %r. Rebuilding.",
-            sidecar_path,
-            existing.model_name,
-            provider.name,
-        )
-        return build_sidecar(learnings_path, entries=entries, provider=provider)
-    if existing.dimensions != provider.dimensions:
-        logger.info(
-            "Sidecar at %s carries %d-dim vectors; provider %s produces "
-            "%d. Rebuilding.",
-            sidecar_path,
-            existing.dimensions,
-            provider.name,
-            provider.dimensions,
-        )
+    mismatch = _sidecar_mismatch(existing, provider)
+    if mismatch is not None:
+        logger.info("Sidecar at %s is stale (%s). Rebuilding.", sidecar_path, mismatch)
         return build_sidecar(learnings_path, entries=entries, provider=provider)
     if entries is None:
         try:

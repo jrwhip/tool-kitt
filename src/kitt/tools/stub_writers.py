@@ -26,17 +26,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import yaml
-
 from .._atomic_write import atomic_write_text
+from ..product import CONFIG_FILENAME
 from ._data_paths import resolve_data_path
+from ._kitt_yml_kind import KIND_INVALID, load_kitt_yml
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 
 def _read_project_kitt_yml(target_dir: Path) -> dict[str, Any] | str:
-    """Read `<target_dir>/kitt.yml`. Returns the parsed mapping or an error string.
+    """Read `<target_dir>/kitt.yml`. Returns the parsed project mapping or an error string.
 
     Success returns the parsed mapping (a ``dict``). Failure returns a
     string beginning with ``Error:``. Callers narrow with ``isinstance``;
@@ -44,19 +44,26 @@ def _read_project_kitt_yml(target_dir: Path) -> dict[str, Any] | str:
     union, not a pair of optionals smuggling a "exactly one is set"
     invariant the type checker cannot see.
     """
-    yml_path = target_dir / "kitt.yml"
-    if not yml_path.is_file():
+    yml_path = target_dir / CONFIG_FILENAME
+    info = load_kitt_yml(yml_path)
+    if info is None:
         return (
             f"Error: project kitt.yml not found at {yml_path}. "
             "Run /kitt-create-yml first."
         )
-    try:
-        data = yaml.safe_load(yml_path.read_text(encoding="utf-8")) or {}
-    except (OSError, yaml.YAMLError) as e:
-        return f"Error: failed to read or parse {yml_path}: {e}"
-    if not isinstance(data, dict):
-        return f"Error: {yml_path} must contain a YAML mapping at the root."
-    return data
+    if info.kind == KIND_INVALID or info.data is None:
+        return f"Error: {yml_path}: {info.error}"
+    if info.workspace is not None:
+        # A workspace root has no stack, no specs, and no tracking of
+        # its own; every crew artifact lives in a member. Refuse here
+        # rather than land a template the crew would mistake for a
+        # project document.
+        members = ", ".join(member.path for member in info.workspace.members)
+        return (
+            f"Error: {yml_path} is a workspace kitt.yml (members: {members}); "
+            "run this tool against one member project directory."
+        )
+    return info.data
 
 
 def _legacy_field(kitt_yml: dict[str, Any], key: str) -> str | None:

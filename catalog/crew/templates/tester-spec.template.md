@@ -23,7 +23,7 @@ The tester agent reads these before writing any tests.
 | Implementation tracking | `[STACK: e.g. CURRENT_REQUIREMENTS.md]` | Which REQs need coverage, which need disabled stubs, which need nothing. Also carries the pinned `spec_version` and `generator_version`. |
 | Extracted requirements | `[STACK: e.g. LEGACY_REQUIREMENTS.md]` | Acceptance criteria for each REQ |
 | Coder spec | `[STACK: e.g. CODER_SPEC.md]` | What the production code is supposed to look like, the Migration Context for this session, and the coverage gate definition (section 22). |
-| API contract | `[STACK: e.g. /v3/api-docs, specs/openapi.json, schema.graphql]` | Source of truth for operation shapes, status codes or result types, and model types (`api_contract.spec_url` in `kitt.yml`). Tests assert against types generated from the contract, not against hand-copied types. |
+| API contract | `[STACK: e.g. /v3/api-docs, specs/openapi.json, schema.graphql; in a KITT workspace the backend member's, e.g. <workspace_root>/<backend.path>/specs/openapi.json]` | Source of truth for operation shapes, status codes or result types, and model types (`api_contract.spec_url` in `kitt.yml`). Tests assert against types generated from the contract, not against hand-copied types. |
 
 ---
 

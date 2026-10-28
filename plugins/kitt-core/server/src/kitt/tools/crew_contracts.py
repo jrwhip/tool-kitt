@@ -86,6 +86,9 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from ..product import CONFIG_FILENAME
+from ._kitt_yml_kind import find_enclosing_workspace
+
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
@@ -214,6 +217,13 @@ def _validate_frontmatter_dict(
     return errors, warnings
 
 
+# Optional frontmatter key for the workspace-mode exception: a REQ whose
+# home member is the contract's workspace but which may also write
+# into other members. Each entry names the member, its absolute root,
+# and the files inside it; ``files_touched`` itself never leaves the
+# home member. Absent key = single-project contract, no change.
+_ALSO_WRITES_KEY = "also_writes"
+
 # The directory contracts live under, per the layout documented at the
 # top of this module. Its parent is the workspace the contract's
 # relative paths are relative to.
@@ -286,27 +296,34 @@ def _files_touched_entries(frontmatter: dict[str, Any]) -> list[str]:
     return [item.strip() for item in value if isinstance(item, str) and item.strip()]
 
 
-def _scope_errors(files_touched: list[str], workspace: Path | None) -> list[str]:
+def _scope_errors(
+    files_touched: list[str],
+    workspace: Path | None,
+    *,
+    scope: str = "the workspace root",
+    owner: str = "the contract's workspace",
+) -> list[str]:
     """Errors for ``files_touched`` entries that leave the workspace.
 
     Downstream agents read this list as an edit allowlist. An absolute
     path, a ``..`` traversal, or a symlink that lands outside the
     workspace all mean the same thing: the contract authorizes an edit
-    outside the project it was written for.
+    outside the project it was written for. ``scope`` and ``owner`` name
+    the directory in the messages, so the same check reads correctly
+    for an ``also_writes`` member's root.
     """
     errors: list[str] = []
     for entry in files_touched:
         if PurePosixPath(entry).is_absolute() or Path(entry).is_absolute():
             errors.append(
                 f"`files_touched` entry `{entry}` is absolute; entries must be "
-                "relative to the workspace root so downstream agents resolve "
-                "them the same way"
+                f"relative to {scope} so downstream agents resolve them the same way"
             )
             continue
         if ".." in PurePosixPath(entry).parts:
             errors.append(
                 f"`files_touched` entry `{entry}` contains `..`; entries must "
-                "not traverse outside the workspace root"
+                f"not traverse outside {scope}"
             )
             continue
         if workspace is None:
@@ -318,13 +335,16 @@ def _scope_errors(files_touched: list[str], workspace: Path | None) -> list[str]
         if not resolved.is_relative_to(workspace.resolve()):
             errors.append(
                 f"`files_touched` entry `{entry}` resolves to `{resolved}`, "
-                f"outside the contract's workspace `{workspace}`"
+                f"outside {owner} `{workspace}`"
             )
     return errors
 
 
 def _missing_file_warnings(
-    files_touched: list[str], workspace: Path | None
+    files_touched: list[str],
+    workspace: Path | None,
+    *,
+    label: str = "`files_touched`",
 ) -> list[str]:
     """One warning naming every ``files_touched`` entry not on disk.
 
@@ -342,7 +362,7 @@ def _missing_file_warnings(
     if not missing:
         return []
     return [
-        "`files_touched` entries do not exist on disk, assumed net-new; "
+        f"{label} entries do not exist on disk, assumed net-new; "
         f"verify not a typo: {', '.join(f'`{entry}`' for entry in missing)}"
     ]
 
@@ -443,6 +463,118 @@ def _inventory_scope_warnings(
     return warnings
 
 
+def _declared_member_roots(home: Path) -> tuple[Path, set[Path]] | None:
+    """The workspace root above ``home`` and the member dirs it declares.
+
+    ``None`` when no ancestor carries a workspace ``kitt.yml``. Member
+    dirs are resolved so they compare equal to a resolved ``root``.
+    """
+    found = find_enclosing_workspace(home)
+    if found is None:
+        return None
+    workspace_root, section = found
+    roots: set[Path] = set()
+    for _member, member_dir in section.member_dirs(workspace_root):
+        try:
+            roots.add(member_dir.resolve())
+        except OSError:
+            continue
+    return workspace_root, roots
+
+
+def _also_writes_errors(
+    frontmatter: dict[str, Any], workspace: Path | None
+) -> tuple[list[str], list[str]]:
+    """``(errors, warnings)`` for the optional ``also_writes`` block.
+
+    Every entry must name a member, an absolute existing ``root`` that
+    the enclosing workspace ``kitt.yml`` declares as a member, and a
+    non-empty ``files_touched`` list that stays inside that root (the
+    same scope rules ``files_touched`` obeys, applied against the
+    member's root). The home workspace must itself be a declared member
+    of that same workspace; listing it under ``also_writes`` is an
+    error, since its files belong in ``files_touched``. Without the
+    membership check this block would authorize an edit anywhere on
+    disk, which is exactly what the scope rules exist to prevent.
+
+    Missing files inside a member get the same advisory warning the
+    home list gets. When the contract's own workspace could not be
+    resolved, only the shape checks run.
+    """
+    if _ALSO_WRITES_KEY not in frontmatter:
+        return [], []
+    raw = frontmatter[_ALSO_WRITES_KEY]
+    if not isinstance(raw, list):
+        return [f"`{_ALSO_WRITES_KEY}` must be a list of member entries"], []
+    errors: list[str] = []
+    warnings: list[str] = []
+    home = workspace.resolve() if workspace is not None else None
+    declared: tuple[Path, set[Path]] | None = None
+    if home is not None and raw:
+        declared = _declared_member_roots(home)
+        if declared is None:
+            errors.append(
+                f"`{_ALSO_WRITES_KEY}` requires the contract's workspace `{home}` to "
+                f"be a declared member of a workspace root, and no ancestor carries a "
+                f"`{CONFIG_FILENAME}` with a `workspace` block"
+            )
+        elif home not in declared[1]:
+            errors.append(
+                f"`{_ALSO_WRITES_KEY}` requires the contract's workspace `{home}` to "
+                f"be a declared member of `{declared[0] / CONFIG_FILENAME}`, and it is not"
+            )
+    for index, entry in enumerate(raw):
+        where = f"`{_ALSO_WRITES_KEY}[{index}]`"
+        if not isinstance(entry, dict):
+            errors.append(f"{where} must be a mapping with keys `member`, `root`, `files_touched`")
+            continue
+        member = entry.get("member")
+        if not (isinstance(member, str) and member.strip()):
+            errors.append(f"{where} `member` must be a non-empty string")
+            continue
+        label = f"{where} ({member})"
+        root_value = entry.get("root")
+        if not (isinstance(root_value, str) and root_value.strip()):
+            errors.append(f"{label} `root` must be a non-empty absolute path")
+            continue
+        root = Path(root_value).expanduser()
+        if not root.is_absolute():
+            errors.append(f"{label} `root` `{root_value}` is not absolute")
+            continue
+        if not root.is_dir():
+            errors.append(f"{label} `root` `{root_value}` is not an existing directory")
+            continue
+        root = root.resolve()
+        if home is not None and root == home:
+            errors.append(
+                f"{label} names the home member; put its files in `files_touched`"
+            )
+            continue
+        if declared is not None and root not in declared[1]:
+            errors.append(
+                f"{label} `root` `{root}` is not a declared member of "
+                f"`{declared[0] / CONFIG_FILENAME}`"
+            )
+            continue
+        files = entry.get("files_touched")
+        if not isinstance(files, list) or not files:
+            errors.append(f"{label} `files_touched` must be a non-empty list")
+            continue
+        if not all(isinstance(item, str) and item.strip() for item in files):
+            errors.append(f"{label} `files_touched` must contain only non-empty strings")
+            continue
+        cleaned = [item.strip() for item in files]
+        member_scope = f"member `{member}`'s root"
+        for scope_error in _scope_errors(
+            cleaned, root, scope=member_scope, owner=member_scope
+        ):
+            errors.append(f"{label} {scope_error}")
+        warnings.extend(
+            _missing_file_warnings(cleaned, root, label=f"{label} `files_touched`")
+        )
+    return errors, warnings
+
+
 def _consistency_checks(
     frontmatter: dict[str, Any], body: str, workspace: Path | None
 ) -> tuple[list[str], list[str]]:
@@ -454,7 +586,9 @@ def _consistency_checks(
     """
     files_touched = _files_touched_entries(frontmatter)
     errors = _scope_errors(files_touched, workspace)
-    warnings: list[str] = []
+    also_errors, also_warnings = _also_writes_errors(frontmatter, workspace)
+    errors.extend(also_errors)
+    warnings: list[str] = list(also_warnings)
     if files_touched:
         warnings.extend(_missing_file_warnings(files_touched, workspace))
         warnings.extend(_basename_drift_warnings(body, files_touched))

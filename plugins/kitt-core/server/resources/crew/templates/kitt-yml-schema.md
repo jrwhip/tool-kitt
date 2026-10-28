@@ -33,6 +33,26 @@ legacy-migration:   # required only when the legacy-migration pack is in use
 # future packs add their own sections without disturbing existing ones
 ```
 
+A file declares exactly one of `project` or `workspace`. A `project` file (everything above) configures one codebase. A `workspace` file configures a container directory whose children are each their own project; it carries the `workspace` section, optionally `learnings`, and nothing else. Readers tell the two kinds apart by content, never by location; a file with both blocks is invalid.
+
+**Monorepo vs workspace.** A monorepo is one git repository with several apps under `apps/`; each app gets its own `project` `kitt.yml` and the repo root gets none. A workspace is a parent directory of sibling repositories (`backend/`, `frontend/`, `tests/`, each with its own `.git`); each member keeps its own `project` `kitt.yml` and the parent gets a `workspace` `kitt.yml` so a session launched there knows every member.
+
+## Section: `workspace`
+
+Pack-agnostic. Present only in a workspace root's `kitt.yml`; mutually exclusive with `project`. Read by `stack_detect.py` (`project_type: "workspace"`, member list, undeclared and missing children), by `get_workspace_info` (`kitt_yml_kind`, `workspace_config`), and by the learnings read path (a search from the root reads the root corpus plus every member's).
+
+| Field | Required | Type | Notes |
+|---|---|---|---|
+| `slug` | yes | string | Kebab-case identifier for the workspace as a whole. |
+| `name` | optional | string | Human-readable workspace name. |
+| `projects` | yes | list | Non-empty. One entry per member, in display order. |
+| `projects[].path` | yes | string | Member directory relative to this `kitt.yml`. No `..`, not `.`, not absolute; nested paths such as `apps/api` are fine. Declared more than once: invalid. |
+| `projects[].slug` | optional | string | Member identifier; defaults to the kebab-case basename of `path`. REQ files name their home member by this slug. |
+| `projects[].role` | optional | `backend` \| `frontend` \| `tests` \| `other` | Default `other`. Hints at how members relate (the backend owns the API contract, the frontend consumes it, tests exercise both). Any other value is invalid. |
+
+Sections that only mean something in a project file (`specs`, `api_contract`, `openapi`, `legacy-migration`, `requirements`) are ignored with a warning beside `workspace`. `learnings` is honored and governs the root corpus. Spec stubs, tracking-doc stubs, and handoff-contract stubs are per-member and refuse to land at a workspace root.
+
+
 ## Section: `project`
 
 Pack-agnostic. Identifies the project and its top-level directory layout. Read by `stack_detect.py`'s `_summarize_kitt_yml` and by the `propose_kitt_yml` generator.
@@ -127,6 +147,8 @@ Each maps 1:1 onto a harness env var:
 ## Path conventions
 
 - **`<target_dir>`**, wherever it appears in pack documentation (crew agents, orchestrator skill, contracts), means **the directory containing the project's `kitt.yml`** — the project root by default, or the override directory when the operator passes an explicit config path. It is a documentation term resolved from the `kitt.yml` location, not a `kitt.yml` field. Example: the scout contract lands at `<target_dir>/crew-contracts/<REQ-ID>/scout.md`.
+- **Workspace mode.** If the directory the operator launched from (or named as the target) holds a `kitt.yml` whose top-level key is `workspace` and which has no `project` key, the session is in workspace mode. **`<workspace_root>`** is that directory. For a member listed in `workspace.projects`, `<target_dir>` is `<workspace_root>/<projects[i].path>`, and that member's `kitt.yml`, specs, `LEARNINGS.md`, `requirements/`, and `crew-contracts/` live there, exactly as they would if the operator had launched inside the member. A session launched inside a member is never in workspace mode, even when a parent directory holds a workspace file. Crew artifacts (scout contract, tracking document, audit report, appended lessons) always land in the REQ's home member, never at the root; a member's history reads the same whichever directory the run started from.
+- `workspace.projects[].path` is relative to the workspace root's `kitt.yml`.
 - All paths in shared sections (`project`, `specs`) are **relative to project root** unless the field documentation explicitly says otherwise.
 - `api_contract.spec_url` accepts a URL OR a relative path; agents detect the form.
 - `requirements.local.path` is relative to this `kitt.yml`.
@@ -147,3 +169,7 @@ See `kitt.example.yml` (this directory).
 ## Example: frontend project (`apps/demo-admin`)
 
 Same example file covers both shapes. Backend uses the `legacy-migration.schema_path` and `legacy-migration.schema_env_prefix` fields; frontend omits them and sets `handoff_contract` to the same path the backend's audit emits.
+
+## Example: workspace root (`myproduct/`)
+
+Example C in `kitt.example.yml`: a `workspace` file at the parent of `backend/`, `frontend/`, and `tests/`. `/kitt-create-yml` proposes it when the target is `.` at a container of sibling projects; `/kitt-init-project` writes it along with the root `AGENTS.md` and `LEARNINGS.md`, then offers each member its own init.

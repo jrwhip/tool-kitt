@@ -675,3 +675,237 @@ class TestRegister:
     def test_register_registers_expected_tools(self, fake_mcp) -> None:
         crew_contracts.register(fake_mcp)
         assert sorted(fake_mcp.registered) == ["validate_scout_contract"]
+
+
+# ---------------------------------------------------------------------------
+# Workspace mode: the ``also_writes`` exception
+# ---------------------------------------------------------------------------
+
+
+def _also_writes_frontmatter(entries_yaml: list[str]) -> list[str]:
+    lines = _frontmatter(files_touched=["app/game.py"])
+    lines.append("also_writes:")
+    lines.extend(entries_yaml)
+    return lines
+
+
+class TestAlsoWrites:
+    """``files_touched`` stays home-relative; other members go here."""
+
+    def _home_and_sibling(self, tmp_path: Path, *, declare: bool = True) -> tuple[Path, Path]:
+        """``frontend`` (home) and ``backend`` under a workspace root.
+
+        ``declare=False`` leaves the root without a workspace ``kitt.yml``
+        so the membership requirement can be exercised.
+        """
+        home = tmp_path / "frontend"
+        (home / "app").mkdir(parents=True)
+        (home / "app" / "game.py").write_text("x\n", encoding="utf-8")
+        sibling = tmp_path / "backend"
+        (sibling / "app").mkdir(parents=True)
+        (sibling / "app" / "routes.py").write_text("x\n", encoding="utf-8")
+        if declare:
+            (tmp_path / "kitt.yml").write_text(
+                "workspace:\n  slug: p\n  projects:\n"
+                "    - path: frontend\n    - path: backend\n",
+                encoding="utf-8",
+            )
+        return home, sibling
+
+    def test_valid_entry_is_ok(self, tmp_path: Path) -> None:
+        home, sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                f"    root: {sibling}",
+                "    files_touched:",
+                "      - app/routes.py",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is True, result["errors"]
+        assert result["errors"] == []
+
+    def test_root_that_is_not_a_declared_member_is_rejected(self, tmp_path: Path) -> None:
+        home, _sibling = self._home_and_sibling(tmp_path)
+        stranger = tmp_path / "stranger"
+        (stranger / "app").mkdir(parents=True)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: stranger",
+                f"    root: {stranger}",
+                "    files_touched: [app/x.py]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("not a declared member" in e for e in result["errors"])
+
+    def test_root_anywhere_on_disk_is_rejected(self, tmp_path: Path) -> None:
+        """The hole the review found: ``/`` used to pass with zero errors."""
+        home, _sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: x",
+                "    root: /",
+                "    files_touched: [etc/hostname]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("not a declared member" in e for e in result["errors"])
+
+    def test_requires_an_enclosing_workspace_root(self, tmp_path: Path) -> None:
+        home, sibling = self._home_and_sibling(tmp_path, declare=False)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                f"    root: {sibling}",
+                "    files_touched: [app/routes.py]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("workspace root" in e and "no ancestor" in e for e in result["errors"])
+
+    def test_home_must_be_a_declared_member_too(self, tmp_path: Path) -> None:
+        home, sibling = self._home_and_sibling(tmp_path)
+        (tmp_path / "kitt.yml").write_text(
+            "workspace:\n  slug: p\n  projects:\n    - path: backend\n", encoding="utf-8"
+        )
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                f"    root: {sibling}",
+                "    files_touched: [app/routes.py]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("and it is not" in e for e in result["errors"])
+
+    def test_missing_member_files_are_an_advisory_warning(self, tmp_path: Path) -> None:
+        home, sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                f"    root: {sibling}",
+                "    files_touched: [app/routes.py, app/new_module.py]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is True, result["errors"]
+        assert any(
+            "also_writes" in w and "app/new_module.py" in w for w in result["warnings"]
+        )
+
+    def test_member_scope_messages_name_the_member(self, tmp_path: Path) -> None:
+        home, sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                f"    root: {sibling}",
+                "    files_touched: [/etc/passwd]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("member `backend`'s root" in e for e in result["errors"])
+
+    def test_absent_key_changes_nothing(self, tmp_path: Path) -> None:
+        home, _sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_frontmatter(files_touched=["app/game.py"]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is True
+
+    def test_entry_file_escaping_its_member_root_is_rejected(self, tmp_path: Path) -> None:
+        home, sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                f"    root: {sibling}",
+                "    files_touched:",
+                "      - ../frontend/app/game.py",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("(backend)" in e and "`..`" in e for e in result["errors"])
+
+    def test_relative_root_is_rejected(self, tmp_path: Path) -> None:
+        home, _sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                "    root: ../backend",
+                "    files_touched: [app/routes.py]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("not absolute" in e for e in result["errors"])
+
+    def test_missing_root_directory_is_rejected(self, tmp_path: Path) -> None:
+        home, _sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: gone",
+                f"    root: {tmp_path / 'gone'}",
+                "    files_touched: [a.py]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("not an existing directory" in e for e in result["errors"])
+
+    def test_home_member_listed_under_also_writes_is_rejected(self, tmp_path: Path) -> None:
+        home, _sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: frontend",
+                f"    root: {home}",
+                "    files_touched: [app/other.py]",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("home member" in e for e in result["errors"])
+
+    def test_shape_problems_are_named(self, tmp_path: Path) -> None:
+        home, sibling = self._home_and_sibling(tmp_path)
+        path = _write_contract(
+            home / "crew-contracts",
+            frontmatter_lines=_also_writes_frontmatter([
+                "  - member: backend",
+                f"    root: {sibling}",
+                "    files_touched: []",
+                "  - just-a-string",
+            ]),
+        )
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("non-empty list" in e for e in result["errors"])
+        assert any("`also_writes[1]`" in e and "mapping" in e for e in result["errors"])
+
+    def test_not_a_list_is_rejected(self, tmp_path: Path) -> None:
+        home, _sibling = self._home_and_sibling(tmp_path)
+        lines = _frontmatter(files_touched=["app/game.py"])
+        lines.append("also_writes: backend")
+        path = _write_contract(home / "crew-contracts", frontmatter_lines=lines)
+        result = json.loads(validate_scout_contract(str(path)))
+        assert result["ok"] is False
+        assert any("must be a list" in e for e in result["errors"])

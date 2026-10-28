@@ -8,3 +8,5 @@
 {"intent": "the yaml linter is complaining about line forty", "expected_skill": null}
 {"intent": "add a new key to package.json", "expected_skill": null}
 {"intent": "what's the difference between yaml anchors and aliases", "expected_skill": null}
+{"intent": "the children are already configured, now I'm scaffolding the root kitt.yml for a multi-repo workspace", "expected_skill": "kitt-create-yml"}
+{"intent": "write a docker-compose file that starts backend and frontend together", "expected_skill": null}

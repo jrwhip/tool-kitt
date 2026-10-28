@@ -34,6 +34,7 @@ from .tools import (
     stack_detect,
     stub_writers,
 )
+from .tools._kitt_yml_kind import describe_members, load_kitt_yml
 from .tools._workspace_target import (
     InvalidTargetWorkspaceError,
     resolve_request_workspace,
@@ -126,6 +127,21 @@ def _register_server_tools(mcp: FastMCP) -> None:
         lock = read_lock_file(workspace / ".ai-cli")
         installed_packs = lock.get("installed_packs", []) if lock else []
 
+        # Which kind of kitt.yml the workspace carries, and the members a
+        # workspace-kind root declares, reported as ``workspace_config``
+        # (``workspace`` is already the path). Same member shape as detect_stack.
+        root_info = load_kitt_yml(workspace / CONFIG_FILENAME)
+        workspace_block = None
+        if root_info is not None and root_info.workspace is not None:
+            workspace_block = {
+                "slug": root_info.workspace.slug,
+                "name": root_info.workspace.name,
+                "members": [
+                    member.to_json()
+                    for member in describe_members(workspace, root_info.workspace)
+                ],
+            }
+
         result = {
             "workspace": str(workspace),
             "workspace_source": (
@@ -156,6 +172,8 @@ def _register_server_tools(mcp: FastMCP) -> None:
             # tools that owned them; GEMINI.md and
             # .github/copilot-instructions.md went with Gemini and
             # Copilot support.
+            "kitt_yml_kind": None if root_info is None else root_info.kind,
+            "workspace_config": workspace_block,
             "files": {
                 "todos": (workspace / "TO-DOS.md").exists(),
                 "handoff": (workspace / "whats-next.md").exists(),

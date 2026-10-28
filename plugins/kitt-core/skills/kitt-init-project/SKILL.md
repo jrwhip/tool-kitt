@@ -1,6 +1,6 @@
 ---
 name: kitt-init-project
-description: One-shot umbrella skill that takes a project from "no KITT setup" to "AI-ready" in a single operator session. Detects the stack, recommends and surfaces missing packs/MCPs, writes kitt.yml, writes stack-pre-filled spec stubs, writes AGENTS.md plus per-CLI pointer files (CLAUDE.md, GEMINI.md, .github/copilot-instructions.md), and creates an empty LEARNINGS.md. Every write step previews the file content for operator confirmation before landing. Companion to `/kitt-doctor` (read-only) and the individual `/kitt-create-*` skills. Use when taking a project from zero to AI-ready, running the whole KITT onboarding, or setting up kitt end to end.
+description: One-shot umbrella skill that takes a project from "no KITT setup" to "AI-ready" in a single operator session. Detects the stack, recommends and surfaces missing packs/MCPs, writes kitt.yml, writes stack-pre-filled spec stubs, writes AGENTS.md plus per-CLI pointer files (CLAUDE.md, GEMINI.md, .github/copilot-instructions.md), and creates an empty LEARNINGS.md. Every write step previews the file content for operator confirmation before landing. Companion to `/kitt-doctor` (read-only) and the individual `/kitt-create-*` skills. Use when taking a project from zero to AI-ready, running the whole KITT onboarding, or setting up kitt end to end. Use when onboarding a parent folder of sibling repos.
 ---
 
 <objective>
@@ -16,6 +16,12 @@ Make a fresh project AI-ready in one operator command. After this skill runs to 
 - `LEARNINGS.md` created (empty) so the CRAG read path has a target file when the auditor first writes a lesson.
 - A `/kitt-doctor` re-run that returns "ready" or specifically names the remaining human-required edits.
 
+**Workspace root variant.** When the target is the parent directory of several sibling projects (detection says `container`, or a `workspace` `kitt.yml` already exists), the root gets a different set: a `workspace` `kitt.yml` naming the members, a root `AGENTS.md` in the workspace shape below, `CLAUDE.md` and `GEMINI.md` pointers, `.github/copilot-instructions.md`, and a root `LEARNINGS.md` seeded with the union of every member's stack tags. No spec stubs, tracking document, or handoff contract at the root; those are per-member, and each member lacking setup is offered its own init in turn. The workspace `AGENTS.md` outline:
+- What this workspace is, in one line, then a members table: path, role, slug, one-line purpose, how to build and test that member.
+- How the members relate: who owns the API contract (backend), who consumes the generated client (frontend), what `tests/` exercises.
+- Rules for the AI: read a member's own `AGENTS.md` before editing anything inside it; every member is its own git repository, so commit inside the member; the crew writes to one home member per REQ, named by the REQ's `project:` field.
+- Where the root `kitt.yml`, root `LEARNINGS.md`, and each member's `kitt.yml` live.
+
 Without this skill, the operator has to chain `/kitt-doctor` -> `/kitt-create-yml` -> `/kitt-create-agent-instructions` -> manual `/plugin install` of missing packs -> manual `LEARNINGS.md` touch by hand. The empty-shell state that bit dogfooding came from operators stopping partway through that chain.
 </objective>
 
@@ -28,11 +34,11 @@ Do NOT run during a crew run. This is setup, not runtime.
 </when_to_run>
 
 <procedure>
-1. **Resolve the workspace and target from the OPERATOR's current context.** Same rule as the other create skills: the operator's current Claude Code working directory is the only legitimate source. Do NOT use env vars or pinned workspace state. If the operator did not name a target inside the workspace, ask which one; do not infer.
+1. **Resolve the workspace and target from the OPERATOR's current context.** Same rule as the other create skills: the operator's current Claude Code working directory is the only legitimate source. Do NOT use env vars or pinned workspace state. If the operator did not name a target inside the workspace, ask which one; do not infer. A target of `.` at a directory that holds several child projects and no `project` `kitt.yml` (or that already holds a `workspace` `kitt.yml`) is a workspace root (the workspace-mode rule under "Path conventions" in `kitt-yml-schema.md`); use the workspace-root plan and write sequence below.
 
 2. **Print the resolved workspace and target BEFORE doing anything.** One line up front: `Initializing KITT setup for <absolute target path>.` Stop and ask if the resolution is wrong. This step is non-negotiable.
 
-3. **Call `mcp__plugin_kitt-core_kitt__detect_stack`** with the resolved absolute workspace path.
+3. **Call `mcp__plugin_kitt-core_kitt__detect_stack`** with the resolved absolute workspace path. `project_type: "container"` (children recognized, no root file yet) or `"workspace"` (root file present; `workspace.members`, `undeclared_children`, `missing_children` filled in) selects the workspace-root variant.
 
 4. **Build the recommendation by hand**, the same way `/kitt-doctor` step 4 does: read `../../data/doctor-recommendations.yaml` (relative to this skill's base directory) and cross-reference it against the detection JSON, `.ai-cli/kitt.lock.yaml`, and the three CLI MCP configs to get the list of missing packs and missing MCPs. There is no recommendation tool.
 
@@ -43,6 +49,12 @@ Do NOT run during a crew run. This is setup, not runtime.
    - Packs to install: list missing packs and the exact `/plugin install <pack>@kitt-marketplace` commands the operator will run after the skill finishes.
    - MCPs to install: list missing MCPs and their install commands.
    - "Confirm with `yes` to proceed."
+
+   **Workspace-root plan** (when detection says `container` or `workspace`) renders instead:
+   - Resolved workspace root and the members detection found (path, role guess, stack), plus any undeclared or missing children.
+   - Files to be created at `<workspace_root>`: `kitt.yml` (workspace kind, from `propose_kitt_yml(detection, ".")`), `AGENTS.md` (workspace shape), `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `LEARNINGS.md` (seeded with the union of every member's stack tags). No spec stubs, tracking document, or handoff contract at the root.
+   - Members lacking setup (no `kitt.yml`, missing specs, or missing agent-instructions), each with what is missing.
+   - "Confirm with `yes` to write the root files. After they land, each member above is offered its own init in turn."
 
 6. **Wait for operator confirmation.** Default is no; only an explicit yes proceeds.
 
@@ -61,6 +73,8 @@ Do NOT run during a crew run. This is setup, not runtime.
    f. Call `mcp__plugin_kitt-core_kitt__seed_learnings` with the absolute target path and the detected stack tags (`angular`, `fastapi`; pass each that applies). The tool appends curated foundational lessons for the stack to `<target>/LEARNINGS.md` (creating the file if needed) AND registers the workspace in `~/.kitt/workspaces.txt` so cross-workspace reads can aggregate it. Seed entries are marked `seed: true` and bypass the recency cutoff in the CRAG prefilter, so they remain retrievable forever. This is what makes the RAG retrieval path produce useful output on day one of a new project; without seeded entries, the corpus would be empty until the first auditor distillation. Unknown stacks (e.g. Rust, Go) are skipped with no error. If `seed_learnings` returns an error (e.g. no seed files for the detected stack), surface it and continue without seeding rather than abort the whole init.
 
    If any write returns an `Error:` string, surface it, stop the sequence, and tell the operator which step failed. Do not silently continue.
+
+   **7-W (workspace root).** On confirm of the workspace-root plan: (a) `mcp__plugin_kitt-core_kitt__propose_kitt_yml` with target `.` -> `mcp__plugin_kitt-core_kitt__write_kitt_yml` at `<workspace_root>`; the proposal is a `workspace` file, show it verbatim and keep its TODO comments. (b) Skip the spec, tracking-doc, and handoff-contract stubs; the tools refuse at a workspace root by design. (c) Draft and write the root `AGENTS.md` in the workspace shape, the two one-line pointer files, and `.github/copilot-instructions.md`, checking each destination first. (d) `mcp__plugin_kitt-core_kitt__seed_learnings` with `<workspace_root>` and the union of the members' stack tags (`angular`, `fastapi`; whichever apply). (e) **Member loop:** for each member lacking setup, print `Initializing KITT setup for <workspace_root>/<path>.` and run steps 3 to 7 with that member as the target and the member itself as the workspace (it is its own repository, so its Copilot file lands at `<member>/.github/copilot-instructions.md`, not at the container root), each with its own confirm. The operator may skip a member; record the skip in the final report.
 
 8. **On non-confirm: do nothing.** Report no files written.
 
@@ -97,5 +111,6 @@ You MAY NOT:
 - Silently overwrite ANY existing file. If a file is present, surface the error from the tool (or, for the agent-instructions files you write directly, your own existence check) and ask the operator whether to proceed with an explicit overwrite.
 - Install KITT packs (`/plugin install ...`) or external MCPs on the operator's behalf. Those commands change `~/.claude.json` and must remain operator-driven.
 - Create parent directories beyond `<target>/specs/`. The target itself must already exist.
+- Write spec stubs, a tracking document, or a handoff contract at a workspace root. Those are per-member documents; the stub tools refuse the root and so do you.
 - Modify proposed file contents between propose and write. The operator confirms specific strings; those exact strings are what land.
 </role_boundaries>

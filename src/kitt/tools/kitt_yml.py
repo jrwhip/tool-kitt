@@ -25,7 +25,7 @@ import logging
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import yaml
 
@@ -33,6 +33,12 @@ from .._atomic_write import atomic_create_text, atomic_write_text
 from ..product import LOGGER_NAME
 from ._data_paths import candidate_data_paths
 from ._errors import ERROR_PREFIX
+from ._kitt_yml_kind import (
+    KIND_INVALID,
+    KIND_WORKSPACE,
+    classify_kitt_yml_data,
+    kitt_yml_kind,
+)
 from ._target_paths import (
     find_profile as _find_profile,
 )
@@ -333,6 +339,195 @@ def _derive_api_contract_section(
 # -----------------------------------------------------------------------------
 
 
+_BACKEND_FRAMEWORKS = frozenset({"spring-boot", "fastapi", "flask", "django"})
+_FRONTEND_FRAMEWORKS = frozenset({"angular", "react", "vue", "next"})
+
+_ROLE_TODO = "could not infer; set one of backend | frontend | tests | other."
+
+# Directory names that mean "test suite" on their own, for a member no
+# stack detector recognizes (a repo of Playwright specs and shell
+# scripts has no build file to classify).
+_TEST_SUITE_DIRNAMES = frozenset({"tests", "test", "e2e", "qa", "acceptance"})
+
+
+def _infer_member_role(profile: dict[str, Any]) -> tuple[str, str | None]:
+    """Guess a workspace member's role from its stack profile.
+
+    Returns ``(role, todo)``; ``todo`` is set when the guess is the
+    ``other`` fallback and the operator has to decide. The API-contract
+    role is the strongest signal (a producer IS the backend, a consumer
+    IS the frontend); the framework family comes next; a directory with
+    a test runner and no framework is a test suite, and so is an
+    unrecognized directory whose name says so (``tests/``, ``e2e/``).
+    """
+    contract_role = profile.get("openapi_role")
+    if contract_role == "producer":
+        return "backend", None
+    if contract_role == "consumer":
+        return "frontend", None
+    framework = profile.get("framework")
+    if framework in _BACKEND_FRAMEWORKS:
+        return "backend", None
+    if framework in _FRONTEND_FRAMEWORKS:
+        return "frontend", None
+    if profile.get("test_runner") and not framework:
+        return "tests", None
+    basename = Path(_normalize_target_path(str(profile.get("target_path") or ""))).name
+    if not framework and basename.lower() in _TEST_SUITE_DIRNAMES:
+        return "tests", None
+    return "other", _ROLE_TODO
+
+
+_PLAIN_SCALAR = re.compile(r"[A-Za-z0-9_./-][A-Za-z0-9_./ -]*")
+
+
+def _yaml_scalar(value: str) -> str:
+    """Emit ``value`` as a YAML scalar, quoting it when it needs quoting.
+
+    Member paths and names come from directory names and operator
+    edits. A colon or a leading special character would turn the line
+    into a nested mapping or a parse error, and a directory named
+    ``2024``, ``true``, ``no`` or ``null`` would come back from the
+    parser as a number, a boolean or nothing at all. The regex is only
+    the fast path; PyYAML itself has the final say, by round-tripping
+    the bare value and checking it comes back as the same string. JSON
+    double-quoted strings are valid YAML double-quoted scalars.
+    """
+    if _PLAIN_SCALAR.fullmatch(value):
+        try:
+            if yaml.safe_load(value) == value:
+                return value
+        except yaml.YAMLError:
+            pass
+    return json.dumps(value)
+
+
+class _ProposedMember(NamedTuple):
+    path: str
+    slug: str
+    role: str
+    todo: str | None
+
+
+def _propose_workspace_yml(detection: dict[str, Any]) -> str:
+    """The proposed root ``kitt.yml`` for a container of sibling projects.
+
+    Called by :func:`propose_kitt_yml` when the target is ``.`` and the
+    detection classified the root as a ``container`` (no root file yet)
+    or a ``workspace`` (a root file already declares members). Every
+    target in the detection becomes a member; declared roles and slugs
+    are kept when the root file already has them, otherwise the role is
+    inferred from the member's stack. Children the scan found but the
+    root file omits are appended with a TODO; declared members missing
+    on disk are emitted commented out so the operator sees the gap.
+    """
+    workspace_path = detection.get("workspace_path") or "."
+    slug = _slug_from_target(".", workspace_path)
+    name = _name_from_slug(slug)
+
+    declared_roles: dict[str, str] = {}
+    declared_slugs: dict[str, str] = {}
+    undeclared: list[str] = []
+    missing: list[str] = []
+    workspace_block = detection.get("workspace")
+    if isinstance(workspace_block, dict):
+        if isinstance(workspace_block.get("slug"), str) and workspace_block["slug"]:
+            slug = workspace_block["slug"]
+            declared_name = workspace_block.get("name")
+            name = declared_name if isinstance(declared_name, str) and declared_name else name
+        for member in workspace_block.get("members") or []:
+            if not isinstance(member, dict) or not member.get("path"):
+                continue
+            path = _normalize_target_path(str(member["path"]))
+            if isinstance(member.get("role"), str):
+                declared_roles[path] = member["role"]
+            if isinstance(member.get("slug"), str):
+                declared_slugs[path] = member["slug"]
+        undeclared = [
+            _normalize_target_path(str(child))
+            for child in workspace_block.get("undeclared_children") or []
+        ]
+        missing = [
+            _normalize_target_path(str(child))
+            for child in workspace_block.get("missing_children") or []
+        ]
+
+    members: list[_ProposedMember] = []
+    seen: set[str] = set()
+    for profile in detection.get("targets") or []:
+        if not isinstance(profile, dict) or not profile.get("target_path"):
+            continue
+        path = _normalize_target_path(str(profile["target_path"]))
+        if path == "." or path in seen:
+            continue
+        seen.add(path)
+        if path in declared_roles:
+            role, todo = declared_roles[path], None
+        else:
+            role, todo = _infer_member_role(profile)
+        member_slug = declared_slugs.get(path) or _slug_from_target(path, workspace_path)
+        members.append(_ProposedMember(path, member_slug, role, todo))
+
+    # A workspace file needs at least one member; the writer rejects an
+    # empty list, so refuse here rather than show a preview that cannot
+    # land. Missing declared members are not members on disk.
+    if not members and not [path for path in undeclared if path not in seen]:
+        gone = f" Declared but missing on disk: {', '.join(missing)}." if missing else ""
+        return (
+            f"Error: no member projects found under {workspace_path}; a workspace "
+            f"kitt.yml needs at least one child directory that is a project or a git "
+            f"repository.{gone}"
+        )
+
+    lines: list[str] = []
+    lines.append(f"# kitt.yml generated by /kitt-create-yml for the {slug} workspace.")
+    lines.append("# Schema: kitt-yml-schema.md (KITT crew pack; mcp get_pack_template)")
+    lines.append(
+        "# This is a WORKSPACE file: it names the sibling projects under this "
+        "directory. Each member keeps its own project kitt.yml."
+    )
+    lines.append(
+        "# Review every TODO comment; the generator guesses roles from the "
+        "stack it detected and may be wrong."
+    )
+    lines.append("")
+    lines.append("workspace:")
+    lines.append(f"  slug: {_yaml_scalar(slug)}")
+    lines.append(f"  name: {_yaml_scalar(name)}  # TODO: confirm the human-readable name.")
+    lines.append("  projects:")
+    for member in members:
+        lines.append(f"    - path: {_yaml_scalar(member.path)}")
+        lines.append(f"      slug: {_yaml_scalar(member.slug)}")
+        role_line = f"      role: {member.role}"
+        if member.todo:
+            role_line += f"  # TODO: {member.todo}"
+        lines.append(role_line)
+    for path in undeclared:
+        if path in seen:
+            continue
+        seen.add(path)
+        lines.append(f"    - path: {_yaml_scalar(path)}")
+        lines.append(f"      slug: {_yaml_scalar(_slug_from_target(path, workspace_path))}")
+        lines.append(
+            "      role: other  # TODO: found on disk but not declared; "
+            "keep this entry or remove it."
+        )
+    for path in missing:
+        if path in seen:
+            continue
+        lines.append(
+            f"    # - path: {_yaml_scalar(path)}  # TODO: declared but not found on disk."
+        )
+    lines.append("")
+    lines.append("# Optional. Semantic-search configuration for the ROOT corpus")
+    lines.append("# (searches from here also read every member's LEARNINGS.md).")
+    lines.append("# learnings:")
+    lines.append("#   embeddings:")
+    lines.append("#     provider: local  # local | bedrock | none")
+    lines.append("")
+    return "\n".join(lines)
+
+
 def propose_kitt_yml(detection_json: str, target_path: str) -> str:
     """Generate the proposed `kitt.yml` text for a target inside a workspace.
 
@@ -340,6 +535,10 @@ def propose_kitt_yml(detection_json: str, target_path: str) -> str:
         detection_json: Output of ``detect_stack``. JSON string.
         target_path: Path of the target inside the workspace (``.`` for
             the workspace root, ``apps/example-app`` for an Nx app).
+            When the target is ``.`` and the detection classified the
+            root as a ``container`` or ``workspace``, the proposal is a
+            workspace file (a ``workspace:`` block naming the child
+            projects as members) rather than a project file.
 
     Returns:
         The proposed YAML as a string with TODO comments next to fields
@@ -362,6 +561,16 @@ def propose_kitt_yml(detection_json: str, target_path: str) -> str:
         )
     if detection.get("error"):
         return f"Error: detection reports an error: {detection['error']}"
+
+    # The root of a container of sibling projects gets a workspace
+    # file, not a project file. Before this branch the same call
+    # dead-ended with "target '.' not found", because a container
+    # root is never itself a target.
+    if (
+        _normalize_target_path(target_path) == "."
+        and detection.get("project_type") in ("container", "workspace")
+    ):
+        return _propose_workspace_yml(detection)
 
     workspace_path = detection.get("workspace_path") or "."
     profile = _find_profile(detection, target_path)
@@ -553,10 +762,11 @@ def write_kitt_yml(
     # operator-supplied content; if the operator passed it in, they get
     # it back out.
 
-    # YAML must not just parse; it must be a mapping that declares the
-    # ``project`` block. Without this gate, callers can write empty
-    # strings, bare scalars (``"x"``), or lists and the function would
-    # cheerfully accept them.
+    # YAML must not just parse; it must be a mapping that declares a
+    # ``project`` block (a project file) or a ``workspace`` block (a
+    # container root). The classifier owns that rule. Without this
+    # gate, callers can write empty strings, bare scalars (``"x"``),
+    # or lists and the function would cheerfully accept them.
     try:
         parsed = yaml.safe_load(yaml_content)
     except yaml.YAMLError as e:
@@ -566,8 +776,13 @@ def write_kitt_yml(
             "Error: yaml_content must be a mapping (got "
             f"{type(parsed).__name__})."
         )
-    if "project" not in parsed:
-        return "Error: yaml_content is missing the required `project` block."
+    info = classify_kitt_yml_data(parsed)
+    if info.kind == KIND_INVALID:
+        return f"Error: yaml_content is not a valid kitt.yml: {info.error}"
+    # Non-fatal classifier findings (a project-only section beside a
+    # workspace block) ride along on the success string so the operator
+    # sees them at write time, the same way detect_stack surfaces them.
+    warning_suffix = "".join(f"\nWarning: {warning}" for warning in info.warnings)
 
     dest = dest_dir / "kitt.yml"
     # Two paths with different durability properties:
@@ -623,7 +838,7 @@ def write_kitt_yml(
         except OSError as e:
             return f"Error: failed to write {dest}: {e}"
 
-    return f"Wrote {dest}"
+    return f"Wrote {dest}{warning_suffix}"
 
 
 # -----------------------------------------------------------------------------
@@ -677,6 +892,41 @@ def _select_stack_template_sources(
     )
 
 
+def _workspace_root_refusal(
+    dest_dir: Path, detection: dict[str, Any], target_path: str
+) -> str | None:
+    """Why spec stubs must not land in ``dest_dir``, or ``None`` to proceed.
+
+    Coder and tester specs are per-stack documents; a workspace root has
+    no stack. Landing the generic skeletons there would hand the crew a
+    "spec" for a REQ that actually lives in a member. Two signals catch
+    it: a workspace-kind ``kitt.yml`` already on disk, or a detection
+    that classified the root as a workspace while the target is ``.``
+    (the pre-write case, before the root file exists).
+    """
+    members: list[str] = []
+    on_disk = kitt_yml_kind(dest_dir) == KIND_WORKSPACE
+    in_detection = (
+        detection.get("project_type") == "workspace"
+        and _normalize_target_path(target_path) == "."
+    )
+    if not (on_disk or in_detection):
+        return None
+    workspace_block = detection.get("workspace")
+    if isinstance(workspace_block, dict):
+        members = [
+            str(member.get("path"))
+            for member in workspace_block.get("members") or []
+            if isinstance(member, dict) and member.get("path")
+        ]
+    listed = ", ".join(members) if members else "each member listed in its kitt.yml"
+    return (
+        f"Error: {dest_dir} is a workspace root (kitt.yml declares workspace:); "
+        f"spec stubs belong to member projects. Run write_spec_stubs against "
+        f"each member: {listed}."
+    )
+
+
 def write_spec_stubs(
     target_dir: str,
     detection_json: str,
@@ -718,6 +968,10 @@ def write_spec_stubs(
             "Error: detection JSON must be an object "
             f"(got {type(detection).__name__})."
         )
+
+    refusal = _workspace_root_refusal(dest_dir, detection, target_path)
+    if refusal is not None:
+        return refusal
 
     stack, coder_src, tester_src = _select_stack_template_sources(
         detection, target_path

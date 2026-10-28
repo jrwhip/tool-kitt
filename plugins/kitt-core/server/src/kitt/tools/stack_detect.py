@@ -22,9 +22,17 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
-from ..product import LOGGER_NAME
+from ..product import CONFIG_FILENAME, LOGGER_NAME
+from ._kitt_yml_kind import (
+    KIND_INVALID,
+    WorkspaceSection,
+    classify_kitt_yml_data,
+    describe_members,
+    load_kitt_yml,
+)
 from ._safe_load import safe_load_json as _safe_load_json
 from ._safe_load import safe_load_yaml as _safe_load_yaml
+from ._workspace_root import GIT_DIR_NAME
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -68,15 +76,55 @@ class KittYmlInventory:
 
 
 @dataclass
+class WorkspaceMemberDetection:
+    """One declared member of a workspace root, as detection saw it.
+
+    :class:`._kitt_yml_kind.DescribedMember` serialized the same way
+    ``get_workspace_info`` serializes it, plus ``detected``: whether a
+    stack detector recognized the directory. Built explicitly in
+    :func:`_detect_workspace_members`, field by field, so the two
+    shapes are checked against each other by mypy rather than by a
+    comment.
+    """
+
+    path: str
+    abs_path: str
+    slug: str
+    role: str
+    exists: bool
+    has_kitt_yml: bool
+    kitt_yml_kind: str | None
+    has_learnings: bool
+    detected: bool
+
+
+@dataclass
+class WorkspaceDetection:
+    """The workspace block of a root ``kitt.yml``, cross-checked with disk."""
+
+    slug: str
+    name: str | None
+    members: list[WorkspaceMemberDetection] = field(default_factory=list)
+    #: Immediate children the container scan recognizes as projects (a
+    #: stack marker file, or a ``.git`` of their own) that the root file
+    #: does not list. Surfaced so the operator can declare or ignore them.
+    undeclared_children: list[str] = field(default_factory=list)
+    #: Declared member paths that are not directories on disk.
+    missing_children: list[str] = field(default_factory=list)
+
+
+@dataclass
 class StackDetection:
     """Top-level detection result for a workspace."""
 
     workspace_path: str
-    project_type: str  # "single-app", "monorepo", or "container"
+    project_type: str  # "single-app", "monorepo", "container", or "workspace"
     monorepo_type: str | None = None
     targets: list[StackProfile] = field(default_factory=list)
     kitt_yml_inventory: list[KittYmlInventory] = field(default_factory=list)
     detected_external_signals: list[str] = field(default_factory=list)
+    #: Set only when ``project_type`` is ``"workspace"``.
+    workspace: WorkspaceDetection | None = None
 
 
 # -----------------------------------------------------------------------------
@@ -431,8 +479,13 @@ _CONTAINER_SCAN_SKIP_DIRS = frozenset({
 })
 
 
-def _detect_container_children(workspace: Path) -> list[StackProfile]:
+def _detect_container_children(
+    workspace: Path, *, skip_paths: frozenset[str] = frozenset()
+) -> list[StackProfile]:
     """Scan immediate children for sub-project marker files.
+
+    ``skip_paths`` names children (relative POSIX paths) the caller has
+    already profiled; they are not read again.
 
     When the workspace path itself has no recognizable marker files and
     is not a known monorepo, treat it as a container directory and
@@ -442,11 +495,16 @@ def _detect_container_children(workspace: Path) -> list[StackProfile]:
     ``example-webapp/``, and ``example-api/`` rather than returning an
     empty targets list.
 
-    Skips hidden directories and common build / vendor noise. Sorts the
-    output by target path so the result is reproducible. Does NOT
-    recurse further; a detected child that is itself a monorepo
-    (``monorepo_type`` would be set if re-scanned) is left to the
-    operator to re-run against directly.
+    A child that is its own git repository counts as a project even
+    when no stack detector recognizes it (a test-suite repo holding
+    only scripts, say): in a container of sibling repos the ``.git``
+    entry is the operator's own statement that the directory is a
+    project, so it gets a bare profile (``target_path`` only) rather
+    than being dropped. Skips hidden directories and common build /
+    vendor noise. Sorts the output by target path so the result is
+    reproducible. Does NOT recurse further; a detected child that is
+    itself a monorepo (``monorepo_type`` would be set if re-scanned) is
+    left to the operator to re-run against directly.
     """
     children: list[StackProfile] = []
     try:
@@ -461,10 +519,74 @@ def _detect_container_children(workspace: Path) -> list[StackProfile]:
             continue
         if name in _CONTAINER_SCAN_SKIP_DIRS:
             continue
+        rel = child.relative_to(workspace).as_posix()
+        if rel in skip_paths:
+            continue
         profile = _detect_target(child, workspace)
+        if profile is None and (child / GIT_DIR_NAME).exists():
+            profile = StackProfile(target_path=rel)
         if profile is not None:
             children.append(profile)
     return children
+
+
+def _detect_workspace_members(
+    workspace: Path, section: WorkspaceSection
+) -> tuple[WorkspaceDetection, list[StackProfile]]:
+    """Profile each declared member and cross-check the declaration with disk.
+
+    Every existing member becomes a target. A member no detector
+    recognizes still gets a bare profile (``target_path`` only) so
+    ``find_profile`` resolves it and ``propose_kitt_yml`` can offer a
+    generic project file for it; a declared member is a target by
+    the operator's word, not by marker files. Undeclared children are
+    whatever the container scan would have found that the root file
+    omits; the scan is immediate-children only, so a nested declared
+    member such as ``apps/api`` never shows up as undeclared.
+    """
+    members: list[WorkspaceMemberDetection] = []
+    targets: list[StackProfile] = []
+    declared: set[str] = set()
+    missing: list[str] = []
+    for member in describe_members(workspace, section):
+        declared.add(member.path)
+        detected = False
+        if member.exists:
+            profile = _detect_target(member.abs_path, workspace)
+            if profile is None:
+                profile = StackProfile(target_path=member.path)
+            else:
+                detected = True
+            targets.append(profile)
+        else:
+            missing.append(member.path)
+        members.append(
+            WorkspaceMemberDetection(
+                path=member.path,
+                abs_path=str(member.abs_path),
+                slug=member.slug,
+                role=member.role,
+                exists=member.exists,
+                has_kitt_yml=member.has_kitt_yml,
+                kitt_yml_kind=member.kitt_yml_kind,
+                has_learnings=member.has_learnings,
+                detected=detected,
+            )
+        )
+    # Declared members were just profiled; the container scan only has
+    # to look at the children the root file does not mention.
+    undeclared = [
+        child.target_path
+        for child in _detect_container_children(workspace, skip_paths=frozenset(declared))
+    ]
+    detection = WorkspaceDetection(
+        slug=section.slug,
+        name=section.name,
+        members=members,
+        undeclared_children=undeclared,
+        missing_children=missing,
+    )
+    return detection, targets
 
 
 def _summarize_kitt_yml(data: Any) -> dict[str, Any]:
@@ -476,7 +598,26 @@ def _summarize_kitt_yml(data: Any) -> dict[str, Any]:
     """
     if not isinstance(data, dict):
         return {}
-    summary: dict[str, Any] = {}
+    # ``kind`` is on every entry so a skill reading the inventory can tell
+    # a workspace root from a project without re-deriving the rule, and
+    # never mistakes the root file for a project with missing specs.
+    info = classify_kitt_yml_data(data)
+    summary: dict[str, Any] = {"kind": info.kind}
+    if info.kind == KIND_INVALID:
+        summary["error"] = info.error
+        return summary
+    if info.workspace is not None:
+        summary["workspace"] = {
+            "slug": info.workspace.slug,
+            "name": info.workspace.name,
+            "projects": [
+                {"path": m.path, "slug": m.slug, "role": m.role}
+                for m in info.workspace.members
+            ],
+        }
+        if info.warnings:
+            summary["warnings"] = list(info.warnings)
+        return summary
     project = data.get("project") if isinstance(data.get("project"), dict) else {}
     if project:
         summary["project"] = {
@@ -570,7 +711,10 @@ def _detect_kitt_yml_files(workspace: Path) -> list[KittYmlInventory]:
         # previous inline set was a stale six-entry subset that let
         # rglob walk into .angular/, .next/, .gradle/, coverage/ on
         # every scan.
-        if set(path.parts) & _CONTAINER_SCAN_SKIP_DIRS:
+        # Filter on the path INSIDE the workspace. Matching the absolute
+        # path would empty the inventory for any workspace that happens
+        # to sit under a directory named ``build``, ``out``, ``target``...
+        if set(path.relative_to(workspace).parts) & _CONTAINER_SCAN_SKIP_DIRS:
             continue
         # Read via the module's shared helper so a parse failure is
         # logged at WARNING (operator-facing problem) and a read
@@ -680,11 +824,24 @@ def detect_stack(workspace_path: str) -> str:
             "error": f"Workspace path does not exist or is not a directory: {workspace}"
         })
 
-    monorepo_type = _detect_monorepo_type(workspace)
+    # A workspace-kind kitt.yml at the root wins over every other
+    # signal: the operator declared what the children are, so the
+    # targets are the declared members, not whatever marker files a
+    # scan would guess at. An invalid root file is NOT a workspace; it
+    # falls through to the ordinary logic and the inventory entry
+    # carries the parse problem. Monorepo markers are not even consulted
+    # on a workspace root.
+    root_info = load_kitt_yml(workspace / CONFIG_FILENAME)
+    root_workspace = None if root_info is None else root_info.workspace
+    monorepo_type = None if root_workspace is not None else _detect_monorepo_type(workspace)
     targets: list[StackProfile] = []
     project_type = "monorepo" if monorepo_type else "single-app"
+    workspace_detection: WorkspaceDetection | None = None
 
-    if monorepo_type:
+    if root_workspace is not None:
+        project_type = "workspace"
+        workspace_detection, targets = _detect_workspace_members(workspace, root_workspace)
+    elif monorepo_type:
         # Always include root profile (the monorepo's own package.json / build file).
         root_profile = _detect_target(workspace, workspace)
         if root_profile:
@@ -729,6 +886,7 @@ def detect_stack(workspace_path: str) -> str:
         targets=targets,
         kitt_yml_inventory=kitt_yml_inventory,
         detected_external_signals=external_signals,
+        workspace=workspace_detection,
     )
     return json.dumps(asdict(detection), indent=2)
 

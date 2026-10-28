@@ -10,3 +10,5 @@
 {"intent": "assign this ticket to bob and move on", "expected_skill": null}
 {"intent": "what does the auditor role actually do again", "expected_skill": null}
 {"intent": "the migration script needs a rollback step", "expected_skill": null}
+{"intent": "we're running the crew from a workspace root against one member, the frontend, for REQ-UI-3", "expected_skill": "kitt-run-crew"}
+{"intent": "list every member of the github org", "expected_skill": null}

@@ -78,7 +78,7 @@ Two file locations:
 - `<workspace root>/LEARNINGS.md`: committable, per-project. Lives in the project repo, travels with the project.
 - `~/.kitt/LEARNINGS.md`: per-machine, used only when a call names no target workspace at all and none is in scope. The registry at `~/.kitt/workspaces.txt` lets outside-workspace reads aggregate across every known workspace path.
 
-The workspace root is resolved the same way by every learnings tool (seed, append, search, curate): starting at the target path and walking up, the nearest directory carrying `kitt.yml` **or** `LEARNINGS.md` wins, and the search stops at the git toplevel. A repo whose `kitt.yml` files live in subpackages declares where its corpus lives by seeding the directory that should own it; `seed_learnings` writes `LEARNINGS.md` there, and that file is itself the marker. A call that names a target which resolves to no workspace root gets an error listing the searched paths, not a silent write to `~/.kitt/LEARNINGS.md`. The algorithm and its edge cases are documented in `src/kitt/tools/_workspace_root.py`.
+The workspace root is resolved the same way by every learnings tool (seed, append, search, curate): starting at the target path and walking up, the nearest directory carrying `kitt.yml` **or** `LEARNINGS.md` wins, and the search stops at the git toplevel. A repo whose `kitt.yml` files live in subpackages declares where its corpus lives by seeding the directory that should own it; `seed_learnings` writes `LEARNINGS.md` there, and that file is itself the marker. A call that names a target which resolves to no workspace root gets an error listing the searched paths, not a silent write to `~/.kitt/LEARNINGS.md`. A workspace root (a `kitt.yml` with a `workspace` block over sibling repositories) is its own corpus; a search from the root also reads every member's `LEARNINGS.md`, read-only, while the crew still appends to the home member's file. The algorithm and its edge cases are documented in `src/kitt/tools/_workspace_root.py`.
 
 Three new MCP tools register with the KITT server: `mcp__kitt__append_learnings`, `mcp__kitt__learnings_search`, `mcp__kitt__learnings_path`. The auditor uses the first; the orchestrator uses the second during the pre-step; the third is diagnostic.
 
@@ -144,9 +144,9 @@ Doctor surfaces `requirements.local_path_missing` (warning) when `source: local`
 
 ## Project configuration: `kitt.yml`
 
-Every project using the crew has a `kitt.yml` at its project root. The schema is shared across KITT packs (any pack that needs project context reads `kitt.yml`). See:
+Every project using the crew has a `project` `kitt.yml` at its project root. A container of such projects (sibling repositories under one parent) may add a `workspace` `kitt.yml` at the parent so the crew can run from there against one home member while reading the others; see "Path conventions" in the schema. The schema is shared across KITT packs (any pack that needs project context reads `kitt.yml`). See:
 
-- `templates/kitt.example.yml`: worked examples for backend and frontend projects
+- `templates/kitt.example.yml`: worked examples for a backend project, a frontend project, and a workspace root
 - `catalog/crew/templates/kitt-yml-schema.md`: full schema with field tables (ships with the pack; agents fetch it via `get_pack_template`)
 
 The crew does not run without `kitt.yml`. If it is missing, every agent stops and reports.

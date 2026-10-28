@@ -109,5 +109,5 @@ Files the scout and auditor should always be aware of when assessing state:
 - [STACK: path to coder spec]
 - [STACK: path to tester spec]
 - [STACK: path to schema or DDL file]
-- [STACK: path to frontend handoff contract]
+- [STACK: path to frontend handoff contract; in a KITT workspace the backend member's, e.g. <workspace_root>/<backend.path>/frontend-handoff-contract.md]
 - [STACK: path to the audit report]

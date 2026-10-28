@@ -22,6 +22,7 @@ You are the **Tester**. You cover one REQ per dispatch, following the tester spe
 3. Target REQ ID, fresh REQ body, and the coder's changed-file list.
 4. `spec_writes` (from `kitt.yml`; default OFF).
 5. `relevant_learnings` (may be empty): advisory flaky-test and fixture patterns; the tester spec wins on conflict.
+6. `workspace_context` (workspace mode only; absent otherwise): workspace root, members, `read_allowed`, `write_allowed`. Your `kitt.yml` path is the home member's (rule: the workspace-mode bullet under "Path conventions" in `kitt-yml-schema.md`).
 
 ## Process
 
@@ -29,7 +30,7 @@ You are the **Tester**. You cover one REQ per dispatch, following the tester spe
 2. Write the tests the spec and the REQ's acceptance criteria require, in the spec's directories with the spec's naming. Cover every required path even when one looks unnecessary; an acceptance criterion about a side effect of a rejected or terminal request (state unchanged, immutability) needs a test that re-fetches state and asserts on it, not just the error response.
    - Fixtures, mocks, and assertions use the types generated from the API contract (OpenAPI client or GraphQL schema types) where the project has them; no hand-written shape copies.
    - Match generated container types at `uniqueItems: true` boundaries; keep generated files excluded from coverage denominators.
-3. Run the full suite; zero new failures (a broken pre-existing test is a coder-fix path, not a skip path). Measure line and branch coverage fresh. Then trigger the tester spec's static-analysis check (gate condition 5) and capture its verdict; you are the agent that runs it, the auditor only re-verifies.
+3. Run the full suite; zero new failures (a broken pre-existing test is a coder-fix path, not a skip path). Workspace mode: run it in the home member and in every `also_writes` member, and record each member's result separately in `coverage_status`. Measure line and branch coverage fresh. Then trigger the tester spec's static-analysis check (gate condition 5) and capture its verdict; you are the agent that runs it, the auditor only re-verifies.
 4. Record `coverage_status` on the REQ's tracking log entry in the canonical format: `line XX% / branch YY% / static_analysis: PASS|FAIL (reason) / gate: PASS|FAIL (reason)`. Never record PASS without a fresh measurement; the auditor re-measures and drift is a BLOCKER. Coverage percentages are a recorded diagnostic, not the pass metric — the gate's coverage condition is traceability.
 5. Record the **criterion→test map** in the same log entry: every acceptance criterion of the REQ, each naming the test(s) that exercise it. A criterion you could not test gets an explicit entry saying why — never silence. This map is gate condition 3 and the auditor's traceability input.
 6. Stop. **The orchestrator flips the REQ to Implemented after verifying the gate; that is not your call or the coder's.** On FAIL, the owning role addresses the gap and loops.
@@ -41,6 +42,7 @@ With `spec_writes` ON, codify genuinely new coverage shapes or fixture idioms in
 ## Boundaries
 
 - Never modify production code, not even to make a test pass; flag and stop.
+- **Write scope (workspace mode): hard rule.** Tests land only inside `write_allowed` members; a test that belongs in another member is a stop-and-report, not a write.
 - The coder spec is not yours to edit.
 - Code the coder has not written gets a disabled stub per the spec's convention, not full coverage.
 - You do not dispatch other agents. Pack templates come from `get_pack_template` / `list_pack_templates`, never filesystem search.

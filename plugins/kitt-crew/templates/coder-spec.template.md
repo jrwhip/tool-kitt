@@ -141,7 +141,7 @@ This section has three halves. Backend projects fill in 4a. Frontend projects fi
 - [STACK: rule that every endpoint must have documented 2xx, 4xx, and 5xx responses]
 - [STACK: rule against docstrings that just echo the field name]
 - [STACK: build command or CI step that exports a static `openapi.json` file, e.g. "Maven `-Pswagger` profile writes `target/openapi.json`", "CI workflow `.github/workflows/publish-spec.yml`"]
-- [STACK: where the published static spec artifact is consumed by the frontend, e.g. "uploaded to S3 bucket `s3://example-api-specs/<version>/openapi.json`", "fetched from `<backend-repo>` via Maven GAV coordinate", "committed to `specs/openapi.json` in the backend repo"]
+- [STACK: where the published static spec artifact is consumed by the frontend, e.g. "uploaded to S3 bucket `s3://example-api-specs/<version>/openapi.json`", "fetched from `<backend-repo>` via Maven GAV coordinate", "committed to `specs/openapi.json` in the backend repo", or in a KITT workspace "read from the backend member at `<workspace_root>/<backend.path>/specs/openapi.json`"]
 
 **Spec version pinning (lockstep rule):**
 

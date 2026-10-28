@@ -47,6 +47,7 @@ from ._embedding_providers import (
     get_active_provider,
 )
 from ._gitignore import ensure_sidecar_gitignored
+from ._kitt_yml_kind import describe_members, load_kitt_yml
 from ._leak_vet import find_leak_indicators, format_leak_report
 from ._learnings_format import (
     ENTRY_HEADER_RE,
@@ -65,10 +66,14 @@ from ._learnings_sidecar import (
 from ._learnings_sidecar import (
     load_or_rebuild_sidecar as _load_or_rebuild_sidecar,
 )
+from ._learnings_sidecar import (
+    load_sidecar_if_current as _load_sidecar_if_current,
+)
 from ._workspace_root import (
     KITT_YML_FILENAME,
     MARKER_FILENAMES,
     WorkspaceRoot,
+    find_workspace_members,
     find_workspace_root,
     has_marker,
 )
@@ -178,35 +183,45 @@ def _unresolved_workspace_error(workspace: Path, resolution: WorkspaceRoot) -> s
     )
 
 
-def _resolve_read_paths(root: Path | None) -> list[Path]:
-    """In-workspace mode returns the resolved root's file only.
+def _candidate_read_paths(root: Path | None, *, include_missing: bool) -> list[Path]:
+    """Every ``LEARNINGS.md`` a search from ``root`` consults, in read order.
 
-    Outside-workspace mode (``root`` is ``None``) aggregates the system file
-    plus every registered workspace's file. Missing paths are skipped
-    silently.
+    In-workspace mode (``root`` set): the root's own file first, then
+    the file of each member a workspace-kind root declares (see
+    :func:`find_workspace_members`; a project root has no members, so
+    for it this is the root's file alone). Outside-workspace mode
+    aggregates the system file plus every registered workspace's file.
+
+    ``include_missing`` keeps absent paths in the list. The search wants
+    only files it can read; the diagnostic wants the full candidate set
+    so it can show which are missing, and both must agree on what the
+    candidates are, which is why this is one function.
     """
-    if root is not None:
-        return [root / LEARNINGS_FILENAME]
-
     paths: list[Path] = []
-    home = get_global_home()
-    system_file = home / LEARNINGS_FILENAME
-    if system_file.exists():
-        paths.append(system_file)
-    registry = home / WORKSPACES_REGISTRY_FILENAME
-    if registry.exists():
-        try:
-            registry_text = registry.read_text(encoding="utf-8")
-        except OSError:
-            return paths
-        for line in registry_text.splitlines():
-            entry = line.strip()
-            if not entry:
-                continue
-            candidate = Path(entry) / LEARNINGS_FILENAME
-            if candidate.exists():
-                paths.append(candidate)
-    return paths
+    if root is not None:
+        paths.append(root / LEARNINGS_FILENAME)
+        paths.extend(member / LEARNINGS_FILENAME for member in find_workspace_members(root))
+    else:
+        home = get_global_home()
+        paths.append(home / LEARNINGS_FILENAME)
+        registry = home / WORKSPACES_REGISTRY_FILENAME
+        if registry.exists():
+            try:
+                registry_text = registry.read_text(encoding="utf-8")
+            except OSError:
+                registry_text = ""
+            for line in registry_text.splitlines():
+                entry = line.strip()
+                if entry:
+                    paths.append(Path(entry) / LEARNINGS_FILENAME)
+    if include_missing:
+        return paths
+    return [path for path in paths if path.exists()]
+
+
+def _resolve_read_paths(root: Path | None) -> list[Path]:
+    """The readable subset of :func:`_candidate_read_paths` for a search."""
+    return _candidate_read_paths(root, include_missing=False)
 
 
 def _ensure_workspace_registered(workspace: Path) -> RegistrationResult:
@@ -585,6 +600,13 @@ async def learnings_search(
     if root is not None:
         _ensure_workspace_registered(root)
 
+    # Inside a workspace only the root's own sidecar may be (re)built
+    # by this search; member corpora are read with their sidecars as
+    # they are. ``None`` keeps the outside-workspace behavior.
+    writable_sources: frozenset[Path] | None = (
+        frozenset({root / LEARNINGS_FILENAME}) if root is not None else None
+    )
+
     entries: list[LearningEntry] = []
     for path in _resolve_read_paths(root):
         try:
@@ -614,7 +636,11 @@ async def learnings_search(
         if provider is not None and provider.available():
             try:
                 sem_hits = _semantic_top_n(
-                    entries, req_summary, limit // 2 or 1, provider
+                    entries,
+                    req_summary,
+                    limit // 2 or 1,
+                    provider,
+                    writable_sources=writable_sources,
                 )
             except (OSError, ValueError, RuntimeError, ImportError) as e:
                 logger.warning(
@@ -644,6 +670,8 @@ def _semantic_top_n(
     req_summary: str,
     limit: int,
     provider: EmbeddingProvider,
+    *,
+    writable_sources: frozenset[Path] | None = None,
 ) -> list[LearningEntry]:
     """Rank ``entries`` by cosine similarity to ``req_summary``; top-N.
 
@@ -659,6 +687,13 @@ def _semantic_top_n(
     - no entries have a usable sidecar (load failed, model mismatch,
       hash drift the rebuild path could not resolve),
     - the query embedding call fails.
+
+    ``writable_sources`` names the corpora whose sidecar this search
+    may rebuild when stale; every other source is loaded read-only and
+    skipped when stale. ``None`` means every source may be rebuilt
+    (the outside-workspace aggregate). A search from a workspace root
+    passes the root's own file so member sidecars are never written
+    by anyone but their owner.
 
     Logs at INFO/WARNING for each skip reason so operators have
     visibility into why semantic results may be smaller than expected.
@@ -686,15 +721,21 @@ def _semantic_top_n(
     aggregated_entries: list[LearningEntry] = []
     matrices: list[Any] = []
     for source_path, source_entries in by_source.items():
-        sidecar = _load_or_rebuild_sidecar(
-            source_path, entries=source_entries, provider=provider
-        )
+        if writable_sources is None or source_path in writable_sources:
+            sidecar = _load_or_rebuild_sidecar(
+                source_path, entries=source_entries, provider=provider
+            )
+        else:
+            sidecar = _load_sidecar_if_current(
+                source_path, entries=source_entries, provider=provider
+            )
         if sidecar is None:
             continue
         if sidecar.model_name != provider.name:
-            # _load_or_rebuild_sidecar should have rebuilt on mismatch;
-            # if we still see the wrong model, the rebuild failed.
-            # Skip rather than mix incompatible vectors.
+            # Both loaders refuse to hand back a sidecar built for another
+            # model (the rebuilding one rebuilds, the read-only one returns
+            # None), so reaching here means a rebuild failed. Skip rather
+            # than mix incompatible vectors.
             logger.warning(
                 "Sidecar for %s uses model %r; expected %r. Skipping "
                 "semantic ranking for that source.",
@@ -787,32 +828,17 @@ async def learnings_path(
     root = resolution.root
     in_workspace = resolution.found
 
-    # Enumerate the FULL candidate set for reads, then annotate each
-    # with present/absent + populated/empty. ``_resolve_read_paths``
-    # drops missing entries silently which obscures the misconfigured-
-    # vs-empty distinction; recompute the full list here for reporting.
-    candidate_reads: list[Path] = []
-    if root is not None:
-        candidate_reads.append(root / LEARNINGS_FILENAME)
-    else:
-        home = get_global_home()
-        candidate_reads.append(home / LEARNINGS_FILENAME)
-        registry = home / WORKSPACES_REGISTRY_FILENAME
-        if registry.exists():
-            try:
-                registry_text = registry.read_text(encoding="utf-8")
-            except OSError:
-                registry_text = ""
-            for line in registry_text.splitlines():
-                entry = line.strip()
-                if entry:
-                    candidate_reads.append(Path(entry) / LEARNINGS_FILENAME)
+    # The FULL candidate set, missing entries included, from the same
+    # function the search uses, so the diagnostic cannot drift from the
+    # behavior it describes; present/absent is annotated below.
+    candidate_reads = _candidate_read_paths(root, include_missing=True)
 
     lines = [
         f"workspace: {workspace}",
         f"workspace_root: {root if root is not None else '(none found)'}",
         f"in_workspace: {in_workspace}",
     ]
+    lines.extend(_workspace_kind_lines(root))
     if root is None:
         lines.append(f"searched: {', '.join(str(p) for p in resolution.searched)}")
         if resolution.git_toplevel is not None:
@@ -865,6 +891,28 @@ async def learnings_path(
 
     lines.extend(_embeddings_status_lines(root, write_path))
     return "\n".join(lines)
+
+
+def _workspace_kind_lines(root: Path | None) -> list[str]:
+    """``kitt_yml_kind`` and, for a workspace root, its declared members.
+
+    Members are listed whether or not they exist on disk, flagged
+    either way, so an operator can see a declared-but-missing member
+    here instead of wondering why its lessons never show up.
+    """
+    if root is None:
+        return []
+    info = load_kitt_yml(root / KITT_YML_FILENAME)
+    if info is None:
+        return ["kitt_yml_kind: (none; LEARNINGS.md is the root marker)"]
+    lines = [f"kitt_yml_kind: {info.kind}"]
+    if info.workspace is None:
+        return lines
+    lines.append("workspace_members:")
+    for member in describe_members(root, info.workspace):
+        state = "exists" if member.exists else "missing"
+        lines.append(f"  - {member.abs_path}  [declared, {state}]")
+    return lines
 
 
 def _embeddings_status_lines(root: Path | None, write_path: Path | None) -> list[str]:
@@ -960,7 +1008,10 @@ def seed_learnings(target_workspace_path: str, stack_tags: list[str]) -> str:
     ``kitt.yml`` files live in subpackages, seeding the repo root is
     what makes later ``append_learnings`` and ``learnings_search``
     calls from the repo root resolve there (see
-    :mod:`._workspace_root`).
+    :mod:`._workspace_root`). For a workspace root (a ``kitt.yml``
+    with a ``workspace`` block), pass the union of every member's
+    stack tags: the root corpus is read alongside the members' and
+    should carry the lessons that apply across them.
 
     Args:
         target_workspace_path: Absolute path to the directory that
