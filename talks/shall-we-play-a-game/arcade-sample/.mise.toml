@@ -1,0 +1,7 @@
+# Arcade pins its own Node. The parent workspace pins Node 20, which Angular
+# 22 does not support; this file overrides that for anything run from inside
+# the arcade tree. Python is pinned separately in backend/.python-version and
+# provisioned by uv, not mise.
+
+[tools]
+node = "24"

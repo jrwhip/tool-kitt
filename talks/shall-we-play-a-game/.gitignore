@@ -4,3 +4,7 @@ fixture/.angular
 fixture-configured/node_modules
 fixture-configured/dist
 fixture-configured/.angular
+arcade-sample/node_modules
+arcade-sample/dist
+arcade-sample/.angular
+arcade-sample/coverage

@@ -1,0 +1,34 @@
+project:
+  slug: arcade
+  name: WOPR Arcade
+  target_source_root: src/app
+  test_root: src/app
+  build_file: package.json
+
+specs:
+  coder_spec: specs/coder-spec.md
+  tester_spec: specs/tester-spec.md
+  audit_report: AUDIT_REPORT.md
+  spec_writes: false
+
+api_contract:
+  kind: graphql
+  spec_url: amplify/data/resource.ts
+  pinned_generator_version: aws-amplify 6.22.0
+
+requirements:
+  source: local
+  local:
+    path: requirements
+
+# Which model each crew role runs on, and how that moves with the requirement's
+# complexity (scout contract file count). Every role names its own model.
+crew:
+  models:
+    scout: haiku
+    coder: sonnet
+    tester: sonnet
+    auditor: sonnet
+  escalation:
+    roles: [coder, auditor]
+    high_at_files: 6

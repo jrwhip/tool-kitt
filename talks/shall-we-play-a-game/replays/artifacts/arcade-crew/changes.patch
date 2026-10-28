@@ -1,0 +1,143 @@
+diff --git i/.gitignore w/.gitignore
+index 572b863..9f0abd0 100644
+--- i/.gitignore
++++ w/.gitignore
+@@ -2,3 +2,7 @@ node_modules
+ dist
+ .angular
+ coverage
++
++# KITT (do not edit between markers)
++LEARNINGS.embeddings.npz
++# /KITT
+diff --git i/LEARNINGS.md w/LEARNINGS.md
+index 562e9bc..c064247 100644
+--- i/LEARNINGS.md
++++ w/LEARNINGS.md
+@@ -554,3 +554,22 @@ What happened: REQ-ARC-6's `services/joshua.py` reported 100% line and 100% bran
+ Why it matters: a coverage percentage is a claim about which statements/branches executed, not about the order two independently-covered call sites executed in relative to each other. Treating 100%/100% as evidence of correctness for concurrency/ordering-sensitive code (anything touching `asyncio.create_task`, shared mutable state, or two racing writers) is a category error the gate itself cannot flag.
+ 
+ Pattern to encode: when auditing any fire-and-forget/task-spawning code path, do not let a high coverage number substitute for manually tracing statement order across the spawn site and the task body — specifically check whether any caller-side code mutates state the spawned task itself is about to account for, and prefer reproducing the actual runtime ordering with a throwaway script over trusting that "every line ran" implies "ran in the right order."
++
++
++## LRN-2026-10-28-a: A "pure" rules function that returns a module-level constant by reference lets callers corrupt the rules
++
++```meta
++date: 2026-10-28
++project: arcade
++stack: [typescript, vitest, amplify-gen2]
++req: [REQ-ARC-3]
++auditor_run: AUDIT_REPORT.md@2026-10-28
++severity: warning
++origin: crew-auditor
++```
++
++**What happened.** A pure game-rules module returned the winning line inside each new state by reference to its own `WINNING_LINES` table. The table was only `readonly` at the type level. The separate read function deep-copied and froze, but the move function did not. 100% coverage and 16 per-line tests passed, since every test compared the line with `toEqual` and none mutated it.
++
++**Why it matters.** Types do not stop runtime writes. One caller mutating a returned `result.line` changes win detection for every later game in the process. Tests that only assert equality cannot see aliasing.
++
++**Pattern to encode.** When an authority module returns data derived from a module-level constant table, either freeze the table (and its rows) at definition or copy on return. Add one test that mutates a returned value and then re-runs the rule. Review every return path of a "pure" function for shared references, not only the read API.
+diff --git i/angular.json w/angular.json
+index 4f1f213..59a5f04 100644
+--- i/angular.json
++++ w/angular.json
+@@ -96,7 +96,8 @@
+         "test": {
+           "builder": "@angular/build:unit-test",
+           "options": {
+-            "runnerConfig": "vitest.config.ts"
++            "runnerConfig": "vitest.config.ts",
++            "include": ["**/*.spec.ts", "../amplify/**/*.spec.ts"]
+           }
+         },
+         "lint": {
+diff --git i/implementation-tracking.md w/implementation-tracking.md
+index f1e12f4..f7b48a8 100644
+--- i/implementation-tracking.md
++++ w/implementation-tracking.md
+@@ -1,6 +1,6 @@
+ # WOPR Arcade - Implementation Tracking
+ 
+-> **Last updated:** 2026-09-26 (fresh rebuild; baseline set, nothing built)
++> **Last updated:** 2026-10-28 (REQ-ARC-3 crew run: rules module implemented, audit UNBLOCKED; all other REQs unbuilt)
+ > **Scope:** Full app per `requirements/REQ-ARC-1` through `REQ-ARC-10`.
+ > **Status legend:** `⏳ Pending`, `🔄 In Progress`, `✅ Implemented`, `❌ Out of Scope`
+ > **Spec version pinned:** `@aws-amplify/backend` (version recorded at scaffold)
+@@ -19,6 +19,18 @@
+   - Backend deploys go to the Amplify sandbox in the default AWS profile (account 019918485675). Unit tests never touch the network; e2e tests run against the deployed sandbox.
+   - JOSHUA is a reserved callsign from REQ-ARC-1 onward (REQ-ARC-10 AC8), so the identity layer refuses it from the start rather than retrofitting.
+ 
++## Session Intake (2026-10-28) — supersedes the 2026-09-26 intake where they conflict
++
++- **Run type:** (1) crew run (scout, coder, tester, auditor; no designer, `kitt.yml` declares no `specs.design_spec`).
++- **Scope:** REQ-ARC-3 only.
++- **Structural context (operator):**
++  - This is a sample build in a scratch copy of the project at its setup commit. There is no AWS account, no Amplify sandbox, no deploy, and no `ampx` in this copy; never run any of them. (Overrides the 2026-09-26 sandbox/account and e2e-against-sandbox decisions.)
++  - Implement REQ-ARC-3 as a pure TypeScript rules module under `amplify/shared/` (the module the server Lambdas will call), with unit tests run through Vitest in Node. A client-side move-handling layer is out of scope.
++  - The dependency REQ-ARC-2 is pending by design in this sample; treat that as accepted, not as a blocker.
++- **Models:** pack defaults per `kitt.yml` `crew.models` (scout haiku; coder, tester, auditor sonnet). The 2026-09-26 all-Opus instruction does not apply to this session.
++- **Optional hooks:** prompt-log and git-branch-guard both declined; none registered.
++- **spec_writes:** off.
++
+ ---
+ 
+ ## Tech Stack
+@@ -43,7 +55,7 @@
+ |---|---|---|---|
+ | REQ-ARC-1 | Identity and callsigns | ⏳ Pending | |
+ | REQ-ARC-2 | Matchmaking | ⏳ Pending | |
+-| REQ-ARC-3 | Game rules and server authority | ⏳ Pending | |
++| REQ-ARC-3 | Game rules and server authority | ✅ Implemented | REQ review: approved 2026-10-28, 1 round. Coverage gate passed 2026-10-28; audit UNBLOCKED 2026-10-28 (`AUDIT_REPORT.md`). Scope: pure rules module `amplify/shared/game-rules.ts`. **Deferred:** AC5's "source of truth over any live notification" clause has no code here (no notification layer exists); it lands with whichever REQ builds the server/live-notification layer (operator to assign; REQ-ARC-4 "Live state" is the likely home). |
+ | REQ-ARC-4 | Live state and disconnect resilience | ⏳ Pending | |
+ | REQ-ARC-5 | Ratings, history, and leaderboard | ⏳ Pending | |
+ | REQ-ARC-6 | JOSHUA, the AI host | ⏳ Pending | |
+@@ -56,13 +68,36 @@
+ 
+ ## Gap Analysis (Latest Session)
+ 
+-Not run yet. The scout fills this at the start of each crew run.
++| REQ ID | Baseline status | Codebase reality (2026-10-28) | Verdict |
++|---|---|---|---|
++| REQ-ARC-3 | ⏳ Pending at scout time; now ✅ Implemented | Scout (2026-10-28, pre-build): no game code existed, ALIGNED with ⏳ Pending. Closed out 2026-10-28: `amplify/shared/game-rules.ts` + `amplify/shared/game-rules.spec.ts` (84 tests) landed; `ng test` discovers them via the `angular.json` test `include`; coverage gate passed. `amplify/data/resource.ts` unchanged (no schema change, by operator scope). REQ-ARC-2 (dependency) still pending, accepted per the 2026-10-28 intake. | ALIGNED (closed) |
++
++**Verdict (REQ-ARC-3): ALIGNED at scout time; closed out as ✅ Implemented after the coverage gate on 2026-10-28.** Session run type: crew run; scout mode: `gap_analysis`; scope REQ-ARC-3 only.
+ 
+ ---
+ 
+ ## Current Implementation Log
+ 
+-No entries yet.
++### REQ-ARC-3 - Game rules and server authority (coder, 2026-10-28)
++
++- **Status:** ✅ Implemented (orchestrator, 2026-10-28, after the coverage gate). Audit: UNBLOCKED 2026-10-28, 0 blockers / 4 warnings (`AUDIT_REPORT.md`); W1/W3/W4 (tracking-doc wording) fixed by the orchestrator in this doc; W2 (`WINNING_LINES` not frozen and returned by reference in `result.line`, `game-rules.ts:41`/`:119`) left open for an operator decision.
++- **Gate waiver (explicit, audit W1):** gate condition 1 is WAIVED for the app build only. `ng build` fails on the missing, sandbox-generated `amplify_outputs.json` (pre-existing; `ampx` forbidden this session). REQ-scope build passes. This waiver applies to this sample copy only.
++- **Accepted drift:** `tsconfig.spec.json` (gate-fix) was not in the scout contract's `files_touched`; accepted.
++- **spec_version:** `specs/coder-spec.md` as of 2026-10-28 (unversioned file; Migration Context "Net-new project"). `coverage_status`: line 100% / branch 100% / static_analysis: PASS (eslint clean on game-rules.ts and game-rules.spec.ts; `tsc -p amplify/tsconfig.json --noEmit` clean) / gate: PASS after gate-fix (see below). History: the tester's first measurement was gate FAIL because `ng test` did not discover the amplify spec; resolved by the coder's gate-fix entry below.
++- **Coverage gate (orchestrator re-check, 2026-10-28):** (1) Build: REQ-scope build `npx tsc -p amplify/tsconfig.json --noEmit` clean. App `npx ng build` FAILS, pre-existing and not attributable to this REQ: `src/main.ts` imports `../amplify_outputs.json`, which is generated only by `ampx sandbox`/deploy and was never committed at the setup commit; the operator's structural context forbids `ampx`, so it cannot be generated in this copy. Nothing this REQ changed touches `src/main.ts`. (2) `npx ng test --watch=false --coverage`: 2 files, 86/86 pass, 0 failures. (3) Traceability: AC1-AC5 each map to named tests (map below). (4) API surface untouched; no handoff entry needed. (5) Static analysis clean. → PASS.
++  - Measurement (fresh, 2026-10-28): `npx vitest run amplify --coverage --coverage.include='amplify/shared/**'` -> 84/84 pass; game-rules.ts statements 100% (33/33), branches 100% (40/40), functions 100% (5/5), lines 100% (32/32). Root `npx vitest run` (all files): 84 pass, plus the 2 pre-existing `src/app/app.component.spec.ts` tests fail with "Need to call TestBed.initTestEnvironment() first" because raw Vitest skips the Angular builder's TestBed setup; those pass under `ng test`.
++  - **Criterion -> test map** (all in `amplify/shared/game-rules.spec.ts`):
++    - AC1: `applyMove turn and cell legality` > "lets the player whose turn it is take an empty cell and passes the turn", "alternates back to X after O moves", "does not mutate the input state on an accepted move", "rejects a participant moving out of turn...", "rejects the previous mover moving twice in a row", "rejects a move onto an occupied cell", "rejects the mover re-taking their own occupied cell", "rejects out-of-grid or non-integer cell %s" (-1, 9, 1.5, NaN, Infinity, 100), "accepts boundary cell %s" (0, 8), "reports wrong turn before an invalid cell". Every rejection goes through `expectRejected`, which deep-compares the input state with a pre-call snapshot.
++    - AC2: `applyMove non-participants` > outsider on fresh game, in-progress game, finished game; outsider with an invalid cell; case-different id ('Alice'); empty id. Each asserts `not_a_participant` and an unchanged state.
++    - AC3: `win detection` > "findWinningLine detects $label" and "applyMove names winner and line for $label" (16 cases each: 8 lines x X/O, expected lines written independently of `WINNING_LINES`), "returns null" cases, real X-win and O-win games; `WINNING_LINES` > "lists exactly the 3 rows, 3 columns and 2 diagonals"; `draw detection` > "declares a draw on a full board with no line", "does not declare a draw while a cell is still empty", "scores a line completed on the ninth move as a win, not a draw".
++    - AC4: `finished games are immutable` > after a won game and after a drawn game: "rejects further moves from either participant and leaves the state unchanged", "rejects a participant move onto an occupied cell as finished", "rejects a finished-game move even with an invalid cell"; plus "rejects a move on a won game that still has empty cells" and "rejects a move when turn is null even if result is missing".
++    - AC5: `readAuthoritativeState` > "returns fields equal to the source state for a fresh game", "reflects each accepted move", "is unchanged by a rejected move", "exposes the win result with winner and line", "exposes the draw result", "returns a deeply frozen copy", "freezes the draw result too", "throws when a caller writes to the returned copy, leaving the source intact", "is a copy: later mutation of the source board does not leak into the read". Not testable here: the "source of truth over a live notification" half of AC5 is a server-layer concern (no notification code exists in this module), per the scout contract.
++    - Extra (not an AC): `createGame` > initial state and RangeError for empty or identical ids.
++- **Files changed:** `amplify/shared/game-rules.ts` (new; types, `WINNING_LINES`, `createGame`, `findWinningLine`, `applyMove`, `readAuthoritativeState`).
++- **Verification:** `npx tsc -p amplify/tsconfig.json --noEmit` clean; `npx eslint amplify/shared/game-rules.ts` clean. No ampx or AWS command run.
++- **Gate-fix (coder, 2026-10-28, condition 2):** `ng test` now discovers `amplify/**/*.spec.ts`. Changes: `angular.json` `projects.*.architect.test.options.include` = `["**/*.spec.ts", "../amplify/**/*.spec.ts"]` (the unit-test builder resolves globs relative to `sourceRoot` = `src`, so a plain `amplify/**` pattern matched nothing; `../amplify` escapes it); `tsconfig.spec.json` `include` gained `"amplify/**/*.spec.ts"` so the specs are type-checked with the spec tsconfig. `vitest.config.ts` unchanged (generated-file coverage excludes kept). Result: `npx ng test --watch=false` -> 2 files, 86 tests pass; `--coverage` -> amplify/shared/game-rules.ts statements 100% (33/33), branches 100% (40/40), functions 100% (5/5), lines 100% (32/32); overall 100%. No spec or production file touched.
++- **Contract surface:** no schema change; no handoff-contract entry.
++- **Handoff Notes:** `PlayerId` is trusted input; the future server layer must derive it from a verified identity. `readAuthoritativeState` has no in-sample consumer by design (public read API for the server layer). `ng test` discovery of `amplify/shared/*.spec.ts` confirmed after the gate-fix. Spec amendment proposals (spec_writes off, operator decides): tester spec should name the `angular.json` test `include` for `amplify/**` specs; both specs say `wopr.yml` where the repo uses `kitt.yml`.
+ 
+ ---
+ 
+diff --git i/tsconfig.spec.json w/tsconfig.spec.json
+index aecce35..8a5ccb8 100644
+--- i/tsconfig.spec.json
++++ w/tsconfig.spec.json
+@@ -5,5 +5,5 @@
+   "compilerOptions": {
+     "types": ["vitest/globals"]
+   },
+-  "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
++  "include": ["src/**/*.d.ts", "src/**/*.spec.ts", "amplify/**/*.spec.ts"]
+ }

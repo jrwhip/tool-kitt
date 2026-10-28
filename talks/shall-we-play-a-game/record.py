@@ -133,9 +133,11 @@ def main() -> int:
         print(f"error: fixture dir {fixture} not found", file=sys.stderr)
         return 2
 
-    scratch = Path(tempfile.mkdtemp(prefix="kitt-rec-")) / "mission-log"
+    scratch = Path(tempfile.mkdtemp(prefix="kitt-rec-")) / (fixture.name if fixture.name != "fixture" else "mission-log")
     shutil.copytree(fixture, scratch, ignore=shutil.ignore_patterns(*FIXTURE_IGNORE))
-    node_modules = HERE / "fixture" / "node_modules"
+    # Share the fixture's own node_modules (following a symlink if that is what it is) so the
+    # scratch copy can build and test without an install.
+    node_modules = (fixture / "node_modules").resolve() if (fixture / "node_modules").exists() else HERE / "fixture" / "node_modules"
     if node_modules.is_dir():
         os.symlink(node_modules, scratch / "node_modules")
     (scratch / ".gitignore").write_text("node_modules\ndist\n.angular\ncoverage\n")

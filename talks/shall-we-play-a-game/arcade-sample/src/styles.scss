@@ -1,0 +1,39 @@
+:root {
+  --wopr-bg: #010b06;
+  --wopr-bg-panel: #041a0f;
+  --wopr-phosphor-green: #33ff66;
+  --wopr-phosphor-green-dim: #1a8033;
+  --wopr-phosphor-amber: #ffb000;
+  --wopr-phosphor-red: #ff3b30;
+  --wopr-font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', 'DejaVu Sans Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--wopr-bg);
+  color: var(--wopr-phosphor-green);
+  font-family: var(--wopr-font-mono);
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}

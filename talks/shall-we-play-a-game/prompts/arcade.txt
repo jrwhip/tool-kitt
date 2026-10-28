@@ -1,0 +1,12 @@
+/kitt-run-crew REQ-ARC-3
+
+I am the operator. I have answered every intake question below so the crew can run start to finish without stopping to ask me anything.
+
+- Run type: (1) crew run.
+- Scope: REQ-ARC-3 only.
+- Structural context, record it in the tracking document: This is a sample build in a scratch copy of the project at its setup commit. There is no AWS account, no Amplify sandbox, no deploy, and no `ampx` in this copy; never run any of them. Implement REQ-ARC-3 as a pure TypeScript rules module under amplify/shared/ (the module the server Lambdas will call), with unit tests run through Vitest in Node; a client-side move-handling layer is out of scope. The dependency REQ-ARC-2 is pending by design in this sample; treat that as accepted, not as a blocker.
+- REQ review gate: I have read requirements/REQ-ARC-3.md in full and I APPROVE it exactly as written, with no edits. Record "REQ review: approved 2026-10-28, 1 round" on its baseline row.
+- Optional hooks: no. Do not register any.
+- spec_writes stays off.
+
+Show me the REQ body as the gate requires, then treat my approval above as the answer and continue. If a required input is genuinely missing, stop and report; do not guess.
