@@ -20,7 +20,7 @@
 <footer class="chrome">
   <span class="chrome__title">Shall We Play a Game?</span>
   <span class="chrome__section" id="section-label">Title</span>
-  <span class="chrome__count"><b id="slide-current">01</b><i>/</i><span id="slide-total">21</span></span>
+  <span class="chrome__count"><b id="slide-current">01</b><i>/</i><span id="slide-total">22</span></span>
   <span class="chrome__clock" id="clock">00:00</span>
 </footer>
 
@@ -289,35 +289,60 @@
     <h2 class="display reveal">A requirement is a list of checks a machine can run.</h2>
     <div class="doc reveal">
       <article class="term">
-        <div class="term__bar"><b>requirements/REQ-ML-1.md</b><span class="spacer"></span>excerpt</div>
+        <div class="term__bar"><b>requirements/REQ-ARC-3.md</b><span class="spacer"></span>WOPR Arcade · excerpt</div>
         <pre class="term__body"><span class="c">---
-id: REQ-ML-1
-title: Filter the mission list by status
-status: pending
+id: REQ-ARC-3
+title: Game rules and server authority
+depends_on: [REQ-ARC-2]
 ---</span>
 <span class="k">## Requirement</span>
-<span class="s">Adds a status filter with three choices (All, Open, Done) and a
-count line. Does not add sorting, search, persistence, or any
-change to the Mission Log API.</span>
+<span class="s">The server is the sole authority on the board. It decides
+every move's legality and every outcome; a client can never
+make an illegal move stick or fabricate a result.</span>
 
 <span class="k">## Acceptance criteria</span>
-<span class="s">1. One filter control with exactly three options labelled
-   <span class="hl">"All", "Open", and "Done"</span>. "All" is selected on first render.
-4. A count line reads <span class="hl">"Showing N of M missions"</span>.
-   3 returned, 2 open, "Open" selected: "Showing 2 of 3 missions".
-5. No match: the text "No missions match this filter." and
-   "Showing 0 of M missions".
-7. Changing the filter <span class="hl">sends no new request</span> to the API.
-8. `ng test` passes with zero failures, including pre-existing tests.
-10. No file under `src/api/` changes.</span></pre>
+<span class="s">1. Only the player whose turn it is may move, and only to an
+   empty cell in the 3x3 grid; <span class="hl">any other attempt is rejected
+   with a specific reason</span> and leaves the board unchanged.
+2. A player who is not a participant of a game cannot affect it.
+3. A win is detected on <span class="hl">any of the 8 lines</span> (3 rows, 3 columns,
+   2 diagonals) and names the winner and the winning line;
+   a full board with no line is a draw.
+4. A finished game is immutable: no further move changes it.
+5. The authoritative game state can be read at any time and is
+   the source of truth over any live notification.</span></pre>
       </article>
       <ul class="callouts">
-        <li><b>The bar</b>If two honest reviewers could disagree about whether a criterion is met, rewrite the criterion. Use exact labels, exact text, and exact counts.</li>
+        <li><b>Where this came from</b>This is one of the eleven requirements behind WOPR Arcade, a real tic-tac-toe app with accounts, matchmaking, ratings, chat, and an AI host. The crew built all eleven in September.</li>
+        <li><b>The bar</b>If two honest reviewers could disagree about whether a criterion is met, rewrite the criterion. Exact counts, exact outcomes, exact boundaries.</li>
         <li><b>No implementation</b>A requirement names no files, no components, and no libraries. A criterion that restates the code certifies anything.</li>
-        <li><b>Where it lives</b>A requirement is a markdown file in the <code>requirements/</code> folder or a Jira issue. The crew reads either one.</li>
       </ul>
     </div>
-    <aside class="notes">This is the goals part. Read criterion four out loud. The auditor can check it without a judgment call. That is the whole bar. Compare it with the one-sentence prompt from recording one.</aside>
+    <aside class="notes">This is the goals part. Read criterion three out loud. The judge can check it without a judgment call. The arcade's requirements all look like this, and they came out of a wargame session, which is the next slide.</aside>
+  </section>
+
+  <!-- 11b · The real build -->
+  <section class="slide slide--numbers" data-section="The real build">
+    <p class="kicker reveal">WOPR Arcade · September 2026</p>
+    <h2 class="display reveal">Eleven requirements. One crew run each. About 27 hours.</h2>
+    <table class="tally reveal">
+      <thead><tr><th>Requirement</th><th>Verdict</th><th>Audit passes</th><th>Wall clock</th><th>Unit tests at commit</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Identity and callsigns</td><td>UNBLOCKED</td><td>2</td><td>3 h 15 min</td><td>384</td></tr>
+        <tr><td>2 · Matchmaking</td><td>UNBLOCKED</td><td>1</td><td>1 h 40 min</td><td>623</td></tr>
+        <tr><td>3 · Game rules and server authority</td><td>UNBLOCKED</td><td>1</td><td>1 h 38 min</td><td>871</td></tr>
+        <tr><td>4 · Live state and disconnect resilience</td><td>UNBLOCKED</td><td>3</td><td>2 h 57 min</td><td>1,147</td></tr>
+        <tr><td>5 · Ratings, history, leaderboard</td><td>UNBLOCKED</td><td>3</td><td>2 h 13 min</td><td>1,384</td></tr>
+        <tr><td>6 · JOSHUA, the AI host</td><td>UNBLOCKED</td><td>2</td><td>3 h 01 min</td><td>1,924</td></tr>
+        <tr><td>7 · Player chat</td><td>UNBLOCKED</td><td>1</td><td>1 h 37 min</td><td>2,039</td></tr>
+        <tr><td>8 · Rematch</td><td>UNBLOCKED</td><td>1</td><td>2 h 00 min</td><td>2,442</td></tr>
+        <tr><td>9 · Client experience and visual design</td><td>UNBLOCKED</td><td>2</td><td>2 h 23 min</td><td>2,718</td></tr>
+        <tr><td>10 · Play against JOSHUA</td><td>UNBLOCKED</td><td>1</td><td>1 h 50 min</td><td>3,070</td></tr>
+        <tr><td>11 · JOSHUA remembers players</td><td>UNBLOCKED</td><td>2</td><td>4 h 32 min</td><td>3,643</td></tr>
+      </tbody>
+    </table>
+    <p class="lede reveal small">The numbers come from the retrospectives written after each run. Audit passes above one mean the judge said BLOCKED first and the fix came back for another look. The app has an Amplify backend, Cognito accounts, a Bedrock-powered host, and 756 visual baselines.</p>
+    <aside class="notes">This slide is the proof that the method scales past a demo. Eleven requirements, each one crew run, and every one ended UNBLOCKED. Six of them needed a second or third audit pass, which is the gate doing its job. Then say that the next three slides are a fresh sample of requirement three being built from the project's first commit.</aside>
   </section>
 
   <!-- 12 · Wargame -->
@@ -351,7 +376,7 @@ change to the Mission Log API.</span>
   <section class="slide slide--replay" data-section="Crew · 1 of 3">
     <header class="replay__head">
       <div>
-        <p class="kicker">Recording 4, part 1</p>
+        <p class="kicker">Recording 4, part 1 · REQ-ARC-3 on the arcade</p>
         <h2 class="replay__title">The run stops for your approval, then the scout reads.</h2>
       </div>
       <div class="replay__meta">
@@ -360,9 +385,9 @@ change to the Mission Log API.</span>
         <button class="btn" data-r="play">Replay</button>
       </div>
     </header>
-    <div class="replay" data-replay="crew" data-to-agent="crew-coder">
+    <div class="replay" data-replay="arcade-crew" data-to-agent="crew-coder">
       <article class="term">
-        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>orchestrator and scout</div>
+        <div class="term__bar"><b>claude</b> · arcade, at its first commit<span class="spacer"></span>orchestrator, grader, and scout</div>
         <div class="replay__prompt" data-r="prompt"></div>
         <ol class="log" data-r="log"></ol>
         <footer class="counters">
@@ -382,7 +407,8 @@ change to the Mission Log API.</span>
         <div class="card">
           <h3><small>watch for</small>Four steps before any code</h3>
           <ul class="watch">
-            <li data-watch="learnings_search">It searches the learnings file for lessons from past runs.</li>
+            <li data-watch="learnings_search">It searches the project's memory file for notes from past runs.</li>
+            <li data-watch="crew-evaluator">More than five notes matched, so a fifth agent grades which ones matter.</li>
             <li data-watch="crew-scout">It starts the scout as a separate agent.</li>
             <li data-watch="crew-contracts|scout.md">The scout writes its contract file.</li>
             <li data-watch="validate_scout_contract">A tool validates the contract. No agent gives an opinion on it.</li>
@@ -406,9 +432,9 @@ change to the Mission Log API.</span>
         <button class="btn" data-r="play">Replay</button>
       </div>
     </header>
-    <div class="replay" data-replay="crew" data-from-agent="crew-coder" data-to-agent="crew-auditor">
+    <div class="replay" data-replay="arcade-crew" data-from-agent="crew-coder" data-to-agent="crew-auditor">
       <article class="term">
-        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>coder and tester</div>
+        <div class="term__bar"><b>claude</b> · arcade<span class="spacer"></span>coder and tester</div>
         <div class="replay__prompt" data-r="prompt"></div>
         <ol class="log" data-r="log"></ol>
         <footer class="counters">
@@ -436,11 +462,12 @@ change to the Mission Log API.</span>
             <li data-watch="crew-coder">The coder edits only production files.</li>
             <li data-watch="crew-tester">The tester is a second, separate agent.</li>
             <li data-watch="ng test|ng build|npx ng">The test suite runs for real.</li>
+            <li data-watch="discovery gate|Fix ng test">The test check fails once, and one fix goes back to the coder.</li>
           </ul>
         </div>
       </aside>
     </div>
-    <aside class="notes">This is part two. Watch the file names. The coder touches the component. The tester touches the spec files. Neither one touches the other's files. If a gate condition fails, the orchestrator sends the failure back to its owner and checks again. It never sends a known failure to the auditor.</aside>
+    <aside class="notes">This is part two. Watch the file names. The coder writes the rules module under amplify/shared. The tester writes the spec file next to it. Neither one touches the other's files. Then the test check fails, because the project's test command never looked under the amplify folder. One fix goes back to the coder, and the check passes on the second try. If a gate condition fails, the orchestrator sends the failure back to its owner and checks again. It never sends a known failure to the auditor.</aside>
   </section>
 
   <!-- 16 · Replay: crew part 3 -->
@@ -456,9 +483,9 @@ change to the Mission Log API.</span>
         <button class="btn" data-r="play">Replay</button>
       </div>
     </header>
-    <div class="replay" data-replay="crew" data-from-agent="crew-auditor">
+    <div class="replay" data-replay="arcade-crew" data-from-agent="crew-auditor">
       <article class="term">
-        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>auditor</div>
+        <div class="term__bar"><b>claude</b> · arcade<span class="spacer"></span>auditor</div>
         <div class="replay__prompt" data-r="prompt"></div>
         <ol class="log" data-r="log"></ol>
         <footer class="counters">
@@ -480,6 +507,7 @@ change to the Mission Log API.</span>
           <ul class="watch">
             <li data-watch="crew-auditor">It runs once, after the gate, and never during iteration.</li>
             <li data-watch="ng test|ng build">It re-runs the test suite itself instead of trusting the record.</li>
+            <li data-watch="aud-mut|mutation|sed -i">It breaks the rules on purpose in a throwaway copy and checks that a test fails each time.</li>
             <li data-watch="AUDIT_REPORT|audit-report|audit report">It writes the audit report.</li>
             <li data-watch="append_learnings|LEARNINGS">It adds zero to three lessons to the memory file.</li>
           </ul>
@@ -496,63 +524,56 @@ change to the Mission Log API.</span>
     <div class="cards cards--3 reveal">
       <article class="term">
         <div class="term__bar"><b>AUDIT_REPORT.md</b></div>
-        <pre class="term__body" data-excerpt="audit"><span class="c">## Audit Report - REQ-ML-1</span>
-<span class="k">Build:</span> <span class="s">PASS (strict TS)</span>
-<span class="k">Tests:</span> <span class="s">17 passed, 0 failed</span>
-
+        <pre class="term__body" data-excerpt="audit"><span class="c">## Audit Report - REQ-ARC-3</span>
+<span class="k">Tests:</span> <span class="s">86 passed, 0 failed</span>
 <span class="k">## PR Readiness Verdict: <span class="hl">UNBLOCKED</span></span>
-<span class="s">Zero BLOCKERs. Five warnings.</span>
+<span class="s">Zero BLOCKERs. Four warnings.</span>
 
 <span class="k">### WARNINGS</span>
-<span class="s">1. Default-selection test may be
-   vacuous in jsdom. Mutate-check it.
-2. Coverage unmeasured: no provider
-   installed. Install one.
-4. Tracking-doc dates disagree.</span>
+<span class="s">W2. WINNING_LINES is not frozen, and
+    a win result points at the module's
+    own copy of the line.</span>
 
 <span class="k">### PASSED</span>
-<span class="s">Criteria 1-7 traced to named tests.
-No file under src/api/ changed.
-Files touched match the scout contract.</span></pre>
+<span class="s">Item 10: defects reintroduced in a
+throwaway copy, each one caught.
+  cell > 9 bound ........ 1 failed
+  diagonal [2,4,5] ...... 5 failed
+  finished-game check ... 8 failed</span></pre>
       </article>
       <article class="term">
         <div class="term__bar"><b>LEARNINGS.md</b></div>
-        <pre class="term__body" data-excerpt="learnings"><span class="c">## LRN-2026-10-27-a: Default-selection
-tests on a native select are vacuous
-in jsdom</span>
-<span class="k">stack:</span> <span class="s">angular, vitest, jsdom</span>
-<span class="k">req:</span> <span class="s">REQ-ML-1</span>  <span class="k">origin:</span> <span class="s">crew-auditor</span>
+        <pre class="term__body" data-excerpt="learnings"><span class="c">## LRN-2026-10-28-a: A "pure" rules
+function that returns a module-level
+constant by reference lets callers
+corrupt the rules</span>
+<span class="k">req:</span> <span class="s">REQ-ARC-3</span>  <span class="k">origin:</span> <span class="s">crew-auditor</span>
 
-<span class="k">What happened:</span> <span class="s">"All" is the first
-option, and jsdom selects the first
-option when none is marked. The
-[selected] bindings could be deleted
-and the test would stay green.</span>
+<span class="k">Why it matters:</span> <span class="s">Types do not stop
+runtime writes. One caller mutating a
+returned result.line changes win
+detection for every later game.</span>
 
-<span class="k">Pattern to encode:</span> <span class="s">For a "default
-selected" criterion, assert against a
-non-first default, or mutate the
-binding and confirm the test fails.</span></pre>
+<span class="k">Pattern to encode:</span> <span class="s">Freeze the table
+and its rows, or copy on return. Add one
+test that mutates a returned value.</span></pre>
       </article>
       <article class="term">
         <div class="term__bar"><b>IMPLEMENTATION_TRACKING.md</b></div>
         <pre class="term__body" data-excerpt="tracking"><span class="c">## Requirements Baseline</span>
-<span class="s">| REQ-ML-1 | Filter the mission list
-| <span class="hl">✅ Implemented</span> | REQ review: approved,
-1 round. Coverage gate passed: build
-PASS, suite 17/17, criteria 1-7 traced |</span>
+<span class="s">| REQ-ARC-3 | Game rules and server
+authority | <span class="hl">✅ Implemented</span> | REQ review:
+approved, 1 round. Gate: 86/86 tests,
+100% line and branch, tsc and eslint
+clean; ng build waived (no
+amplify_outputs.json in this copy) |</span>
 
 <span class="c">## Gap Analysis</span>
-<span class="s">Last run: 2026-10-27. Verdict: ALIGNED.
-| REQ-ML-1 | Implemented | None |
-Audit UNBLOCKED: 0 blockers, 5 warnings</span>
-
-<span class="c">## Implementation Log</span>
-<span class="s">2026-10-27 · REQ-ML-1 (coder)
-2026-10-27 · REQ-ML-1 (tester)</span></pre>
+<span class="s">AC5 "source of truth over any live
+notification" deferred to REQ-ARC-4.</span></pre>
       </article>
     </div>
-    <p class="lede reveal small">These excerpts come from the recorded run. They are cut only for length. The full files are in replays/artifacts/crew/. The next crew run reads that lesson before its first step.</p>
+    <p class="lede reveal small">These excerpts come from the recorded arcade run. They are cut only for length. The full files are in replays/artifacts/arcade-crew/. The next crew run reads that lesson before its first step.</p>
     <aside class="notes">This is the record that the run with no plugins did not leave. The audit report is the review. The tracking document is the status. The learnings file is the memory, and the next run reads it before its first step.</aside>
   </section>
 
@@ -571,7 +592,7 @@ Audit UNBLOCKED: 0 blockers, 5 warnings</span>
         <tr><td>Record and memory</td><td class="bad">None</td><td class="good">Full</td><td class="good">Full</td></tr>
       </tbody>
     </table>
-    <p class="lede reveal small"><strong>This deck's own Angular run:</strong> Claude Code alone finished in <span data-stat="naked.minutes">—</span> for <span data-stat="naked.cost">—</span>. The crew took <span data-stat="crew.minutes">—</span> for <span data-stat="crew.cost">—</span>, and it left an audit report, a status entry, and one lesson behind.</p>
+    <p class="lede reveal small"><strong>This deck's own runs:</strong> on the sample app, Claude Code alone finished in <span data-stat="naked.minutes">—</span> for <span data-stat="naked.cost">—</span>, and the crew took <span data-stat="crew.minutes">—</span> for <span data-stat="crew.cost">—</span>. On the arcade's rules requirement the crew took <span data-stat="arcade-crew.minutes">—</span> for <span data-stat="arcade-crew.cost">—</span> and left <span data-stat="arcade-crew.tests">—</span> tests, an audit report, and one lesson behind.</p>
     <p class="lede reveal small">The table comes from a Python test requirement, with two runs per column. The run with no plugins was eight times cheaper and still correct. The crew's own instruction file was cut by 75 percent with no regression, and every cut passed this test first. Shorter is not automatically better. Anthropic reverted a prompt change in April 2026 for that exact reason.</p>
     <aside class="notes">Be honest with this table. The run with no plugins wins on cost, and the task was small enough that the result was correct. The crew pays for an audit you owed anyway and turns the audit into a file. The harness itself must be measured again and cut down as models improve. That is why the crew skill went from 473 lines to 119 lines with a test gating every cut.</aside>
   </section>
@@ -632,6 +653,7 @@ Audit UNBLOCKED: 0 blockers, 5 warnings</span>
 <script src="replays/doctor.js"></script>
 <script src="replays/init.js"></script>
 <script src="replays/crew.js"></script>
+<script src="replays/arcade-crew.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

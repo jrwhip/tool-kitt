@@ -28,6 +28,7 @@ URL hash (`#14` is the first crew slide).
 | `fonts/` | Self-hosted woff2 fonts (Anton for display, Instrument Sans for body, Martian Mono and VT323 for terminals). |
 | `images/` | `title.jpg` is the title slide. Robot art goes here as `doctor.png`, `scout.png`, `coder.png`, `tester.png`, `auditor.png`, `gate.png`, `monday.png`; a slide shows a labelled placeholder until its file exists. |
 | `fixture/` | The Mission Log sample app: Angular 22, one list component, a generated API client in `src/api/`, an OpenAPI document in `api/`, five Vitest tests. Run `npm install` here once before recording. |
+| `arcade-sample/` | A scratch copy of the WOPR Arcade at its "Project setup" commit: the real requirements, specs, and contract file, an empty app, and a `kitt.yml` without the visual check. Recording 4 (the crew slides) runs REQ-ARC-3 against it. `node_modules` is a symlink to the arcade's. |
 | `fixture-configured/` | The same app after `/kitt-init-project`, with `kitt.yml`, specs, tracking document, `LEARNINGS.md`, and `requirements/REQ-ML-1.md`. The crew recording runs against this one. |
 | `prompts/` | The exact prompt each recording was given. |
 | `replays/` | Recordings. `record.py` writes a `.json`, a `.js` twin the deck loads, and a `.raw.ndjson` of the untouched stream. `replays/artifacts/crew/` holds the audit report, learnings file, tracking document, scout contract, and source patch the crew run produced; slide 17 quotes them. |
@@ -46,6 +47,7 @@ python3 record.py @prompts/naked.txt  replays/naked.json  --label naked  --no-pl
 python3 record.py @prompts/doctor.txt replays/doctor.json --label doctor --model sonnet
 python3 record.py @prompts/init.txt   replays/init.json   --label init   --model sonnet
 python3 record.py @prompts/crew.txt   replays/crew.json   --label crew   --fixture fixture-configured
+python3 record.py @prompts/arcade.txt replays/arcade-crew.json --label arcade-crew --fixture arcade-sample
 ```
 
 The crew run dispatches four agents and takes several minutes. The prompt files carry the operator's

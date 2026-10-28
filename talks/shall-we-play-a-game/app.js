@@ -122,7 +122,8 @@ const TOOL_VERB = {
 const verbFor = (tool) => TOOL_VERB[tool] ?? (tool.startsWith("kitt:") ? "kitt" : tool.toLowerCase());
 const classFor = (tool) => tool.startsWith("kitt:") ? "kitt" : tool.toLowerCase();
 const HOME = /\/home\/[a-z0-9_-]+/gi;
-const tidy = (s) => (s || "").replace(HOME, "~");
+const ANSI = /\u001b\[[0-9;?]*[A-Za-z]/g;  // terminal color codes captured from tool output
+const tidy = (s) => (s || "").replace(ANSI, "").replace(HOME, "~");
 // MCP results arrive as {"result": "..."} JSON; show the inner text, even when the recording truncated it.
 function unwrapOutput(text) {
   const t = tidy(text);
