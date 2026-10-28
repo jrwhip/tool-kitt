@@ -27,6 +27,7 @@ If `kitt.yml` is missing at the resolved path, the tool stops and reports an err
 project:        # required, pack-agnostic
 specs:          # required, pack-agnostic
 api_contract:   # required by the crew pack: the machine-readable API contract (OpenAPI or GraphQL)
+crew:           # optional, crew pack: per-role models and complexity escalation
 requirements:   # optional, pack-agnostic; defaults to source: local when absent
 learnings:      # optional, pack-agnostic; semantic-search (CRAG) configuration
 legacy-migration:   # required only when the legacy-migration pack is in use
@@ -90,6 +91,21 @@ The machine-readable API contract that crew agents cite instead of hand-copying 
 | `pinned_generator_version` | yes | string | Format: `<tool> <semver>`. The tool that produces (backend) or consumes (frontend) the contract; used by the auditor for lockstep verification. OpenAPI: `openapi-generator-cli 7.21.0`, `springdoc-openapi 2.7.0`. GraphQL: `aws-amplify 6.20.0`, `graphql-codegen 5.0.0`. |
 
 **Legacy alias.** Before GraphQL projects existed this section was named `openapi:` (same fields, no `kind`). The parser still reads `openapi:` as `api_contract` with `kind: openapi` and flags it (`legacy_section: openapi` in the summary); `api_contract` wins when both are present. New files use `api_contract`.
+
+## Section: `crew`
+
+Crew pack. Optional. Decides which model each crew role runs on, per requirement, without editing the agent files. Read by the `resolve_crew_models` MCP tool, which the crew orchestrator calls before dispatching agents. Absent section: every role runs on the model its agent file names (scout `haiku`; coder, tester, auditor, evaluator, designer `sonnet`) and nothing escalates by file count unless the default threshold below is reached.
+
+| Field | Required | Type | Notes |
+|---|---|---|---|
+| `models.<role>` | optional | string | One line per role you want to change: `scout`, `designer`, `coder`, `tester`, `auditor`, `evaluator`. Values on the ladder `haiku`, `sonnet`, `opus` can escalate. Any other string (a pinned model id) is passed to the agent as given and never escalated. `inherit` is refused: every role names its own model, so a top-tier orchestrator never fans out to every role. |
+| `escalation.roles` | optional | list of roles | The roles that move with complexity. Default `[coder, auditor]`. The scout is never in the default list; add it only on purpose. |
+| `escalation.high_at_files` | optional | integer or null | Default `6`. When the validated scout contract's `files_touched` has at least this many entries and nothing else states the complexity, the requirement is `high`. `null` turns the count off. |
+| `escalation.low_at_files` | optional | integer or null | Default `null` (off). When the contract names at most this many files and nothing else states the complexity, the requirement is `low`. Must be less than `high_at_files`. |
+
+**How complexity is decided.** In order: an explicit level the operator gives the orchestrator; `complexity: low \| medium \| high` in the requirement file's frontmatter; the scout contract's file count against the thresholds; otherwise `medium`. `high` moves each role in `escalation.roles` up one tier on the ladder, capped at `opus`. `low` moves them down one tier, floored at `haiku`. `medium` leaves every role on its default. Roles outside the list never move.
+
+The orchestrator calls the resolver twice per run: once before the scout, with the requirement file, so the scout's own model is known; and once after the contract validates, with the contract path, so the coder, tester, and auditor get the final answer. The tool is deterministic and read-only. A malformed section is an error that stops the run; it never falls back silently.
 
 ## Section: `requirements`
 

@@ -2,7 +2,9 @@
 name: crew-scout
 description: Read-only discovery agent for the KITT four-role crew. Invoke first. Verifies the tracking baseline, searches the codebase, and produces the structured report and scout contract the coder, tester, and auditor consume. Writes only the tracking document and the scout contract.
 # haiku: discovery is structured read/grep/summarize work against a fixed
-# contract format. Keep in sync with the model table in skills/kitt-run-crew/SKILL.md.
+# contract format. This is the default; the orchestrator may pass a different
+# model per REQ via kitt.yml `crew.models` / `crew.escalation` (resolve_crew_models).
+# Keep in sync with DEFAULT_MODELS in src/kitt/tools/crew_models.py.
 model: haiku
 tools:
   - Read

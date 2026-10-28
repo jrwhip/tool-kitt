@@ -47,6 +47,23 @@ api_contract:
   #   spec_url: amplify/data/resource.ts
   #   pinned_generator_version: aws-amplify 6.20.0
 
+# Optional. Which model each crew role runs on, and how that moves with the
+# requirement's complexity. Every role names its own model; `inherit` is refused.
+# Complexity comes from the operator, then the REQ's `complexity:` frontmatter,
+# then the scout contract's file count, then defaults to medium.
+crew:
+  models:
+    scout: haiku        # discovery is structured read/grep work
+    coder: sonnet
+    tester: sonnet
+    auditor: sonnet
+    evaluator: sonnet
+    designer: sonnet
+  escalation:
+    roles: [coder, auditor]   # high: these move up one tier; low: down one tier
+    high_at_files: 6          # scout contract names >= 6 files -> high
+    low_at_files: null        # set to 1 to drop a one-file REQ one tier
+
 # Optional. Semantic-search (CRAG) configuration for learnings_search.
 # Omit the whole section to accept the default (provider: local).
 # learnings:

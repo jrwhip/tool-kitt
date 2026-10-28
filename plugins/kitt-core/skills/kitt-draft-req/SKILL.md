@@ -29,6 +29,7 @@ title: <short imperative title>
 priority: <1..n, unique>
 depends_on: [<REQ ids, or empty>]
 status: pending
+complexity: medium              # optional: low | medium | high; moves the crew's escalation roles down or up one model tier
 project: <member slug>          # workspace mode only: the one member this REQ writes to
 also_writes: []                 # workspace mode only, rare: extra member slugs this REQ may write
 ---
@@ -41,6 +42,8 @@ also_writes: []                 # workspace mode only, rare: extra member slugs 
 ```
 
 In Jira or GitHub, the body is identical; frontmatter maps to issue fields (priority, links for depends_on), and the issue key or number is the id.
+
+**Complexity.** Optional. The operator sets it when they already know a REQ is a one-line change (`low`) or a cross-cutting one (`high`); leave it out otherwise and the crew reads the scout contract's file count instead. It is a cost dial, not a priority: it decides which model tier the crew's escalation roles run on (`kitt-yml-schema.md`, "Section: `crew`"). Never set it from the code; set it from the ask.
 
 **Workspace mode fields.** `project:` and `also_writes:` name members by `workspace.projects[].slug` from the workspace root's `kitt.yml` (schema: `kitt-yml-schema.md`, "Section: `workspace`" and the workspace-mode rule under "Path conventions"). They matter only when the REQ is drafted or run from a workspace root; a single-project session ignores them. The REQ file lives in the home member's `requirements/` directory, so a session launched inside that member sees it unchanged. Default is one writer. Populate `also_writes` only when the operator has decided the REQ genuinely must land in two members at once; the usual answer to "this needs the backend and the frontend" is two REQs, one per member, joined by `depends_on`. In Jira, the two fields are the labels `kitt-project:<slug>` and `kitt-also-writes:<slug>`; when they are absent the orchestrator asks which member before dispatching.
 </format>

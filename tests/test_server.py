@@ -42,6 +42,7 @@ EXPECTED_TOOLS = [
     "list_pack_templates",
     "pin_skill",
     "propose_kitt_yml",
+    "resolve_crew_models",
     "scan_skill_directory",
     "seed_learnings",
     "skill_usage_report",
