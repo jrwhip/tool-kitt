@@ -1,7 +1,7 @@
 {
   "name": "kitt-auditors",
   "description": "Skill, command, and subagent quality auditors",
-  "version": "1.0.0-dev.5",
+  "version": "1.0.0-dev.6",
   "author": {
     "name": "Jared Whipple"
   },
