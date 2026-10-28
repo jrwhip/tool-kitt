@@ -1,0 +1,204 @@
+{
+ "version": 2,
+ "harness": "claude-code",
+ "model": "claude-sonnet-5-5",
+ "label": "doctor",
+ "prompt": "/kitt-doctor .",
+ "plugins": [
+  "kitt-core",
+  "kitt-crew",
+  "kitt-angular"
+ ],
+ "scratch": "/tmp/kitt-rec-veiojb12/mission-log",
+ "recordedAt": "2026-10-28T04:58:07+00:00",
+ "exitCode": 0,
+ "events": [
+  {
+   "kind": "text",
+   "text": "Scanning ..",
+   "t": 5630
+  },
+  {
+   "kind": "tool",
+   "tool": "kitt:detect_stack",
+   "detail": "{\"workspace_path\": \".\"}",
+   "t": 5976
+  },
+  {
+   "kind": "output",
+   "tool": "kitt:detect_stack",
+   "output": "{\"result\":\"{\\n  \\\"workspace_path\\\": \\\".\\\",\\n  \\\"project_type\\\": \\\"single-app\\\",\\n  \\\"monorepo_type\\\": null,\\n  \\\"targets\\\": [\\n    {\\n      \\\"target_path\\\": \\\".\\\",\\n      \\\"language\\\": \\\"typescript\\\",\\n      \\\"framework\\\": \\\"angular\\\",\\n      \\\"framework_version\\\": \\\"^22.2.0\\\",\\n      \\\"package_manager\\\": \\\"npm\\\",\\n      \\\"libraries\\\": [],\\n      \\\"test_runner\\\": \\\"vitest\\\",\\n      \\\"openapi_role\\",
+   "truncated": true,
+   "error": false,
+   "t": 5985
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "/home/jrwhip/Work/AI/kitt/plugins/kitt-core/data/doctor-recommendations.yaml",
+   "t": 6327
+  },
+  {
+   "kind": "tool",
+   "tool": "Bash",
+   "detail": "cd .; cat .ai-cli/kitt.lock.yaml 2>&1 | head -30; for f in ~/.claude.json ~/.gemini/settings.json ~/.copilot/mcp-config.json; do echo \"== $f\"; python3 -I -c \"import json,sys;d=json.load(open('$f'));print(list(d.get('mcpServers',{}).keys()))\" 2>&1; done; grep -c . ~/.kitt/workspaces.txt 2>&1; grep -n mission-log ~/.kitt/workspaces.txt 2>&1",
+   "t": 7811
+  },
+  {
+   "kind": "output",
+   "tool": "Bash",
+   "output": "A variable in this command can't be checked before it runs",
+   "truncated": false,
+   "error": true,
+   "t": 7818
+  },
+  {
+   "kind": "tool",
+   "tool": "Bash",
+   "detail": "ls -la . .ai-cli 2>&1; cat .ai-cli/kitt.lock.yaml 2>&1 | head -30",
+   "t": 9999
+  },
+  {
+   "kind": "output",
+   "tool": "Bash",
+   "output": "ls: cannot access '.ai-cli': No such file or directory\n.:\ntotal 268\ndrwxr-xr-x 6 jrwhip jrwhip    360 Oct 27 22:57 .\ndrwx------ 3 jrwhip jrwhip     60 Oct 27 22:57 ..\n-rw-r--r-- 1 jrwhip jrwhip   1987 Oct 27 22:51 angular.json\ndrwxr-xr-x 2 jrwhip jrwhip     60 Oct 27 22:51 api\n-rw-r--r-- 1 jrwhip jrwhip    314 Oct 27 22:49 .editorconfig\ndrwxr-xr-x 8 jrwhip jrwhip    280 Oct 27 22:57 .git\n-rw-r--r-",
+   "truncated": true,
+   "error": false,
+   "t": 10069
+  },
+  {
+   "kind": "tool",
+   "tool": "Bash",
+   "detail": "grep -o '\"mcpServers\"' /home/jrwhip/.claude.json | head -1; python3 -I -c \"\nimport json\nfor f in ['/home/jrwhip/.claude.json','/home/jrwhip/.gemini/settings.json','/home/jrwhip/.copilot/mcp-config.json']:\n    try: print(f, list(json.load(open(f)).get('mcpServers',{}).keys()))\n    except Exception as e: print(f, 'ERR', e)\n\"; grep -n mission-log /home/jrwhip/.kitt/workspaces.txt 2>&1",
+   "t": 11098
+  },
+  {
+   "kind": "output",
+   "tool": "Bash",
+   "output": "This Bash command contains multiple operations. The following parts require approval: grep -o '\"mcpServers\"' /home/jrwhip/.claude.json, head -1; python3 -I -c \"\nimport json\nfor f in ['/home/jrwhip/.claude.json','/home/jrwhip/.gemini/settings.json','/home/jrwhip/.copilot/mcp-config.json']:\n    try: print(f, list(json.load(open(f)).get('mcpServers',{}).keys()))\n    except Exception as e: print(f, 'E",
+   "truncated": true,
+   "error": true,
+   "t": 11104
+  },
+  {
+   "kind": "tool",
+   "tool": "kitt:learnings_path",
+   "detail": "{\"workspace_path\": \".\"}",
+   "t": 11336
+  },
+  {
+   "kind": "output",
+   "tool": "kitt:learnings_path",
+   "output": "{\"result\":\"workspace: .\\nworkspace_root: (none found)\\nin_workspace: False\\nsearched: .\\nsearch_boundary: git toplevel .\\nwrite_path: /home/jrwhip/.kitt/LEARNINGS.md\\nwrite_path_status: not yet created\\nread_paths:\\n  - /home/jrwhip/.kitt/LEARNINGS.md  [missing]\\nembeddings:\\n  provider: local:BAAI/bge-small-en-v1.5\\n  provider_available: True\\n  sidecar: /home/jrwhip/.kitt/LEARNINGS.embeddings.np",
+   "truncated": true,
+   "error": false,
+   "t": 11341
+  },
+  {
+   "kind": "text",
+   "text": "Reading the MCP configs one at a time.",
+   "t": 12298
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "/home/jrwhip/.gemini/settings.json",
+   "t": 12689
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "/home/jrwhip/.copilot/mcp-config.json",
+   "t": 13040
+  },
+  {
+   "kind": "tool",
+   "tool": "Grep",
+   "detail": "/\"(ag-mcp|chrome-devtools|plugin:atlassian:atlassian)\"/ in /home/jrwhip/.claude.json",
+   "t": 13431
+  },
+  {
+   "kind": "tool",
+   "tool": "Grep",
+   "detail": "/mission-log/ in /home/jrwhip/.kitt/workspaces.txt",
+   "t": 13878
+  },
+  {
+   "kind": "tool",
+   "tool": "Grep",
+   "detail": "/\"(ag-mcp|chrome-devtools|plugin:atlassian:atlassian)\"/ in /home/jrwhip/.claude.json",
+   "t": 15654
+  },
+  {
+   "kind": "text",
+   "text": "# KITT Doctor\n\n**Workspace:** `.`\n\n## Stack detected\n\n- Single app (no monorepo)\n- TypeScript, Angular `^22.2.0`\n- npm package manager\n- Vitest test runner\n- No external signals detected (no AG-Grid, Atlassian, etc.)\n\n## kitt.yml status\n\nNo `kitt.yml` found.\n\n- Recommend creating `kitt.yml` at the project root, since this is a single-app layout.\n\n## Readiness\n\nThere's no `kitt.yml`, so the project **can't run a crew yet**.\n\nBlockers:\n- No `kitt.yml`\n- No spec files (coder, tester)\n- No agent-instructions file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md` or `.github/copilot-instructions.md`)\n\n## CRAG status (warnings)\n\n- **CRAG corpus is empty.** There's no `LEARNINGS.md` in the project, and the global `~/.kitt/LEARNINGS.md` doesn't exist yet. Bootstrap it with `seed_learnings` using the tags `angular`, `typescript`, `vitest`.\n- **Workspace not registered.** `~/.kitt/workspaces.txt` doesn't exist. The first `seed_learnings`, `append_learnings` or `learnings_search` call from inside the project registers it.\n- **Embeddings:** the provider is `local:BAAI/bge-small-en-v1.5` and is available. The sidecar `~/.kitt/LEARNINGS.embeddings.npz` is missing, so it will be built once there are entries. Until then, search has nothing to return.\n\n## KITT packs\n\n- Installed: none. There's no `.ai-cli/kitt.lock.yaml`.\n- Recommended for Angular: `crew` and `angular`.\n\n## External MCPs\n\nNo signals were detected, so none are required. I checked the registrations anyway:\n- `chrome-devtools` is registered in `~/.claude.json` and `~/.gemini/settings.json`.\n- `~/.copilot/mcp-config.json` doesn't exist.\n\nI didn't check Atlassian or ag-mcp registrations, because there are no signals for them.\n\n## Suggested commands\n\n1. `/plugin install kitt-crew@kitt-marketplace`\n2. `/plugin install kitt-angular@kitt-marketplace`\n3. `/kitt-init-project` writes `kitt.yml`, spec stubs, `AGENTS.md`, the per-CLI pointer files and an empty `LEARNINGS.md`. It previews each file before writing.\n4. Run `seed_learnings` with the tags `angular`, `typescript`, `vitest` once the project is initialized.\n\nDoctor is read-only. Run the commands above. Re-run doctor to confirm gaps closed.",
+   "t": 21810
+  },
+  {
+   "kind": "result",
+   "text": "# KITT Doctor\n\n**Workspace:** `.`\n\n## Stack detected\n\n- Single app (no monorepo)\n- TypeScript, Angular `^22.2.0`\n- npm package manager\n- Vitest test runner\n- No external signals detected (no AG-Grid, Atlassian, etc.)\n\n## kitt.yml status\n\nNo `kitt.yml` found.\n\n- Recommend creating `kitt.yml` at the project root, since this is a single-app layout.\n\n## Readiness\n\nThere's no `kitt.yml`, so the project **can't run a crew yet**.\n\nBlockers:\n- No `kitt.yml`\n- No spec files (coder, tester)\n- No agent-instructions file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md` or `.github/copilot-instructions.md`)\n\n## CRAG status (warnings)\n\n- **CRAG corpus is empty.** There's no `LEARNINGS.md` in the project, and the global `~/.kitt/LEARNINGS.md` doesn't exist yet. Bootstrap it with `seed_learnings` using the tags `angular`, `typescript`, `vitest`.\n- **Workspace not registered.** `~/.kitt/workspaces.txt` doesn't exist. The first `seed_learnings`, `append_learnings` or `learnings_search` call from inside the project registers it.\n- **Embeddings:** the provider is `local:BAAI/bge-small-en-v1.5` and is available. The sidecar `~/.kitt/LEARNINGS.embeddings.npz` is missing, so it will be built once there are entries. Until then, search has nothing to return.\n\n## KITT packs\n\n- Installed: none. There's no `.ai-cli/kitt.lock.yaml`.\n- Recommended for Angular: `crew` and `angular`.\n\n## External MCPs\n\nNo signals were detected, so none are required. I checked the registrations anyway:\n- `chrome-devtools` is registered in `~/.claude.json` and `~/.gemini/settings.json`.\n- `~/.copilot/mcp-config.json` doesn't exist.\n\nI didn't check Atlassian or ag-mcp registrations, because there are no signals for them.\n\n## Suggested commands\n\n1. `/plugin install kitt-crew@kitt-marketplace`\n2. `/plugin install kitt-angular@kitt-marketplace`\n3. `/kitt-init-project` writes `kitt.yml`, spec stubs, `AGENTS.md`, the per-CLI pointer files and an empty `LEARNINGS.md`. It previews each file before writing.\n4. Run `seed_learnings` wit",
+   "subtype": "success",
+   "cost": 0.1352237,
+   "t": 21817
+  }
+ ],
+ "after": {
+  "changed": [],
+  "diffstat": "",
+  "tests": {
+   "ran": true,
+   "exit": 0,
+   "tail": "\u276f Building...\n\u2714 Building...\nApplication bundle generation complete. [0.493 seconds] - 2026-10-28T04:58:07.400Z\n\n\n\u001b[1m\u001b[30m\u001b[46m RUN \u001b[49m\u001b[39m\u001b[22m \u001b[36mv5.0.5 \u001b[39m\u001b[90m/tmp/kitt-rec-veiojb12/mission-log\u001b[39m\n\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m5 passed\u001b[39m\u001b[22m\u001b[90m (5)\u001b[39m\n\u001b[2m   Start at \u001b[22m 22:58:07\n\u001b[2m   Duration \u001b[22m 418ms\u001b[2m (environment 57%, setup 23%, tests 11%, transform 6%, import 2%, worker 1%)\u001b[22m\n\n",
+   "summary": "\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m5 passed\u001b[39m\u001b[22m\u001b[90m (5)\u001b[39m"
+  },
+  "patch": ""
+ },
+ "usage": {
+  "subtype": "success",
+  "is_error": false,
+  "duration_ms": 18182,
+  "duration_api_ms": 18104,
+  "num_turns": 12,
+  "total_cost_usd": 0.1352237,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 23512,
+   "cache_read_input_tokens": 146657,
+   "output_tokens": 2649,
+   "output_tokens_details": {
+    "thinking_tokens": 77
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 23512,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "modelUsage": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 10,
+    "outputTokens": 2649,
+    "cacheReadInputTokens": 146657,
+    "cacheCreationInputTokens": 23512,
+    "webSearchRequests": 0,
+    "costUSD": 0.1352237,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 77,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  }
+ },
+ "finalText": "# KITT Doctor\n\n**Workspace:** `.`\n\n## Stack detected\n\n- Single app (no monorepo)\n- TypeScript, Angular `^22.2.0`\n- npm package manager\n- Vitest test runner\n- No external signals detected (no AG-Grid, Atlassian, etc.)\n\n## kitt.yml status\n\nNo `kitt.yml` found.\n\n- Recommend creating `kitt.yml` at the project root, since this is a single-app layout.\n\n## Readiness\n\nThere's no `kitt.yml`, so the project **can't run a crew yet**.\n\nBlockers:\n- No `kitt.yml`\n- No spec files (coder, tester)\n- No agent-instructions file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md` or `.github/copilot-instructions.md`)\n\n## CRAG status (warnings)\n\n- **CRAG corpus is empty.** There's no `LEARNINGS.md` in the project, and the global `~/.kitt/LEARNINGS.md` doesn't exist yet. Bootstrap it with `seed_learnings` using the tags `angular`, `typescript`, `vitest`.\n- **Workspace not registered.** `~/.kitt/workspaces.txt` doesn't exist. The first `seed_learnings`, `append_learnings` or `learnings_search` call from inside the project registers it.\n- **Embeddings:** the provider is `local:BAAI/bge-small-en-v1.5` and is available. The sidecar `~/.kitt/LEARNINGS.embeddings.npz` is missing, so it will be built once there are entries. Until then, search has nothing to return.\n\n## KITT packs\n\n- Installed: none. There's no `.ai-cli/kitt.lock.yaml`.\n- Recommended for Angular: `crew` and `angular`.\n\n## External MCPs\n\nNo signals were detected, so none are required. I checked the registrations anyway:\n- `chrome-devtools` is registered in `~/.claude.json` and `~/.gemini/settings.json`.\n- `~/.copilot/mcp-config.json` doesn't exist.\n\nI didn't check Atlassian or ag-mcp registrations, because there are no signals for them.\n\n## Suggested commands\n\n1. `/plugin install kitt-crew@kitt-marketplace`\n2. `/plugin install kitt-angular@kitt-marketplace`\n3. `/kitt-init-project` writes `kitt.yml`, spec stubs, `AGENTS.md`, the per-CLI pointer files and an empty `LEARNINGS.md`. It previews each file before writing.\n4. Run `seed_learnings` with the tags `angular`, `typescript`, `vitest` once the project is initialized.\n\nDoctor is read-only. Run the commands above. Re-run doctor to confirm gaps closed.",
+ "stderrTail": "Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.\n"
+}

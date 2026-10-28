@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shall We Play a Game? — Tool-Kitt for frontend developers</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="sky" aria-hidden="true">
+  <div class="sky__swoosh sky__swoosh--a"></div>
+  <div class="sky__swoosh sky__swoosh--b"></div>
+  <div class="sky__stars"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="progress" aria-hidden="true"><div class="progress__bar" id="progress"></div></div>
+<footer class="chrome">
+  <span class="chrome__title">Shall We Play a Game?</span>
+  <span class="chrome__section" id="section-label">Title</span>
+  <span class="chrome__count"><b id="slide-current">01</b><i>/</i><span id="slide-total">21</span></span>
+  <span class="chrome__clock" id="clock">00:00</span>
+</footer>
+
+<main class="deck" id="deck">
+
+  <!-- 1 · Title -->
+  <section class="slide slide--art" data-section="Title">
+    <img src="images/title.jpg" alt="Shall We Play a Game? It's not the future. It's now.">
+    <aside class="notes">Start by asking who has Claude Code open right now. This talk is for frontend developers who already use an AI tool and want to control what it does.</aside>
+  </section>
+
+  <!-- 2 · Last time -->
+  <section class="slide" data-section="Last time">
+    <p class="kicker reveal">The last talk</p>
+    <h2 class="display reveal">The model reads your code now.</h2>
+    <div class="slabs reveal" aria-hidden="true">
+      <div class="slab slab--old"><span>2023</span><em>You described your code in the prompt and hoped.</em></div>
+      <div class="slab slab--new"><span>2026</span><em>You give the tool your code and a goal, and you check the result.</em></div>
+    </div>
+    <p class="lede reveal">The last talk ended with a question. <strong>What else can you give the tool besides the code?</strong> This talk answers that question.</p>
+    <aside class="notes">This is one slide of recap. The last talk showed that prompt tricks add nothing once the tool can read the code. The open question was what else to give the tool. The answer is rules, roles, requirements, and memory. Tool-Kitt ships all four.</aside>
+  </section>
+
+  <!-- 3 · Replay: plain Claude Code -->
+  <section class="slide slide--replay" data-section="Plain Claude Code">
+    <header class="replay__head">
+      <div>
+        <p class="kicker">Recording 1</p>
+        <h2 class="replay__title">Claude Code with no plugins adds a feature from one sentence.</h2>
+      </div>
+      <div class="replay__meta">
+        <span class="tag" data-r="model">—</span>
+        <button class="btn btn--quiet" data-r="skip">Skip to end</button>
+        <button class="btn" data-r="play">Replay</button>
+      </div>
+    </header>
+    <div class="replay" data-replay="naked">
+      <article class="term">
+        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>no plugins</div>
+        <div class="replay__prompt" data-r="prompt"></div>
+        <ol class="log" data-r="log"></ol>
+        <footer class="counters">
+          <div class="counter"><b data-r="tools">0</b><span>tool calls</span></div>
+          <div class="counter"><b data-r="reads">0</b><span>files read</span></div>
+          <div class="counter"><b data-r="writes">0</b><span>files changed</span></div>
+          <div class="counter"><b data-r="time">0.0s</b><span>elapsed</span></div>
+          <div class="counter"><b data-r="cost">—</b><span>cost</span></div>
+        </footer>
+      </article>
+      <aside class="replay__side">
+        <div class="card">
+          <h3><small>the sample app</small>Mission Log</h3>
+          <p>Mission Log is a small Angular 22 app. It has one list component, one generated API client, and five passing tests.</p>
+        </div>
+        <div class="card">
+          <h3><small>watch for</small>Three things it does on its own</h3>
+          <ul class="watch">
+            <li data-watch="mission-list.ts|mission-list.html">It reads the component before it changes it.</li>
+            <li data-watch="ng build|ng test|npm test|npx ng">It runs the build or the tests.</li>
+            <li data-watch="spec.ts">It writes the tests in the same session as the code.</li>
+          </ul>
+        </div>
+        <article class="term term--paper">
+          <div class="term__bar">files it changed · tests after: <b data-r="tests">—</b></div>
+          <ul class="files term__body" data-r="files"></ul>
+        </article>
+      </aside>
+    </div>
+    <aside class="notes">This is a real recording. The prompt is one sentence. Let the recording play while you talk. The point of this slide is that the feature works. The next slide covers what this run did not do.</aside>
+  </section>
+
+  <!-- 4 · What it did not do -->
+  <section class="slide" data-section="What was missing">
+    <p class="kicker reveal">Recording 1, the other side</p>
+    <h2 class="display reveal">The feature works. <span class="muted">Five things are missing.</span></h2>
+    <ul class="ledger reveal">
+      <li><span class="ledger__k ledger__k--bad">It graded itself</span><span class="ledger__v">The same agent wrote the code and the tests. <strong>No one independent checked the work.</strong></span></li>
+      <li><span class="ledger__k ledger__k--bad">No standard</span><span class="ledger__v">It followed whatever Angular style it guessed. Your team's rules were not in the session.</span></li>
+      <li><span class="ledger__k ledger__k--bad">No requirement</span><span class="ledger__v">The model decided what done meant. There was no list of criteria to check against.</span></li>
+      <li><span class="ledger__k ledger__k--bad">No record</span><span class="ledger__v">It left no report and no status entry. The next person has nothing to read.</span></li>
+      <li><span class="ledger__k ledger__k--bad">No memory</span><span class="ledger__v">Everything it learned about this code is gone when the session ends.</span></li>
+    </ul>
+    <p class="lede reveal"><strong>The run was also cheap and correct.</strong> On one small task that is a fair trade. Across a whole backlog, these five gaps add up.</p>
+    <aside class="notes">Say this plainly. The run was cheap and correct. The problem is not one run. The problem is fifty runs by six developers with no shared standard and no audit record. That is how a codebase drifts.</aside>
+  </section>
+
+  <!-- 5 · Thesis -->
+  <section class="slide" data-section="Your job now">
+    <p class="kicker reveal">The thesis</p>
+    <h2 class="display reveal">Your job is <span class="accent">supervision.</span></h2>
+    <p class="lede reveal">The model writes the code. You own four things the model cannot decide for itself.</p>
+    <div class="cards reveal">
+      <div class="card"><h3><small>01</small>Context</h3><p>Context is what the tool can read. Your rules, your patterns, and your API contract live in files in the repo, not in a prompt.</p></div>
+      <div class="card"><h3><small>02</small>Goals</h3><p>A goal is a requirement with criteria a machine can check. It names exact labels, exact counts, and exact responses.</p></div>
+      <div class="card"><h3><small>03</small>Plans</h3><p>A plan is one requirement per run. You order the requirements by dependency, and you split anything bigger than one run.</p></div>
+      <div class="card"><h3><small>04</small>Gates</h3><p>A gate is a check that must pass before the work counts. The gates are the build, the tests, the coverage, and an independent audit.</p></div>
+    </div>
+    <aside class="notes">This is the one slide to remember. The four words are context, goals, plans, and gates. Every Tool-Kitt skill in this talk serves one of the four.</aside>
+  </section>
+
+  <!-- 6 · What Tool-Kitt is -->
+  <section class="slide" data-section="Tool-Kitt">
+    <p class="kicker reveal">The tool</p>
+    <h2 class="display reveal">Tool-Kitt is a set of Claude Code plugins.</h2>
+    <p class="lede reveal">Claude Code runs the loop, the tools, and the permissions. <strong>Tool-Kitt adds the rules, the roles, and the checks.</strong> Nothing in Tool-Kitt re-teaches the model what it already knows.</p>
+    <table class="tally tally--compact reveal">
+      <thead><tr><th>Plugin</th><th>What it adds</th><th>Which of the four</th></tr></thead>
+      <tbody>
+        <tr><td>kitt-core</td><td>The MCP server, the doctor, project setup, requirement drafting, handoffs, and the learnings file</td><td>Context and goals</td></tr>
+        <tr><td>kitt-crew</td><td>The four agents, which are the scout, the coder, the tester, and the auditor. They handle one requirement per run.</td><td>Plans and gates</td></tr>
+        <tr><td>kitt-angular</td><td>Angular patterns, an architecture advisor, and a reviewer that rejects React habits</td><td>Context</td></tr>
+        <tr><td>kitt-python, kitt-auditors, kitt-meta</td><td>Python services, skill auditors, and tools for writing your own skills</td><td>Context</td></tr>
+      </tbody>
+    </table>
+    <aside class="notes">Be precise here. Tool-Kitt is not the harness. Claude Code is the harness. Tool-Kitt is a method layer on top. That is why the same files work from Gemini CLI and Copilot CLI.</aside>
+  </section>
+
+  <!-- 7 · Install -->
+  <section class="slide" data-section="Install">
+    <p class="kicker reveal">Install</p>
+    <h2 class="display reveal">Three commands install it.</h2>
+    <ul class="cmds reveal">
+      <li>/plugin marketplace add jrwhip/tool-kitt<span>This registers the marketplace. The marketplace is a git repo, so there is nothing else to host.</span></li>
+      <li>/plugin install kitt-core@kitt-marketplace<span>Install this one first. It carries the MCP server that every other pack calls.</span></li>
+      <li>/plugin install kitt-crew@kitt-marketplace<span>Then install the crew. Angular projects also install kitt-angular.</span></li>
+    </ul>
+    <p class="lede reveal small">There is one prerequisite. The server runs through <code>uv</code>, a static binary that provides its own Python. It needs no admin rights.</p>
+    <aside class="notes">Plugins can be turned on per project, so an Angular repo carries only the packs it needs. Mention uv once and move on.</aside>
+  </section>
+
+  <!-- 8 · Replay: doctor -->
+  <section class="slide slide--replay" data-section="Doctor">
+    <header class="replay__head">
+      <div>
+        <p class="kicker">Recording 2</p>
+        <h2 class="replay__title">The doctor skill lists what is missing.</h2>
+      </div>
+      <div class="replay__meta">
+        <span class="tag" data-r="model">—</span>
+        <button class="btn btn--quiet" data-r="skip">Skip to end</button>
+        <button class="btn" data-r="play">Replay</button>
+      </div>
+    </header>
+    <div class="replay" data-replay="doctor">
+      <article class="term">
+        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>kitt-core · kitt-crew · kitt-angular</div>
+        <div class="replay__prompt" data-r="prompt"></div>
+        <ol class="log" data-r="log"></ol>
+        <footer class="counters">
+          <div class="counter"><b data-r="tools">0</b><span>tool calls</span></div>
+          <div class="counter"><b data-r="reads">0</b><span>files read</span></div>
+          <div class="counter"><b data-r="writes">0</b><span>files changed</span></div>
+          <div class="counter"><b data-r="time">0.0s</b><span>elapsed</span></div>
+          <div class="counter"><b data-r="cost">—</b><span>cost</span></div>
+        </footer>
+      </article>
+      <aside class="replay__side">
+        <div class="card card--robot">
+          <div class="robot"><img data-robot="doctor" data-caption="Doctor robot" alt="The robot as a doctor"></div>
+          <h3><small>read-only</small>It writes nothing</h3>
+          <p>The doctor detects the stack with a deterministic tool and then reports the gaps. You run the fixes yourself.</p>
+        </div>
+        <div class="card">
+          <h3><small>watch for</small>Five checks</h3>
+          <ul class="watch">
+            <li data-watch="detect_stack">It detects the stack through the MCP server instead of guessing.</li>
+            <li data-watch="kitt.yml">It checks for the config file, kitt.yml.</li>
+            <li data-watch="coder-spec|tester-spec|specs">It checks for the coder spec and the tester spec.</li>
+            <li data-watch="AGENTS.md|CLAUDE.md">It checks for the agent instruction files.</li>
+            <li data-watch="LEARNINGS|learnings">It checks for the learnings file, which is the project's memory.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+    <aside class="notes">The doctor is the first thing to run on any repo. It calls one MCP tool to detect the stack and then checks a recommendation table. It never writes. The next slide shows the fix for everything it finds.</aside>
+  </section>
+
+  <!-- 9 · Replay: init-project -->
+  <section class="slide slide--replay" data-section="Init">
+    <header class="replay__head">
+      <div>
+        <p class="kicker">Recording 3</p>
+        <h2 class="replay__title">One command sets up the repo.</h2>
+      </div>
+      <div class="replay__meta">
+        <span class="tag" data-r="model">—</span>
+        <button class="btn btn--quiet" data-r="skip">Skip to end</button>
+        <button class="btn" data-r="play">Replay</button>
+      </div>
+    </header>
+    <div class="replay" data-replay="init">
+      <article class="term">
+        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>it previews each file, waits for a yes, then writes</div>
+        <div class="replay__prompt" data-r="prompt"></div>
+        <ol class="log" data-r="log"></ol>
+        <footer class="counters">
+          <div class="counter"><b data-r="tools">0</b><span>tool calls</span></div>
+          <div class="counter"><b data-r="reads">0</b><span>files read</span></div>
+          <div class="counter"><b data-r="writes">0</b><span>files written</span></div>
+          <div class="counter"><b data-r="time">0.0s</b><span>elapsed</span></div>
+          <div class="counter"><b data-r="cost">—</b><span>cost</span></div>
+        </footer>
+      </article>
+      <aside class="replay__side">
+        <div class="card">
+          <h3><small>what it writes</small>Six files</h3>
+          <ul class="watch">
+            <li data-watch="write_kitt_yml|kitt.yml">kitt.yml is the project config file.</li>
+            <li data-watch="coder-spec">specs/coder-spec.md holds the coding rules, pre-filled for Angular.</li>
+            <li data-watch="tester-spec">specs/tester-spec.md holds the testing rules, pre-filled for Vitest.</li>
+            <li data-watch="AGENTS.md">AGENTS.md holds the agent instructions. CLAUDE.md and GEMINI.md point at it.</li>
+            <li data-watch="LEARNINGS.md|seed_learnings">LEARNINGS.md is the memory file.</li>
+            <li data-watch="tracking">implementation-tracking.md is the status document.</li>
+          </ul>
+        </div>
+        <article class="term term--paper">
+          <div class="term__bar">files it wrote</div>
+          <ul class="files term__body" data-r="files"></ul>
+        </article>
+      </aside>
+    </div>
+    <aside class="notes">Every write previews the file first and waits for a yes. In this recording the yes was given up front so the skill could run end to end. Point out the spec stubs. They are specific to the stack. The Angular ones already say signals, OnPush, and no NgModule.</aside>
+  </section>
+
+  <!-- 10 · The coder spec -->
+  <section class="slide slide--doc" data-section="Coder spec">
+    <p class="kicker reveal">Context</p>
+    <h2 class="display reveal">Your standards become a file the coder must read.</h2>
+    <div class="doc reveal">
+      <article class="term">
+        <div class="term__bar"><b>specs/coder-spec.md</b><span class="spacer"></span>excerpt</div>
+        <pre class="term__body"><span class="c">## Architecture Patterns</span>
+
+<span class="k">### Standalone components only</span>
+<span class="s">No `NgModule`. Components import their own dependencies.</span>
+
+<span class="k">### Signals for reactive state</span>
+<span class="s">- Component state: `signal()`, `computed()`, `linkedSignal()`.
+- Async: `resource()` / `httpResource()`. `toSignal()` for RxJS interop.
+- <span class="hl">Do NOT use `BehaviorSubject` for component-local state.</span></span>
+
+<span class="k">### OnPush change detection</span>
+<span class="s">Every new component declares <span class="hl">`changeDetection: OnPush`</span>.</span>
+
+<span class="c">## API Consumption</span>
+<span class="s">1. <span class="hl">Never hand-write HTTP services</span> or request/response types.
+2. Never hand-edit the generated client. Missing endpoint? STOP and flag it.</span>
+
+<span class="c">## Anti-Patterns (auditor surfaces these as BLOCKERs)</span>
+<span class="x">- `@Component` without OnPush in new code.
+- `subscribe()` inside a component body without a teardown.
+- Reactive forms for new feature work when signal forms exist.</span></pre>
+      </article>
+      <ul class="callouts">
+        <li><b>Why a file</b>Training data is full of React habits written in Angular syntax. A spec file in the repo overrides the training data on every run.</li>
+        <li><b>Who reads it</b>The coder reads it before writing code. The auditor reads it to decide BLOCKED or UNBLOCKED. One file serves two jobs.</li>
+        <li><b>Who maintains it</b>You maintain it by default. If you turn on <code>spec_writes</code>, the coder may propose changes when a new pattern earns a place.</li>
+      </ul>
+    </div>
+    <aside class="notes">This is the context part of the thesis. The spec is a plain markdown file. It ships pre-filled for Angular, FastAPI, and Spring Boot. You edit it like code, and you review changes to it like code.</aside>
+  </section>
+
+  <!-- 11 · A requirement -->
+  <section class="slide slide--doc" data-section="Requirement">
+    <p class="kicker reveal">Goals</p>
+    <h2 class="display reveal">A requirement is a list of checks a machine can run.</h2>
+    <div class="doc reveal">
+      <article class="term">
+        <div class="term__bar"><b>requirements/REQ-ML-1.md</b><span class="spacer"></span>excerpt</div>
+        <pre class="term__body"><span class="c">---
+id: REQ-ML-1
+title: Filter the mission list by status
+status: pending
+---</span>
+<span class="k">## Requirement</span>
+<span class="s">Adds a status filter with three choices (All, Open, Done) and a
+count line. Does not add sorting, search, persistence, or any
+change to the Mission Log API.</span>
+
+<span class="k">## Acceptance criteria</span>
+<span class="s">1. One filter control with exactly three options labelled
+   <span class="hl">"All", "Open", and "Done"</span>. "All" is selected on first render.
+4. A count line reads <span class="hl">"Showing N of M missions"</span>.
+   3 returned, 2 open, "Open" selected: "Showing 2 of 3 missions".
+5. No match: the text "No missions match this filter." and
+   "Showing 0 of M missions".
+7. Changing the filter <span class="hl">sends no new request</span> to the API.
+8. `ng test` passes with zero failures, including pre-existing tests.
+10. No file under `src/api/` changes.</span></pre>
+      </article>
+      <ul class="callouts">
+        <li><b>The bar</b>If two honest reviewers could disagree about whether a criterion is met, rewrite the criterion. Use exact labels, exact text, and exact counts.</li>
+        <li><b>No implementation</b>A requirement names no files, no components, and no libraries. A criterion that restates the code certifies anything.</li>
+        <li><b>Where it lives</b>A requirement is a markdown file in the <code>requirements/</code> folder or a Jira issue. The crew reads either one.</li>
+      </ul>
+    </div>
+    <aside class="notes">This is the goals part. Read criterion four out loud. The auditor can check it without a judgment call. That is the whole bar. Compare it with the one-sentence prompt from recording one.</aside>
+  </section>
+
+  <!-- 12 · Wargame -->
+  <section class="slide" data-section="Wargame">
+    <p class="kicker reveal">Goals</p>
+    <h2 class="display reveal">The wargame skill writes the requirements with you.</h2>
+    <p class="lede reveal">You do not write those files by hand. You sit in a session that interviews you and writes them. <strong>You decide the scope, and the skill decides the wording.</strong></p>
+    <div class="cards cards--3 reveal">
+      <div class="card"><h3><small>phase 1</small>Diverge</h3><p>The skill asks about users, scenarios, edge cases, constraints, and integrations. It generates candidate requirements as you talk.</p></div>
+      <div class="card"><h3><small>phase 2</small>Converge</h3><p>The skill merges duplicates, points out collisions, and makes you pick. It keeps every rejected idea as excluded scope with a reason.</p></div>
+      <div class="card"><h3><small>phase 3</small>Formalize</h3><p>The skill writes one requirement file per capability, sized to one crew run and ordered by dependency. Then it fills the status table.</p></div>
+    </div>
+    <aside class="notes">Keep this short. The wargame is an interview. Most of the value of this whole setup comes from this step, because the crew is only as good as the requirement it is handed.</aside>
+  </section>
+
+  <!-- 13 · The crew -->
+  <section class="slide" data-section="The crew">
+    <p class="kicker reveal">Plans and gates</p>
+    <h2 class="display reveal">Four agents do four jobs. No agent does two.</h2>
+    <div class="cards reveal">
+      <div class="card card--robot"><span class="model">haiku</span><div class="robot"><img data-robot="scout" data-caption="Scout robot" alt="The scout robot"></div><h3><small>01 · it reads</small>Scout</h3><p>The scout reads the specs, the requirement, and the code. It writes a contract that names the files to touch. It changes nothing else.</p></div>
+      <div class="card card--robot"><span class="model">sonnet</span><div class="robot"><img data-robot="coder" data-caption="Coder robot" alt="The coder robot"></div><h3><small>02 · it writes code</small>Coder</h3><p>The coder implements one requirement against the coder spec. It writes no tests. It touches nothing outside the contract.</p></div>
+      <div class="card card--robot"><span class="model">sonnet</span><div class="robot"><img data-robot="tester" data-caption="Tester robot" alt="The tester robot"></div><h3><small>03 · it writes tests</small>Tester</h3><p>The tester writes the tests against the tester spec. It maps every criterion to a named test. It touches no production code.</p></div>
+      <div class="card card--robot"><span class="model">sonnet</span><div class="robot"><img data-robot="auditor" data-caption="Auditor robot" alt="The auditor robot"></div><h3><small>04 · it decides</small>Auditor</h3><p>The auditor re-runs everything itself. It returns BLOCKED or UNBLOCKED. It is the only agent allowed to write a lesson to memory.</p></div>
+    </div>
+    <p class="arrow-row reveal"><b>scout</b><i>→</i><b>coder</b><i>→</i><b>tester</b><i>→</i>coverage gate<i>→</i><b>auditor</b><i>→</i>verdict</p>
+    <aside class="notes">The rule that matters is in the title. An agent that writes code and its own tests approves its own output. Anthropic found the same thing in their own harness work. Agents that grade themselves praise the work. So the grading stays with a separate agent.</aside>
+  </section>
+
+  <!-- 14 · Replay: crew part 1 -->
+  <section class="slide slide--replay" data-section="Crew · 1 of 3">
+    <header class="replay__head">
+      <div>
+        <p class="kicker">Recording 4, part 1</p>
+        <h2 class="replay__title">The run stops for your approval, then the scout reads.</h2>
+      </div>
+      <div class="replay__meta">
+        <span class="tag" data-r="model">—</span>
+        <button class="btn btn--quiet" data-r="skip">Skip to end</button>
+        <button class="btn" data-r="play">Replay</button>
+      </div>
+    </header>
+    <div class="replay" data-replay="crew" data-to-agent="crew-coder">
+      <article class="term">
+        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>orchestrator and scout</div>
+        <div class="replay__prompt" data-r="prompt"></div>
+        <ol class="log" data-r="log"></ol>
+        <footer class="counters">
+          <div class="counter"><b data-r="agents">0</b><span>agents</span></div>
+          <div class="counter"><b data-r="tools">0</b><span>tool calls</span></div>
+          <div class="counter"><b data-r="reads">0</b><span>files read</span></div>
+          <div class="counter"><b data-r="writes">0</b><span>files changed</span></div>
+          <div class="counter"><b data-r="time">0.0s</b><span>elapsed</span></div>
+        </footer>
+      </article>
+      <aside class="replay__side">
+        <div class="card card--robot">
+          <div class="robot"><img data-robot="gate" data-caption="Robot at a gate" alt="The robot waiting at a closed gate"></div>
+          <h3><small>gate 1</small>Requirement review</h3>
+          <p>The run shows you the requirement word for word and waits. You approve it, edit it, send it back for rework, or cancel. Silence is not approval.</p>
+        </div>
+        <div class="card">
+          <h3><small>watch for</small>Four steps before any code</h3>
+          <ul class="watch">
+            <li data-watch="learnings_search">It searches the learnings file for lessons from past runs.</li>
+            <li data-watch="crew-scout">It starts the scout as a separate agent.</li>
+            <li data-watch="crew-contracts|scout.md">The scout writes its contract file.</li>
+            <li data-watch="validate_scout_contract">A tool validates the contract. No agent gives an opinion on it.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+    <aside class="notes">This is part one. The orchestrator reads the requirement, runs the review gate, searches memory, and starts the scout. A deterministic validator checks the scout's contract. A bad contract stops the run before the coder costs anything.</aside>
+  </section>
+
+  <!-- 15 · Replay: crew part 2 -->
+  <section class="slide slide--replay" data-section="Crew · 2 of 3">
+    <header class="replay__head">
+      <div>
+        <p class="kicker">Recording 4, part 2</p>
+        <h2 class="replay__title">The coder writes, the tester checks, and <em>the gate decides.</em></h2>
+      </div>
+      <div class="replay__meta">
+        <span class="tag" data-r="model">—</span>
+        <button class="btn btn--quiet" data-r="skip">Skip to end</button>
+        <button class="btn" data-r="play">Replay</button>
+      </div>
+    </header>
+    <div class="replay" data-replay="crew" data-from-agent="crew-coder" data-to-agent="crew-auditor">
+      <article class="term">
+        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>coder and tester</div>
+        <div class="replay__prompt" data-r="prompt"></div>
+        <ol class="log" data-r="log"></ol>
+        <footer class="counters">
+          <div class="counter"><b data-r="agents">0</b><span>agents</span></div>
+          <div class="counter"><b data-r="tools">0</b><span>tool calls</span></div>
+          <div class="counter"><b data-r="reads">0</b><span>files read</span></div>
+          <div class="counter"><b data-r="writes">0</b><span>files changed</span></div>
+          <div class="counter"><b data-r="time">0.0s</b><span>elapsed</span></div>
+        </footer>
+      </article>
+      <aside class="replay__side">
+        <div class="card">
+          <h3><small>gate 2</small>Five coverage conditions</h3>
+          <ol>
+            <li>The build passes.</li>
+            <li>The full test suite passes with no new failures.</li>
+            <li>Every acceptance criterion maps to a named test.</li>
+            <li>Any API change is written in the handoff contract.</li>
+            <li>Static analysis reports no problems for this change.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3><small>watch for</small>The roles stay separate</h3>
+          <ul class="watch">
+            <li data-watch="crew-coder">The coder edits only production files.</li>
+            <li data-watch="crew-tester">The tester is a second, separate agent.</li>
+            <li data-watch="ng test|ng build|npx ng">The test suite runs for real.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+    <aside class="notes">This is part two. Watch the file names. The coder touches the component. The tester touches the spec files. Neither one touches the other's files. If a gate condition fails, the orchestrator sends the failure back to its owner and checks again. It never sends a known failure to the auditor.</aside>
+  </section>
+
+  <!-- 16 · Replay: crew part 3 -->
+  <section class="slide slide--replay" data-section="Crew · 3 of 3">
+    <header class="replay__head">
+      <div>
+        <p class="kicker">Recording 4, part 3</p>
+        <h2 class="replay__title">The auditor re-runs everything and gives a verdict.</h2>
+      </div>
+      <div class="replay__meta">
+        <span class="tag" data-r="model">—</span>
+        <button class="btn btn--quiet" data-r="skip">Skip to end</button>
+        <button class="btn" data-r="play">Replay</button>
+      </div>
+    </header>
+    <div class="replay" data-replay="crew" data-from-agent="crew-auditor">
+      <article class="term">
+        <div class="term__bar"><b>claude</b> · mission-log<span class="spacer"></span>auditor</div>
+        <div class="replay__prompt" data-r="prompt"></div>
+        <ol class="log" data-r="log"></ol>
+        <footer class="counters">
+          <div class="counter"><b data-r="agents">0</b><span>agents</span></div>
+          <div class="counter"><b data-r="tools">0</b><span>tool calls</span></div>
+          <div class="counter"><b data-r="writes">0</b><span>files changed</span></div>
+          <div class="counter"><b data-r="cost">—</b><span>whole run</span></div>
+          <div class="counter"><b data-r="tests">—</b><span>tests after</span></div>
+        </footer>
+      </article>
+      <aside class="replay__side">
+        <div class="card card--robot">
+          <div class="robot"><img data-robot="auditor" data-caption="Auditor robot" alt="The auditor robot"></div>
+          <h3><small>gate 3</small>The verdict</h3>
+          <p>UNBLOCKED means the work is done. BLOCKED means the run stops. A human sorts each blocker by owner, and that owner fixes it. The crew never loops on its own.</p>
+        </div>
+        <div class="card">
+          <h3><small>watch for</small>Four things only the auditor does</h3>
+          <ul class="watch">
+            <li data-watch="crew-auditor">It runs once, after the gate, and never during iteration.</li>
+            <li data-watch="ng test|ng build">It re-runs the test suite itself instead of trusting the record.</li>
+            <li data-watch="AUDIT_REPORT|audit-report|audit report">It writes the audit report.</li>
+            <li data-watch="append_learnings|LEARNINGS">It adds zero to three lessons to the memory file.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+    <aside class="notes">This is part three. The auditor checks everything again on its own. It does not trust the tester's recorded coverage. Then it writes lessons. It is the only writer to the learnings file, and that is how memory stays trustworthy.</aside>
+  </section>
+
+  <!-- 17 · What the run leaves behind -->
+  <section class="slide slide--files" data-section="Left behind">
+    <p class="kicker reveal">After the run</p>
+    <h2 class="display reveal">The run leaves three files the next person can read.</h2>
+    <div class="cards cards--3 reveal">
+      <article class="term">
+        <div class="term__bar"><b>AUDIT_REPORT.md</b></div>
+        <pre class="term__body" data-excerpt="audit"><span class="c">## Audit Report - REQ-ML-1</span>
+<span class="k">Build:</span> <span class="s">PASS (strict TS)</span>
+<span class="k">Tests:</span> <span class="s">17 passed, 0 failed</span>
+
+<span class="k">## PR Readiness Verdict: <span class="hl">UNBLOCKED</span></span>
+<span class="s">Zero BLOCKERs. Five warnings.</span>
+
+<span class="k">### WARNINGS</span>
+<span class="s">1. Default-selection test may be
+   vacuous in jsdom. Mutate-check it.
+2. Coverage unmeasured: no provider
+   installed. Install one.
+4. Tracking-doc dates disagree.</span>
+
+<span class="k">### PASSED</span>
+<span class="s">Criteria 1-7 traced to named tests.
+No file under src/api/ changed.
+Files touched match the scout contract.</span></pre>
+      </article>
+      <article class="term">
+        <div class="term__bar"><b>LEARNINGS.md</b></div>
+        <pre class="term__body" data-excerpt="learnings"><span class="c">## LRN-2026-10-27-a: Default-selection
+tests on a native select are vacuous
+in jsdom</span>
+<span class="k">stack:</span> <span class="s">angular, vitest, jsdom</span>
+<span class="k">req:</span> <span class="s">REQ-ML-1</span>  <span class="k">origin:</span> <span class="s">crew-auditor</span>
+
+<span class="k">What happened:</span> <span class="s">"All" is the first
+option, and jsdom selects the first
+option when none is marked. The
+[selected] bindings could be deleted
+and the test would stay green.</span>
+
+<span class="k">Pattern to encode:</span> <span class="s">For a "default
+selected" criterion, assert against a
+non-first default, or mutate the
+binding and confirm the test fails.</span></pre>
+      </article>
+      <article class="term">
+        <div class="term__bar"><b>IMPLEMENTATION_TRACKING.md</b></div>
+        <pre class="term__body" data-excerpt="tracking"><span class="c">## Requirements Baseline</span>
+<span class="s">| REQ-ML-1 | Filter the mission list
+| <span class="hl">✅ Implemented</span> | REQ review: approved,
+1 round. Coverage gate passed: build
+PASS, suite 17/17, criteria 1-7 traced |</span>
+
+<span class="c">## Gap Analysis</span>
+<span class="s">Last run: 2026-10-27. Verdict: ALIGNED.
+| REQ-ML-1 | Implemented | None |
+Audit UNBLOCKED: 0 blockers, 5 warnings</span>
+
+<span class="c">## Implementation Log</span>
+<span class="s">2026-10-27 · REQ-ML-1 (coder)
+2026-10-27 · REQ-ML-1 (tester)</span></pre>
+      </article>
+    </div>
+    <p class="lede reveal small">These excerpts come from the recorded run. They are cut only for length. The full files are in replays/artifacts/crew/. The next crew run reads that lesson before its first step.</p>
+    <aside class="notes">This is the record that the run with no plugins did not leave. The audit report is the review. The tracking document is the status. The learnings file is the memory, and the next run reads it before its first step.</aside>
+  </section>
+
+  <!-- 18 · Numbers -->
+  <section class="slide slide--numbers" data-section="Numbers">
+    <p class="kicker reveal">Measured on one requirement, three ways</p>
+    <h2 class="display reveal">The harness shrinks as the models grow.</h2>
+    <table class="tally reveal">
+      <thead><tr><th></th><th>Claude Code alone</th><th>Heavy crew (473-line skill)</th><th>Right-sized crew (119-line skill)</th></tr></thead>
+      <tbody>
+        <tr><td>Agents started</td><td class="num">1</td><td class="num">5</td><td class="num">4</td></tr>
+        <tr><td>Tokens per run</td><td class="num">31k</td><td class="num">251k</td><td class="num">205k</td></tr>
+        <tr><td>Feature works and tests pass</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Independent audit</td><td class="bad">None. We paid about 35k tokens to check the work.</td><td class="good">Built in, with 1 or 2 warnings</td><td class="good">Built in, with 0 warnings</td></tr>
+        <tr><td>Who wrote the tests</td><td class="bad">The same agent that wrote the code</td><td class="good">A tester that cannot touch production code</td><td class="good">The same separation</td></tr>
+        <tr><td>Record and memory</td><td class="bad">None</td><td class="good">Full</td><td class="good">Full</td></tr>
+      </tbody>
+    </table>
+    <p class="lede reveal small"><strong>This deck's own Angular run:</strong> Claude Code alone finished in <span data-stat="naked.minutes">—</span> for <span data-stat="naked.cost">—</span>. The crew took <span data-stat="crew.minutes">—</span> for <span data-stat="crew.cost">—</span>, and it left an audit report, a status entry, and one lesson behind.</p>
+    <p class="lede reveal small">The table comes from a Python test requirement, with two runs per column. The run with no plugins was eight times cheaper and still correct. The crew's own instruction file was cut by 75 percent with no regression, and every cut passed this test first. Shorter is not automatically better. Anthropic reverted a prompt change in April 2026 for that exact reason.</p>
+    <aside class="notes">Be honest with this table. The run with no plugins wins on cost, and the task was small enough that the result was correct. The crew pays for an audit you owed anyway and turns the audit into a file. The harness itself must be measured again and cut down as models improve. That is why the crew skill went from 473 lines to 119 lines with a test gating every cut.</aside>
+  </section>
+
+  <!-- 19 · Handoff -->
+  <section class="slide slide--scene" data-section="Handoff">
+    <div class="scene"><img data-robot="robot" data-caption="The robot" alt="The robot"></div>
+    <div class="scene-text">
+    <p class="kicker reveal">End of session</p>
+    <h2 class="display reveal">Nothing lives in one CLI's memory.</h2>
+    <p class="lede reveal">At the end of a session, one skill gathers evidence from git, writes a handoff, and saves durable lessons. <strong>The next session resumes with nothing lost, on any CLI.</strong></p>
+    <ul class="ledger reveal">
+      <li><span class="ledger__k">Grounded</span><span class="ledger__v">The skill checks every status claim against commits and files before it writes the claim. It labels anything it cannot verify as unverified.</span></li>
+      <li><span class="ledger__k">References</span><span class="ledger__v">It records commit hashes, ticket IDs, and file and line pointers instead of prose that drifts.</span></li>
+      <li><span class="ledger__k">Next action</span><span class="ledger__v">The first line names the one concrete thing to do next and exactly how to do it.</span></li>
+      <li><span class="ledger__k ledger__k--ok">Any CLI</span><span class="ledger__v">The handoff and the lessons go through the MCP server, so Claude Code, Gemini CLI, and Copilot CLI all read the same state.</span></li>
+    </ul>
+    </div>
+    <aside class="notes">This is a short slide. The point is that state lives in the repo and the MCP server, not in a chat history. A teammate on Gemini CLI picks up where you left off on Claude Code.</aside>
+  </section>
+
+  <!-- 20 · Monday -->
+  <section class="slide slide--scene" data-section="Monday">
+    <div class="scene"><img data-robot="monday" data-caption="Robot with coffee" alt="The robot holding a coffee mug"></div>
+    <div class="scene-text">
+      <p class="kicker reveal">Monday</p>
+      <h2 class="display reveal">Do four things this week.</h2>
+      <div class="card reveal">
+        <ol>
+          <li>Install kitt-core, kitt-crew, and kitt-angular. That takes two minutes.</li>
+          <li>Run <code>/kitt-doctor</code> on one real repo and read the report.</li>
+          <li>Run <code>/kitt-init-project</code>. Then edit the coder spec until it says what your team actually does.</li>
+          <li>Pick one small ticket. Write it as a requirement with checkable criteria. Run the crew on it. Read the audit report.</li>
+        </ol>
+      </div>
+      <p class="lede reveal small">Then bring me the audit report.</p>
+    </div>
+    <aside class="notes">The ask is one repo, one ticket, and one crew run. People skip the spec editing step, and that step is the one that makes the next fifty runs match your codebase.</aside>
+  </section>
+
+  <!-- 21 · Close -->
+  <section class="slide slide--close" data-section="Close">
+    <p class="kicker reveal">Shall we play a game?</p>
+    <h1 class="display reveal">The only winning move <span class="accent">is to supervise.</span></h1>
+    <p class="lede reveal">github.com/jrwhip/tool-kitt</p>
+    <aside class="notes">Close on the line and the repo link. Then take questions.</aside>
+  </section>
+
+</main>
+
+<aside class="notes-panel" id="notes-panel" hidden></aside>
+<div class="help" id="help" hidden>
+  <b>←/→</b> slides · <b>R</b> replay · <b>S</b> skip to end · <b>1/2/3</b> speed · <b>N</b> notes · <b>F</b> fullscreen · <b>?</b> help
+</div>
+
+<!-- Recordings. Each file is written by record.py; missing files are skipped. -->
+<script src="replays/naked.js"></script>
+<script src="replays/doctor.js"></script>
+<script src="replays/init.js"></script>
+<script src="replays/crew.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

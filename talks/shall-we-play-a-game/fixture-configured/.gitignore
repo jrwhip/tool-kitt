@@ -1,0 +1,8 @@
+node_modules
+dist
+.angular
+coverage
+
+# KITT (do not edit between markers)
+LEARNINGS.embeddings.npz
+# /KITT

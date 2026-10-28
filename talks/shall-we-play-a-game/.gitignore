@@ -1,0 +1,6 @@
+fixture/node_modules
+fixture/dist
+fixture/.angular
+fixture-configured/node_modules
+fixture-configured/dist
+fixture-configured/.angular

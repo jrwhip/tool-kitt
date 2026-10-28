@@ -1,0 +1,14 @@
+.masthead {
+  padding: 1.5rem 2rem 0.5rem;
+}
+.masthead h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+.masthead p {
+  margin: 0.25rem 0 0;
+  color: #555;
+}
+main {
+  padding: 0 2rem 2rem;
+}

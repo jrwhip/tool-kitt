@@ -1,0 +1,16 @@
+@let list = missions();
+@if (list === undefined) {
+  <p class="loading" role="status">Loading missions…</p>
+} @else if (list.length === 0) {
+  <p class="empty">No missions on the board.</p>
+} @else {
+  <ul class="missions">
+    @for (mission of list; track mission.id) {
+      <li class="mission" [class.done]="mission.status === 'done'">
+        <span class="priority" [attr.aria-label]="'priority ' + mission.priority">P{{ mission.priority }}</span>
+        <span class="title">{{ mission.title }}</span>
+        <span class="status">{{ mission.status }}</span>
+      </li>
+    }
+  </ul>
+}

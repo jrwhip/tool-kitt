@@ -1,0 +1,13 @@
+/kitt-run-crew REQ-ML-1
+
+I am the operator. I have answered every intake question below so the crew can run start to finish without stopping to ask me anything.
+
+- Run type: (1) crew run.
+- Scope: REQ-ML-1 only.
+- Structural context: none. Record "none" in the tracking document.
+- REQ review gate: I have read requirements/REQ-ML-1.md in full and I APPROVE it exactly as written, with no edits. Record "REQ review: approved 2026-10-28, 1 round" on its baseline row.
+- Optional hooks: no. Do not register any.
+- spec_writes stays off.
+- This is a frontend-only project. The API contract is the checked-in OpenAPI document at api/openapi.json. REQ-ML-1 does not touch the API surface, so no handoff contract entry is needed.
+
+Show me the REQ body as the gate requires, then treat my approval above as the answer and continue. If a required input is genuinely missing, stop and report; do not guess.

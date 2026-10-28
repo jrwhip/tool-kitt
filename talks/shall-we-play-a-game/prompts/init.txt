@@ -1,0 +1,7 @@
+/kitt-init-project
+
+Answers to every question you would ask me, so you can run start to finish without stopping:
+- The target is the current directory, a standalone Angular CLI app called Mission Log (slug mission-log).
+- It is a frontend project. The API contract is the OpenAPI document at api/openapi.json, consumed through the generated client in src/api/ (openapi-generator-cli 7.21.0).
+- Requirements live in local REQ files under requirements/.
+- I approve every file you preview. Write them all. Do not register the optional hooks.

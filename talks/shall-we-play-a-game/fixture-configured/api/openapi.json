@@ -1,0 +1,64 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mission Log API", "version": "1.2.0" },
+  "paths": {
+    "/api/missions": {
+      "get": {
+        "operationId": "listMissions",
+        "summary": "List every mission in the log",
+        "responses": {
+          "200": {
+            "description": "The missions, newest first",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Mission" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/missions/{id}": {
+      "patch": {
+        "operationId": "updateMissionStatus",
+        "summary": "Change one mission's status",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/MissionStatusUpdate" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated mission",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Mission" } } }
+          },
+          "404": { "description": "No mission with that id" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "MissionStatus": { "type": "string", "enum": ["open", "done"] },
+      "Mission": {
+        "type": "object",
+        "required": ["id", "title", "status", "priority"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "status": { "$ref": "#/components/schemas/MissionStatus" },
+          "priority": { "type": "integer", "minimum": 1, "maximum": 3 }
+        }
+      },
+      "MissionStatusUpdate": {
+        "type": "object",
+        "required": ["status"],
+        "properties": { "status": { "$ref": "#/components/schemas/MissionStatus" } }
+      }
+    }
+  }
+}

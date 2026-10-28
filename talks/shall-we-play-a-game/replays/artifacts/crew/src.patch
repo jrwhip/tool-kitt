@@ -1,0 +1,217 @@
+diff --git i/src/app/missions/mission-list.css w/src/app/missions/mission-list.css
+index ab80f38..54a8017 100644
+--- i/src/app/missions/mission-list.css
++++ w/src/app/missions/mission-list.css
+@@ -29,6 +29,16 @@
+   color: #555;
+ }
+ .loading,
+-.empty {
++.empty,
++.no-match {
+   color: #555;
+ }
++.filter {
++  margin-bottom: 0.5rem;
++  padding: 0.3rem 0.5rem;
++}
++.count {
++  margin: 0 0 0.75rem;
++  color: #555;
++  font-size: 0.9rem;
++}
+diff --git i/src/app/missions/mission-list.html w/src/app/missions/mission-list.html
+index c6b4197..f93ba50 100644
+--- i/src/app/missions/mission-list.html
++++ w/src/app/missions/mission-list.html
+@@ -1,16 +1,27 @@
+ @let list = missions();
++@let shown = visible() ?? [];
+ @if (list === undefined) {
+   <p class="loading" role="status">Loading missions…</p>
+ } @else if (list.length === 0) {
+   <p class="empty">No missions on the board.</p>
+ } @else {
+-  <ul class="missions">
+-    @for (mission of list; track mission.id) {
+-      <li class="mission" [class.done]="mission.status === 'done'">
+-        <span class="priority" [attr.aria-label]="'priority ' + mission.priority">P{{ mission.priority }}</span>
+-        <span class="title">{{ mission.title }}</span>
+-        <span class="status">{{ mission.status }}</span>
+-      </li>
+-    }
+-  </ul>
++  <select class="filter" aria-label="Filter by status" (change)="setFilter($any($event.target).value)">
++    <option value="all" [selected]="filter() === 'all'">All</option>
++    <option value="open" [selected]="filter() === 'open'">Open</option>
++    <option value="done" [selected]="filter() === 'done'">Done</option>
++  </select>
++  <p class="count">Showing {{ shown.length }} of {{ list.length }} missions</p>
++  @if (shown.length === 0) {
++    <p class="no-match">No missions match this filter.</p>
++  } @else {
++    <ul class="missions">
++      @for (mission of shown; track mission.id) {
++        <li class="mission" [class.done]="mission.status === 'done'">
++          <span class="priority" [attr.aria-label]="'priority ' + mission.priority">P{{ mission.priority }}</span>
++          <span class="title">{{ mission.title }}</span>
++          <span class="status">{{ mission.status }}</span>
++        </li>
++      }
++    </ul>
++  }
+ }
+diff --git i/src/app/missions/mission-list.spec.ts w/src/app/missions/mission-list.spec.ts
+index 502682f..e4cb80c 100644
+--- i/src/app/missions/mission-list.spec.ts
++++ w/src/app/missions/mission-list.spec.ts
+@@ -58,4 +58,109 @@ describe('MissionList', () => {
+     respond([]);
+     expect((fixture.nativeElement as HTMLElement).querySelector('.empty')).not.toBeNull();
+   });
++
++  describe('status filter', () => {
++    const root = () => fixture.nativeElement as HTMLElement;
++    const select = () => root().querySelector('select') as HTMLSelectElement;
++    const count = () => root().querySelector('.count')?.textContent?.replace(/\s+/g, ' ').trim();
++    const titles = () =>
++      Array.from(root().querySelectorAll('li.mission .title')).map((t) => t.textContent?.trim());
++
++    function choose(value: string): void {
++      const el = select();
++      el.value = value;
++      el.dispatchEvent(new Event('change', { bubbles: true }));
++      fixture.detectChanges();
++    }
++
++    async function load(missions: Mission[]): Promise<void> {
++      await fixture.whenStable();
++      respond(missions);
++    }
++
++    it('renders exactly one filter control with options All, Open, Done (criterion 1)', async () => {
++      await load(MISSIONS);
++      expect(root().querySelectorAll('select').length).toBe(1);
++      const options = Array.from(select().options);
++      expect(options.map((o) => o.textContent?.trim())).toEqual(['All', 'Open', 'Done']);
++    });
++
++    it('selects All on first render (criterion 1)', async () => {
++      await load(MISSIONS);
++      expect(select().value).toBe('all');
++      expect(select().selectedOptions[0].textContent?.trim()).toBe('All');
++    });
++
++    it('lists every mission in API order with All selected (criterion 2)', async () => {
++      await load(MISSIONS);
++      expect(titles()).toEqual(MISSIONS.map((m) => m.title));
++    });
++
++    it('lists only open missions when Open is selected (criterion 3)', async () => {
++      await load(MISSIONS);
++      choose('open');
++      expect(titles()).toEqual(['Calibrate the dish', 'Play tic-tac-toe']);
++      expect(root().querySelectorAll('li.mission.done').length).toBe(0);
++    });
++
++    it('lists only done missions when Done is selected (criterion 3)', async () => {
++      await load(MISSIONS);
++      choose('done');
++      expect(titles()).toEqual(['Rotate the launch codes']);
++    });
++
++    it('returns to the full list when All is re-selected (criterion 2)', async () => {
++      await load(MISSIONS);
++      choose('done');
++      choose('all');
++      expect(titles()).toEqual(MISSIONS.map((m) => m.title));
++    });
++
++    it('shows the count line for each filter (criterion 4)', async () => {
++      await load(MISSIONS);
++      expect(count()).toBe('Showing 3 of 3 missions');
++      choose('open');
++      expect(count()).toBe('Showing 2 of 3 missions');
++      choose('done');
++      expect(count()).toBe('Showing 1 of 3 missions');
++    });
++
++    it('shows the no-match text and a zero count when the filter matches nothing (criterion 5)', async () => {
++      const allOpen: Mission[] = MISSIONS.filter((m) => m.status === 'open');
++      await load(allOpen);
++      choose('done');
++      expect(root().querySelector('.no-match')?.textContent?.trim()).toBe(
++        'No missions match this filter.',
++      );
++      expect(count()).toBe('Showing 0 of 2 missions');
++      expect(root().querySelectorAll('li.mission').length).toBe(0);
++      expect(select()).not.toBeNull();
++    });
++
++    it('does not show the no-match text when missions match (criterion 5)', async () => {
++      await load(MISSIONS);
++      choose('open');
++      expect(root().querySelector('.no-match')).toBeNull();
++    });
++
++    it('shows the empty-state text and no filter control for an empty array (criterion 6)', async () => {
++      await load([]);
++      expect(root().querySelector('.empty')?.textContent?.trim()).toBe('No missions on the board.');
++      expect(root().querySelector('select')).toBeNull();
++      expect(root().querySelector('.no-match')).toBeNull();
++    });
++
++    it('renders no count line for an empty array (orchestrator decision, not a numbered criterion)', async () => {
++      await load([]);
++      expect(root().querySelector('.count')).toBeNull();
++    });
++
++    it('sends no new request when the filter changes (criterion 7)', async () => {
++      await load(MISSIONS);
++      choose('open');
++      choose('done');
++      choose('all');
++      http.expectNone('/api/missions');
++    });
++  });
+ });
+diff --git i/src/app/missions/mission-list.ts w/src/app/missions/mission-list.ts
+index dfe7c1e..cdb1558 100644
+--- i/src/app/missions/mission-list.ts
++++ w/src/app/missions/mission-list.ts
+@@ -1,6 +1,8 @@
+-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
++import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+ import { toSignal } from '@angular/core/rxjs-interop';
+-import { MissionsService } from '../../api';
++import { MissionStatus, MissionsService } from '../../api';
++
++type MissionFilter = 'all' | MissionStatus;
+ 
+ @Component({
+   selector: 'app-mission-list',
+@@ -13,4 +15,24 @@ export class MissionList {
+ 
+   /** `undefined` until the first response lands; the template shows a loading row until then. */
+   protected readonly missions = toSignal(this.missionsApi.listMissions());
++
++  protected readonly filter = signal<MissionFilter>('all');
++
++  /** Missions matching the selected filter, in API order. `undefined` while loading. */
++  protected readonly visible = computed(() => {
++    const all = this.missions();
++    const selected = this.filter();
++    if (all === undefined || selected === 'all') {
++      return all;
++    }
++    return all.filter((mission) => mission.status === selected);
++  });
++
++  protected setFilter(value: string): void {
++    if (value === 'open' || value === 'done') {
++      this.filter.set(value);
++    } else {
++      this.filter.set('all');
++    }
++  }
+ }

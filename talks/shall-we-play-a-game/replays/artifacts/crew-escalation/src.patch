@@ -1,0 +1,262 @@
+diff --git i/src/app/missions/mission-list.css w/src/app/missions/mission-list.css
+index ab80f38..31cb6f5 100644
+--- i/src/app/missions/mission-list.css
++++ w/src/app/missions/mission-list.css
+@@ -28,7 +28,30 @@
+   letter-spacing: 0.08em;
+   color: #555;
+ }
++.toolbar {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 0.75rem;
++  margin-bottom: 0.75rem;
++}
++.filter {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.5rem;
++}
++.filter-label {
++  font-size: 0.75rem;
++  text-transform: uppercase;
++  letter-spacing: 0.08em;
++  color: #555;
++}
++.count {
++  margin: 0;
++  color: #555;
++}
+ .loading,
+-.empty {
++.empty,
++.no-match {
+   color: #555;
+ }
+diff --git i/src/app/missions/mission-list.html w/src/app/missions/mission-list.html
+index c6b4197..7095d39 100644
+--- i/src/app/missions/mission-list.html
++++ w/src/app/missions/mission-list.html
+@@ -4,13 +4,29 @@
+ } @else if (list.length === 0) {
+   <p class="empty">No missions on the board.</p>
+ } @else {
+-  <ul class="missions">
+-    @for (mission of list; track mission.id) {
+-      <li class="mission" [class.done]="mission.status === 'done'">
+-        <span class="priority" [attr.aria-label]="'priority ' + mission.priority">P{{ mission.priority }}</span>
+-        <span class="title">{{ mission.title }}</span>
+-        <span class="status">{{ mission.status }}</span>
+-      </li>
+-    }
+-  </ul>
++  @let shown = visible();
++  <div class="toolbar">
++    <label class="filter">
++      <span class="filter-label">Status</span>
++      <select class="status-filter" (change)="onFilterChange($event)">
++        @for (option of filterOptions; track option.value) {
++          <option [value]="option.value" [selected]="option.value === filter()">{{ option.label }}</option>
++        }
++      </select>
++    </label>
++    <p class="count" role="status">Showing {{ shown.length }} of {{ list.length }} missions</p>
++  </div>
++  @if (shown.length === 0) {
++    <p class="no-match">No missions match this filter.</p>
++  } @else {
++    <ul class="missions">
++      @for (mission of shown; track mission.id) {
++        <li class="mission" [class.done]="mission.status === 'done'">
++          <span class="priority" [attr.aria-label]="'priority ' + mission.priority">P{{ mission.priority }}</span>
++          <span class="title">{{ mission.title }}</span>
++          <span class="status">{{ mission.status }}</span>
++        </li>
++      }
++    </ul>
++  }
+ }
+diff --git i/src/app/missions/mission-list.spec.ts w/src/app/missions/mission-list.spec.ts
+index 502682f..00d52bd 100644
+--- i/src/app/missions/mission-list.spec.ts
++++ w/src/app/missions/mission-list.spec.ts
+@@ -1,8 +1,9 @@
+ import { provideHttpClient } from '@angular/common/http';
+ import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+ import { ComponentFixture, TestBed } from '@angular/core/testing';
+-import { Mission } from '../../api';
++import { Mission, MissionsService } from '../../api';
+ import { MissionList } from './mission-list';
++import { vi } from 'vitest';
+ 
+ const MISSIONS: Mission[] = [
+   { id: 'm-1', title: 'Calibrate the dish', status: 'open', priority: 1 },
+@@ -58,4 +59,119 @@ describe('MissionList', () => {
+     respond([]);
+     expect((fixture.nativeElement as HTMLElement).querySelector('.empty')).not.toBeNull();
+   });
++  describe('status filter (REQ-ML-1)', () => {
++    let el: HTMLElement;
++
++    function select(): HTMLSelectElement {
++      return el.querySelector('select.status-filter') as HTMLSelectElement;
++    }
++    function choose(value: 'all' | 'open' | 'done'): void {
++      const s = select();
++      s.value = value;
++      s.dispatchEvent(new Event('change'));
++      fixture.detectChanges();
++    }
++    function titles(): string[] {
++      return Array.from(el.querySelectorAll('li.mission .title')).map((t) => t.textContent?.trim() ?? '');
++    }
++    function count(): string {
++      return el.querySelector('p.count')?.textContent?.trim() ?? '';
++    }
++
++    beforeEach(async () => {
++      el = fixture.nativeElement as HTMLElement;
++      await fixture.whenStable();
++    });
++
++    it('renders one filter control with exactly All, Open, Done options, All selected first (AC1)', () => {
++      respond(MISSIONS);
++      expect(el.querySelectorAll('select.status-filter').length).toBe(1);
++      const options = Array.from(select().options);
++      expect(options.map((o) => o.textContent?.trim())).toEqual(['All', 'Open', 'Done']);
++      expect(select().value).toBe('all');
++      expect(options[0].selected).toBe(true);
++    });
++
++    it('lists every mission in API order with All selected (AC2)', () => {
++      respond(MISSIONS);
++      expect(titles()).toEqual(['Calibrate the dish', 'Rotate the launch codes', 'Play tic-tac-toe']);
++    });
++
++    it('lists only open missions, in API order, when Open is selected (AC3)', () => {
++      respond(MISSIONS);
++      choose('open');
++      expect(titles()).toEqual(['Calibrate the dish', 'Play tic-tac-toe']);
++    });
++
++    it('lists only done missions when Done is selected (AC3)', () => {
++      respond(MISSIONS);
++      choose('done');
++      expect(titles()).toEqual(['Rotate the launch codes']);
++    });
++
++    it('returns to the full list when switching back to All (AC2, AC3)', () => {
++      respond(MISSIONS);
++      choose('done');
++      choose('all');
++      expect(titles().length).toBe(3);
++    });
++
++    it('shows "Showing N of M missions" for each filter (AC4)', () => {
++      respond(MISSIONS);
++      expect(count()).toBe('Showing 3 of 3 missions');
++      choose('open');
++      expect(count()).toBe('Showing 2 of 3 missions');
++      choose('done');
++      expect(count()).toBe('Showing 1 of 3 missions');
++    });
++
++    it('shows the no-match text and a zero count when the filter matches nothing (AC5)', () => {
++      respond([MISSIONS[0], MISSIONS[2]]);
++      choose('done');
++      expect(el.querySelector('p.no-match')?.textContent?.trim()).toBe('No missions match this filter.');
++      expect(el.querySelectorAll('li.mission').length).toBe(0);
++      expect(count()).toBe('Showing 0 of 2 missions');
++    });
++
++    it('shows the empty-state text and no filter control for an empty array (AC6)', () => {
++      respond([]);
++      expect(el.querySelector('p.empty')?.textContent?.trim()).toBe('No missions on the board.');
++      expect(el.querySelector('select.status-filter')).toBeNull();
++      expect(el.querySelector('p.count')).toBeNull();
++      expect(el.querySelector('p.no-match')).toBeNull();
++    });
++
++    it('sends no new HTTP request when the filter changes (AC7)', () => {
++      respond(MISSIONS);
++      choose('open');
++      choose('done');
++      choose('all');
++      http.expectNone('/api/missions');
++    });
++  });
++});
++
++describe('MissionList fetch count (REQ-ML-1)', () => {
++  it('calls MissionsService.listMissions exactly once across filter changes (AC7)', async () => {
++    await TestBed.configureTestingModule({
++      imports: [MissionList],
++      providers: [provideHttpClient(), provideHttpClientTesting()],
++    }).compileComponents();
++    const http = TestBed.inject(HttpTestingController);
++    const spy = vi.spyOn(TestBed.inject(MissionsService), 'listMissions');
++    const fixture = TestBed.createComponent(MissionList);
++    await fixture.whenStable();
++    http.expectOne('/api/missions').flush(MISSIONS);
++    fixture.detectChanges();
++
++    const select = (fixture.nativeElement as HTMLElement).querySelector('select.status-filter') as HTMLSelectElement;
++    for (const value of ['open', 'done', 'all']) {
++      select.value = value;
++      select.dispatchEvent(new Event('change'));
++      fixture.detectChanges();
++    }
++
++    expect(spy).toHaveBeenCalledTimes(1);
++    http.verify();
++  });
+ });
+diff --git i/src/app/missions/mission-list.ts w/src/app/missions/mission-list.ts
+index dfe7c1e..b38ddd6 100644
+--- i/src/app/missions/mission-list.ts
++++ w/src/app/missions/mission-list.ts
+@@ -1,6 +1,9 @@
+-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
++import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+ import { toSignal } from '@angular/core/rxjs-interop';
+-import { MissionsService } from '../../api';
++import { Mission, MissionsService } from '../../api';
++
++/** Status filter choices for the mission list (REQ-ML-1). `all` shows every mission. */
++export type StatusFilter = 'all' | 'open' | 'done';
+ 
+ @Component({
+   selector: 'app-mission-list',
+@@ -11,6 +14,30 @@ import { MissionsService } from '../../api';
+ export class MissionList {
+   private readonly missionsApi = inject(MissionsService);
+ 
+-  /** `undefined` until the first response lands; the template shows a loading row until then. */
++  /** `undefined` until the first response lands; the template shows a loading row until then. Fetched once. */
+   protected readonly missions = toSignal(this.missionsApi.listMissions());
++
++  /** Options rendered by the filter control, in display order. */
++  protected readonly filterOptions: ReadonlyArray<{ value: StatusFilter; label: string }> = [
++    { value: 'all', label: 'All' },
++    { value: 'open', label: 'Open' },
++    { value: 'done', label: 'Done' },
++  ];
++
++  /** Currently selected status filter; "All" on first render. */
++  protected readonly filter = signal<StatusFilter>('all');
++
++  /** Missions matching the selected filter, in API order. Derived locally; never re-fetches. */
++  protected readonly visible = computed<Mission[]>(() => {
++    const list = this.missions() ?? [];
++    const filter = this.filter();
++    return filter === 'all' ? list : list.filter((mission) => mission.status === filter);
++  });
++
++  protected onFilterChange(event: Event): void {
++    const value = (event.target as HTMLSelectElement).value;
++    if (value === 'all' || value === 'open' || value === 'done') {
++      this.filter.set(value);
++    }
++  }
+ }

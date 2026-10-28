@@ -1,0 +1,177 @@
+{
+ "version": 2,
+ "harness": "claude-code",
+ "model": "claude-sonnet-5-5",
+ "label": "naked",
+ "prompt": "Add a filter to the mission list so I can show all, open, or done missions, with a count of how many are showing.",
+ "plugins": [],
+ "scratch": "/tmp/kitt-rec-54ocjp3y/mission-log",
+ "recordedAt": "2026-10-28T05:01:24+00:00",
+ "exitCode": 0,
+ "events": [
+  {
+   "kind": "tool",
+   "tool": "Glob",
+   "detail": "**/*",
+   "t": 2201
+  },
+  {
+   "kind": "tool",
+   "tool": "Bash",
+   "detail": "git ls-files",
+   "t": 2209
+  },
+  {
+   "kind": "output",
+   "tool": "Bash",
+   "output": ".editorconfig\n.gitignore\n.prettierrc\nREADME.md\nangular.json\napi/openapi.json\npackage-lock.json\npackage.json\nproxy.conf.json\npublic/favicon.ico\nsrc/api/README.md\nsrc/api/index.ts\nsrc/api/missions.service.ts\nsrc/api/models.ts\nsrc/app/app.config.ts\nsrc/app/app.css\nsrc/app/app.html\nsrc/app/app.routes.ts\nsrc/app/app.spec.ts\nsrc/app/app.ts\nsrc/app/missions/mission-list.css\nsrc/app/missions/mission-list.",
+   "truncated": true,
+   "error": false,
+   "t": 2281
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "src/app/missions/mission-list.ts",
+   "t": 3408
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "src/app/missions/mission-list.html",
+   "t": 3741
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "src/app/missions/mission-list.spec.ts",
+   "t": 4138
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "src/api/models.ts",
+   "t": 4478
+  },
+  {
+   "kind": "tool",
+   "tool": "Read",
+   "detail": "src/app/missions/mission-list.css",
+   "t": 4700
+  },
+  {
+   "kind": "tool",
+   "tool": "Write",
+   "detail": "src/app/missions/mission-list.ts",
+   "t": 8212
+  },
+  {
+   "kind": "tool",
+   "tool": "Write",
+   "detail": "src/app/missions/mission-list.html",
+   "t": 10745
+  },
+  {
+   "kind": "tool",
+   "tool": "Edit",
+   "detail": "src/app/missions/mission-list.css",
+   "t": 12344
+  },
+  {
+   "kind": "tool",
+   "tool": "Edit",
+   "detail": "src/app/missions/mission-list.spec.ts",
+   "t": 15994
+  },
+  {
+   "kind": "tool",
+   "tool": "Bash",
+   "detail": "cat package.json | grep -A8 '\"scripts\"'; npx ng test --watch=false 2>&1 | tail -30",
+   "t": 17204
+  },
+  {
+   "kind": "output",
+   "tool": "Bash",
+   "output": "\"scripts\": {\n    \"ng\": \"ng\",\n    \"start\": \"ng serve\",\n    \"build\": \"ng build\",\n    \"watch\": \"ng build --watch --configuration development\",\n    \"test\": \"ng test\",\n    \"generate-api\": \"echo \\\"openapi-generator-cli 7.21.0 is run in CI; see src/api/README.md\\\"\"\n  },\n  \"private\": true,\n\u276f Building...\n\u2714 Building...\nApplication bundle generation complete. [0.551 seconds] - 2026-10-28T05:01:20.074Z\n\n\n\u001b[1m",
+   "truncated": true,
+   "error": false,
+   "t": 18730
+  },
+  {
+   "kind": "text",
+   "text": "The mission list now has All / Open / Done buttons and a \"Showing X of Y\" count. All 9 tests pass, including the 4 new filter tests. I haven't run the app in a browser.\n\n- **Filter:** All is the default. The active button is highlighted and exposes `aria-pressed`.\n- **Count:** it updates as you switch filters, for example \"Showing 2 of 3\".\n- **Empty cases:** if a filter matches nothing, you get \"No done missions.\" and the buttons stay visible, so you can switch back. The \"No missions on the board.\" message still shows when the log itself is empty.\n\nThe changes are in `mission-list.ts`, `mission-list.html`, `mission-list.css` and `mission-list.spec.ts`, all under `src/app/missions/`. I didn't commit anything.",
+   "t": 20980
+  },
+  {
+   "kind": "result",
+   "text": "The mission list now has All / Open / Done buttons and a \"Showing X of Y\" count. All 9 tests pass, including the 4 new filter tests. I haven't run the app in a browser.\n\n- **Filter:** All is the default. The active button is highlighted and exposes `aria-pressed`.\n- **Count:** it updates as you switch filters, for example \"Showing 2 of 3\".\n- **Empty cases:** if a filter matches nothing, you get \"No done missions.\" and the buttons stay visible, so you can switch back. The \"No missions on the board.\" message still shows when the log itself is empty.\n\nThe changes are in `mission-list.ts`, `mission-list.html`, `mission-list.css` and `mission-list.spec.ts`, all under `src/app/missions/`. I didn't commit anything.",
+   "subtype": "success",
+   "cost": 0.11150189999999999,
+   "t": 20987
+  }
+ ],
+ "after": {
+  "changed": [
+   "src/app/missions/mission-list.css",
+   "src/app/missions/mission-list.html",
+   "src/app/missions/mission-list.spec.ts",
+   "src/app/missions/mission-list.ts"
+  ],
+  "diffstat": " src/app/missions/mission-list.css     | 27 +++++++++++++++++++++\n src/app/missions/mission-list.html    | 39 +++++++++++++++++++++----------\n src/app/missions/mission-list.spec.ts | 44 +++++++++++++++++++++++++++++++++++\n src/app/missions/mission-list.ts      | 19 +++++++++++++--\n 4 files changed, 115 insertions(+), 14 deletions(-)\n",
+  "tests": {
+   "ran": true,
+   "exit": 0,
+   "tail": "\u276f Building...\n\u2714 Building...\nApplication bundle generation complete. [0.514 seconds] - 2026-10-28T05:01:23.784Z\n\n\n\u001b[1m\u001b[30m\u001b[46m RUN \u001b[49m\u001b[39m\u001b[22m \u001b[36mv5.0.5 \u001b[39m\u001b[90m/tmp/kitt-rec-54ocjp3y/mission-log\u001b[39m\n\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m9 passed\u001b[39m\u001b[22m\u001b[90m (9)\u001b[39m\n\u001b[2m   Start at \u001b[22m 23:01:23\n\u001b[2m   Duration \u001b[22m 451ms\u001b[2m (environment 55%, setup 22%, tests 14%, transform 6%, import 2%, worker 1%)\u001b[22m\n\n",
+   "summary": "\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m9 passed\u001b[39m\u001b[22m\u001b[90m (9)\u001b[39m"
+  },
+  "patch": "diff --git c/src/app/missions/mission-list.css w/src/app/missions/mission-list.css\nindex ab80f38..12ac6b6 100644\n--- c/src/app/missions/mission-list.css\n+++ w/src/app/missions/mission-list.css\n@@ -28,6 +28,33 @@\n   letter-spacing: 0.08em;\n   color: #555;\n }\n+.toolbar {\n+  display: flex;\n+  align-items: center;\n+  justify-content: space-between;\n+  margin-bottom: 0.75rem;\n+}\n+.filters {\n+  display: flex;\n+  gap: 0.25rem;\n+}\n+.filters button {\n+  padding: 0.3rem 0.8rem;\n+  border: 1px solid #ddd;\n+  border-radius: 6px;\n+  background: none;\n+  cursor: pointer;\n+}\n+.filters button.active {\n+  background: #333;\n+  border-color: #333;\n+  color: #fff;\n+}\n+.count {\n+  margin: 0;\n+  color: #555;\n+  font-size: 0.85rem;\n+}\n .loading,\n .empty {\n   color: #555;\ndiff --git c/src/app/missions/mission-list.html w/src/app/missions/mission-list.html\nindex c6b4197..fff217f 100644\n--- c/src/app/missions/mission-list.html\n+++ w/src/app/missions/mission-list.html\n@@ -1,16 +1,31 @@\n-@let list = missions();\n-@if (list === undefined) {\n+@let all = missions();\n+@let list = visibleMissions();\n+@if (all === undefined || list === undefined) {\n   <p class=\"loading\" role=\"status\">Loading missions\u2026</p>\n-} @else if (list.length === 0) {\n+} @else if (all.length === 0) {\n   <p class=\"empty\">No missions on the board.</p>\n } @else {\n-  <ul class=\"missions\">\n-    @for (mission of list; track mission.id) {\n-      <li class=\"mission\" [class.done]=\"mission.status === 'done'\">\n-        <span class=\"priority\" [attr.aria-label]=\"'priority ' + mission.priority\">P{{ mission.priority }}</span>\n-        <span class=\"title\">{{ mission.title }}</span>\n-        <span class=\"status\">{{ mission.status }}</span>\n-      </li>\n-    }\n-  </ul>\n+  <div class=\"toolbar\">\n+    <div class=\"filters\" role=\"group\" aria-label=\"Filter missions by status\">\n+      @for (f of filters; track f.value) {\n+        <button type=\"button\" [class.active]=\"filter() === f.value\" [attr.aria-pressed]=\"filter() === f.value\" (click)=\"filter.set(f.value)\">\n+          {{ f.label }}\n+        </button>\n+      }\n+    </div>\n+    <p class=\"count\" role=\"status\">Showing {{ list.length }} of {{ all.length }}</p>\n+  </div>\n+  @if (list.length === 0) {\n+    <p class=\"empty\">No {{ filter() }} missions.</p>\n+  } @else {\n+    <ul class=\"missions\">\n+      @for (mission of list; track mission.id) {\n+        <li class=\"mission\" [class.done]=\"mission.status === 'done'\">\n+          <span class=\"priority\" [attr.aria-label]=\"'priority ' + mission.priority\">P{{ mission.priority }}</span>\n+          <span class=\"title\">{{ mission.title }}</span>\n+          <span class=\"status\">{{ mission.status }}</span>\n+        </li>\n+      }\n+    </ul>\n+  }\n }\ndiff --git c/src/app/missions/mission-list.spec.ts w/src/app/missions/mission-list.spec.ts\nindex 502682f..2c316fd 100644\n--- c/src/app/missions/mission-list.spec.ts\n+++ w/src/app/missions/mission-list.spec.ts\n@@ -53,6 +53,50 @@ describe('MissionList', () => {\n     expect(rows[0].classList.contains('done')).toBe(false);\n   });\n \n+  describe('filter', () => {\n+    const el = () => fixture.nativeElement as HTMLElement;\n+    const click = (label: string) => {\n+      const btn = Array.from(el().querySelectorAll('.filters button')).find(\n+        (b) => b.textContent?.trim() === label,\n+      ) as HTMLButtonElement;\n+      btn.click();\n+      fixture.detectChanges();\n+    };\n+\n+    it('shows all missions with a count by default', async () => {\n+      await fixture.whenStable();\n+      respond(MISSIONS);\n+      expect(el().querySelectorAll('li.mission').length).toBe(3);\n+      expect(el().querySelector('.count')?.textContent).toContain('Showing 3 of 3');\n+    });\n+\n+    it('shows only open missions', async () => {\n+      await fixture.whenStable();\n+      respond(MISSIONS);\n+      click('Open');\n+      expect(el().querySelectorAll('li.mission').length).toBe(2);\n+      expect(el().querySelector('.count')?.textContent).toContain('Showing 2 of 3');\n+    });\n+\n+    it('shows only done missions', async () => {\n+      await fixture.whenStable();\n+      respond(MISSIONS);\n+      click('Done');\n+      const rows = el().querySelectorAll('li.mission');\n+      expect(rows.length).toBe(1);\n+      expect(rows[0].textContent).toContain('Rotate the launch codes');\n+      expect(el().querySelector('.count')?.textContent).toContain('Showing 1 of 3');\n+    });\n+\n+    it('keeps the filter bar when nothing matches', async () => {\n+      await fixture.whenStable();\n+      respond([MISSIONS[0]]);\n+      click('Done');\n+      expect(el().querySelector('.empty')?.textContent).toContain('No done missions');\n+      expect(el().querySelector('.count')?.textContent).toContain('Showing 0 of 1');\n+    });\n+  });\n+\n   it('shows the empty state for an empty log', async () => {\n     await fixture.whenStable();\n     respond([]);\ndiff --git c/src/app/missions/mission-list.ts w/src/app/missions/mission-list.ts\nindex dfe7c1e..6c73738 100644\n--- c/src/app/missions/mission-list.ts\n+++ w/src/app/missions/mission-list.ts\n@@ -1,6 +1,8 @@\n-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';\n+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';\n import { toSignal } from '@angular/core/rxjs-interop';\n-import { MissionsService } from '../../api';\n+import { MissionStatus, MissionsService } from '../../api';\n+\n+export type MissionFilter = 'all' | MissionStatus;\n \n @Component({\n   selector: 'app-mission-list',\n@@ -11,6 +13,19 @@ import { MissionsService } from '../../api';\n export class MissionList {\n   private readonly missionsApi = inject(MissionsService);\n \n+  protected readonly filters: readonly { value: MissionFilter; label: string }[] = [\n+    { value: 'all', label: 'All' },\n+    { value: 'open', label: 'Open' },\n+    { value: 'done', label: 'Done' },\n+  ];\n+\n+  protected readonly filter = signal<MissionFilter>('all');\n+\n   /** `undefined` until the first response lands; the template shows a loading row until then. */\n   protected readonly missions = toSignal(this.missionsApi.listMissions());\n+\n+  protected readonly visibleMissions = computed(() => {\n+    const filter = this.filter();\n+    return this.missions()?.filter((m) => filter === 'all' || m.status === filter);\n+  });\n }\n"
+ },
+ "usage": {
+  "subtype": "success",
+  "is_error": false,
+  "duration_ms": 20841,
+  "duration_api_ms": 19175,
+  "num_turns": 13,
+  "total_cost_usd": 0.11150189999999999,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 16848,
+   "cache_read_input_tokens": 109299,
+   "output_tokens": 3316,
+   "output_tokens_details": {
+    "thinking_tokens": 55
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 16848,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "modelUsage": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 10,
+    "outputTokens": 3316,
+    "cacheReadInputTokens": 109299,
+    "cacheCreationInputTokens": 16848,
+    "webSearchRequests": 0,
+    "costUSD": 0.11150189999999999,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 55,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  }
+ },
+ "finalText": "The mission list now has All / Open / Done buttons and a \"Showing X of Y\" count. All 9 tests pass, including the 4 new filter tests. I haven't run the app in a browser.\n\n- **Filter:** All is the default. The active button is highlighted and exposes `aria-pressed`.\n- **Count:** it updates as you switch filters, for example \"Showing 2 of 3\".\n- **Empty cases:** if a filter matches nothing, you get \"No done missions.\" and the buttons stay visible, so you can switch back. The \"No missions on the board.\" message still shows when the log itself is empty.\n\nThe changes are in `mission-list.ts`, `mission-list.html`, `mission-list.css` and `mission-list.spec.ts`, all under `src/app/missions/`. I didn't commit anything.",
+ "stderrTail": ""
+}

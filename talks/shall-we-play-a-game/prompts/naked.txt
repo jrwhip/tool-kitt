@@ -1,0 +1,1 @@
+Add a filter to the mission list so I can show all, open, or done missions, with a count of how many are showing.
