@@ -1,0 +1,10 @@
+{"intent": "help me with scaffolding AGENTS.md for this repo", "expected_skill": "kitt-create-agent-instructions"}
+{"intent": "we need CLAUDE.md and GEMINI.md pointers, start writing per-CLI pointer files", "expected_skill": "kitt-create-agent-instructions"}
+{"intent": "kitt.yml is in place, move on to generating agent instructions from the detected stack", "expected_skill": "kitt-create-agent-instructions"}
+{"intent": "a fresh session has no context here, begin scaffolding AGENTS.md and its pointers", "expected_skill": "kitt-create-agent-instructions"}
+{"intent": "add a contributing section to the readme", "expected_skill": null}
+{"intent": "write onboarding docs for the new hire", "expected_skill": null}
+{"intent": "what license header goes at the top of these files", "expected_skill": null}
+{"intent": "our style guide says two spaces, enforce it in the formatter", "expected_skill": null}
+{"intent": "email the team last week's meeting notes", "expected_skill": null}
+{"intent": "the instructions on this coffee maker are useless", "expected_skill": null}

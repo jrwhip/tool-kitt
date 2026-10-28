@@ -1,0 +1,11 @@
+{"intent": "we are building prompts that produce outputs for other prompts to consume in this pipeline", "expected_skill": "kitt-create-meta-prompts"}
+{"intent": "the output of stage one feeds stage two, so we're building prompts that produce outputs for other prompts to consume", "expected_skill": "kitt-create-meta-prompts"}
+{"intent": "plan this as when running multi-stage workflows (research -> plan -> implement) across three fresh contexts", "expected_skill": "kitt-create-meta-prompts"}
+{"intent": "I want a handoff chain: building prompts that produce outputs for other prompts to consume, no human in the middle", "expected_skill": "kitt-create-meta-prompts"}
+{"intent": "this job is exactly when running multi-stage workflows (research -> plan -> implement) pays off", "expected_skill": "kitt-create-meta-prompts"}
+{"intent": "check the color contrast on this hero banner", "expected_skill": null}
+{"intent": "write me a better prompt for this one question", "expected_skill": null}
+{"intent": "the prompt template has a typo in paragraph two", "expected_skill": null}
+{"intent": "what temperature should I use for this model call", "expected_skill": null}
+{"intent": "generate a system prompt for a customer support bot", "expected_skill": null}
+{"intent": "run these three prompts in parallel and merge the output", "expected_skill": null}

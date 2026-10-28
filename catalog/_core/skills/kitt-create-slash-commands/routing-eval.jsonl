@@ -1,0 +1,13 @@
+{"intent": "help me with creating custom commands for our repo", "expected_skill": "kitt-create-slash-commands"}
+{"intent": "I'm learning yaml configuration for a new command", "expected_skill": "kitt-create-slash-commands"}
+{"intent": "working with slash commands again, how do I pass arguments in", "expected_skill": "kitt-create-slash-commands"}
+{"intent": "understanding command structure is my blocker, which fields are required", "expected_skill": "kitt-create-slash-commands"}
+{"intent": "I keep botching the frontmatter when working with slash commands", "expected_skill": "kitt-create-slash-commands"}
+{"intent": "creating custom commands that shell out to a script", "expected_skill": "kitt-create-slash-commands"}
+{"intent": "different thing entirely, I'm working with hooks not commands", "expected_skill": "kitt-create-hooks"}
+{"intent": "add an aria label to this button", "expected_skill": null}
+{"intent": "add a subcommand to our python cli with argparse", "expected_skill": null}
+{"intent": "the /help text is out of date", "expected_skill": null}
+{"intent": "why does my docker compose file fail to parse", "expected_skill": null}
+{"intent": "list every make target in this repo", "expected_skill": null}
+{"intent": "what does the forward slash mean in this regex", "expected_skill": null}

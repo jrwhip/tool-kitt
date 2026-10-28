@@ -1,0 +1,11 @@
+{"intent": "I need help drafting a new requirement for the export feature", "expected_skill": "kitt-draft-req"}
+{"intent": "help me with writing acceptance criteria for a decided feature", "expected_skill": "kitt-draft-req"}
+{"intent": "we're adding a REQ to an existing backlog, make it match the others", "expected_skill": "kitt-draft-req"}
+{"intent": "I keep going back and forth on choosing where requirements live for this project", "expected_skill": "kitt-draft-req"}
+{"intent": "scope is decided, now I want help drafting a new requirement doc the crew can run", "expected_skill": "kitt-draft-req"}
+{"intent": "before publishing to jira I want help writing acceptance criteria for a decided feature", "expected_skill": "kitt-draft-req"}
+{"intent": "file a github issue for the bug I just found", "expected_skill": null}
+{"intent": "summarize the requirements doc the client sent over", "expected_skill": null}
+{"intent": "write acceptance tests for the checkout flow", "expected_skill": null}
+{"intent": "what are the requirements for a real id drivers license", "expected_skill": null}
+{"intent": "draft an email to the team about the outage", "expected_skill": null}

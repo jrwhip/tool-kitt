@@ -1,0 +1,15 @@
+{
+  "name": "kitt-python",
+  "description": "Python development: FastAPI, AI integrations (Bedrock, Vertex, Pinecone), testing, packaging",
+  "version": "1.0.0-dev.5",
+  "author": {
+    "name": "Jared Whipple"
+  },
+  "license": "MIT",
+  "keywords": [
+    "backend",
+    "python",
+    "ai",
+    "fastapi"
+  ]
+}

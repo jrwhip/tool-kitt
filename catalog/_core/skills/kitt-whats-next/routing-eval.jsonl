@@ -1,0 +1,12 @@
+{"intent": "I'm wrapping up a work session and need a handoff doc", "expected_skill": "kitt-whats-next"}
+{"intent": "we're switching clis from claude to copilot mid project", "expected_skill": "kitt-whats-next"}
+{"intent": "wrapping up a work session, dump the state somewhere durable", "expected_skill": "kitt-whats-next"}
+{"intent": "write down where we landed before a context runs out", "expected_skill": "kitt-whats-next"}
+{"intent": "switching clis to gemini tomorrow morning, persist everything first", "expected_skill": "kitt-whats-next"}
+{"intent": "context is at eight percent, do the handoff before a context runs out", "expected_skill": "kitt-whats-next"}
+{"intent": "run the linter on this file", "expected_skill": null}
+{"intent": "what's next on the sprint board", "expected_skill": null}
+{"intent": "switch the editor to dark mode", "expected_skill": null}
+{"intent": "close all my terminal tabs", "expected_skill": null}
+{"intent": "summarize this file for me", "expected_skill": null}
+{"intent": "what should we name the next release", "expected_skill": null}

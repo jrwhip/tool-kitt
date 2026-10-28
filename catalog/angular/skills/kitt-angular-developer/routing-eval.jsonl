@@ -1,0 +1,10 @@
+{"intent": "start generating Angular components for the settings page with linkedSignal state", "expected_skill": "kitt-angular-developer"}
+{"intent": "I am asking for Angular best practices on dependency injection here", "expected_skill": "kitt-angular-developer"}
+{"intent": "spend the afternoon generating Angular services that wrap the new http resource calls", "expected_skill": "kitt-angular-developer"}
+{"intent": "before the review I am asking for Angular best practices on SSR and hydration", "expected_skill": "kitt-angular-developer"}
+{"intent": "what angle should I cut this trim at", "expected_skill": null}
+{"intent": "compute the angular velocity of the wheel", "expected_skill": null}
+{"intent": "our react app needs a new context provider", "expected_skill": null}
+{"intent": "add a vue watcher to this component", "expected_skill": null}
+{"intent": "install node 22 on the build box", "expected_skill": null}
+{"intent": "the designer wants rounded corners on these cards", "expected_skill": null}

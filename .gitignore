@@ -1,13 +1,45 @@
-# Planning artifacts
-.planning/
+# OS
+.DS_Store
+._.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
 
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
-dist/
+.eggs/
 build/
-.venv/
-*.egg
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
 
-CLI-CAPABILITY-COMPARISON.md
+# uv
+.venv/
+venv/
+.uv/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# KITT embeddings sidecars. Machine-specific dense vectors keyed by the
+# local embedding model's version; regenerated on demand whenever the
+# markdown corpus changes, so committing one only produces noisy diffs
+# and merge conflicts. Same rule the `ensure_sidecar_gitignored` helper
+# writes into managed projects, applied to this repo's own corpus.
+LEARNINGS.embeddings.npz
+*.embeddings.npz

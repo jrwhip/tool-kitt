@@ -1,0 +1,10 @@
+{"intent": "I am building a FastAPI service with proper packaging and pytest coverage", "expected_skill": "build-python-services"}
+{"intent": "we are modernizing Python packaging for this repo, it looks like 2021 in here", "expected_skill": "build-python-services"}
+{"intent": "start wiring Bedrock into a Python service for the embedding calls", "expected_skill": "build-python-services"}
+{"intent": "writing a Python CLI tool for the release process, do it properly", "expected_skill": "build-python-services"}
+{"intent": "our go service needs a health check endpoint", "expected_skill": null}
+{"intent": "the ruby script errors on line three", "expected_skill": null}
+{"intent": "there's a python in the reptile house exhibit", "expected_skill": null}
+{"intent": "which java version does maven use here", "expected_skill": null}
+{"intent": "rename this variable in the perl script", "expected_skill": null}
+{"intent": "the build service charges by the minute now", "expected_skill": null}

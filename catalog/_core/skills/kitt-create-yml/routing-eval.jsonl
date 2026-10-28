@@ -1,0 +1,10 @@
+{"intent": "the doctor flagged this package, help scaffolding a kitt.yml at its root", "expected_skill": "kitt-create-yml"}
+{"intent": "creating a kitt config file for the api subfolder too", "expected_skill": "kitt-create-yml"}
+{"intent": "I want to see it before it lands, so start by previewing workspace config", "expected_skill": "kitt-create-yml"}
+{"intent": "go ahead with scaffolding a kitt.yml with the detected fields pre-filled", "expected_skill": "kitt-create-yml"}
+{"intent": "fix the indentation in this github actions workflow file", "expected_skill": null}
+{"intent": "why does my docker-compose file refuse to parse", "expected_skill": null}
+{"intent": "convert this json config to toml", "expected_skill": null}
+{"intent": "the yaml linter is complaining about line forty", "expected_skill": null}
+{"intent": "add a new key to package.json", "expected_skill": null}
+{"intent": "what's the difference between yaml anchors and aliases", "expected_skill": null}

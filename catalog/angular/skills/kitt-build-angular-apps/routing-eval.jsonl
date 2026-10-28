@@ -1,0 +1,10 @@
+{"intent": "we are architecting an Angular application from scratch this sprint", "expected_skill": "kitt-build-angular-apps"}
+{"intent": "spend an hour reviewing Angular architecture against what the platform expects", "expected_skill": "kitt-build-angular-apps"}
+{"intent": "this codebase needs migrating React-flavored patterns to idiomatic Angular", "expected_skill": "kitt-build-angular-apps"}
+{"intent": "help architecting an Angular application with OnPush as the default", "expected_skill": "kitt-build-angular-apps"}
+{"intent": "build the docker image and push it to ecr", "expected_skill": null}
+{"intent": "our svelte store needs a derived value", "expected_skill": null}
+{"intent": "why is the next.js bundle four megabytes", "expected_skill": null}
+{"intent": "the ci build takes twenty minutes, speed it up", "expected_skill": null}
+{"intent": "set up a python virtualenv for this repo", "expected_skill": null}
+{"intent": "the contractor will build the deck in april", "expected_skill": null}

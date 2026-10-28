@@ -1,0 +1,12 @@
+{"intent": "I'm planning projects for the next quarter and need phases mapped out", "expected_skill": "kitt-create-plans"}
+{"intent": "break this into tasks that the ai agent will execute automatically", "expected_skill": "kitt-create-plans"}
+{"intent": "map out the phases for this rewrite before we touch any code", "expected_skill": "kitt-create-plans"}
+{"intent": "we're planning projects for one agent, not a five person team", "expected_skill": "kitt-create-plans"}
+{"intent": "I need a roadmap with phases and verification criteria on every step", "expected_skill": "kitt-create-plans"}
+{"intent": "give me a brief first, then tasks that the ai agent will execute unattended", "expected_skill": "kitt-create-plans"}
+{"intent": "translate this button label to spanish", "expected_skill": null}
+{"intent": "what's the plan for dinner tonight", "expected_skill": null}
+{"intent": "estimate story points for the backlog", "expected_skill": null}
+{"intent": "the client wants a status update on the timeline", "expected_skill": null}
+{"intent": "cancel tomorrow's standup", "expected_skill": null}
+{"intent": "plan a driving route to the airport", "expected_skill": null}
