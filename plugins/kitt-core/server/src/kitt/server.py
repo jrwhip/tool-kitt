@@ -23,6 +23,7 @@ from .context import ServerContext, ToolContext
 from .product import CONFIG_FILENAME, LOGGER_NAME, MCP_SERVER_KEY, PLUGIN_PREFIX
 from .tools import (
     crew_contracts,
+    crew_models,
     handoff,
     kitt_yml,
     learnings,
@@ -254,6 +255,7 @@ def create_app(
     kitt_yml.register(mcp)
     stub_writers.register(mcp)
     crew_contracts.register(mcp)
+    crew_models.register(mcp)
     pack_templates.register(mcp)
 
     return mcp

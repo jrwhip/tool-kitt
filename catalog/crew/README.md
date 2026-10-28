@@ -52,6 +52,8 @@ The crew decomposes work into four roles. Each role is a separate agent with a s
 
 A fifth, **conditionally dispatched** role exists for projects that declare `specs.design_spec` in `kitt.yml`: the **Designer** (`kitt-crew-designer.md`) maintains the visual spec, derives per-REQ appearance acceptance criteria, and writes the `@visual` regression tests the auditor runs at the gate. Baseline approval is operator-only. Backend-only projects never dispatch it.
 
+**Models per role.** Each agent file names a default model (scout haiku; the rest sonnet). The orchestrator does not use those lines directly. Before each dispatch it calls the `resolve_crew_models` MCP tool, which reads the optional `crew:` section of `kitt.yml` and the requirement's complexity and returns one model per role. `high` complexity moves the configured escalation roles (default coder and auditor) up one tier; `low` moves them down one; everything else stays put. Complexity comes from the operator, then the REQ file's `complexity:` field, then the scout contract's file count. `inherit` is refused on purpose: a run must never fan the orchestrator's top-tier model out to every role. Schema: `kitt-yml-schema.md`, "Section: `crew`".
+
 The crew's principles, full step-by-step orchestration, intake routing (crew run, blocker fix, frontend handoff, unattended), and verification checklist live in two parallel forms:
 
 * **`skills/kitt-run-crew/SKILL.md`**, the skill form, loaded via the Skill tool on Claude Code and Gemini CLI and available as a native skill on Copilot CLI.
