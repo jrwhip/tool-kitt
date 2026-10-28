@@ -1,6 +1,6 @@
 ---
 name: kitt-create-yml
-description: Scaffold a `kitt.yml` at a specified path inside the workspace, with detected fields pre-filled and TODO comments next to anything that needs operator review. Previews the YAML for operator confirmation before any file lands on disk. Companion to `/kitt-doctor`; the doctor surfaces missing kitt.yml placements, this skill creates them. Use when scaffolding a kitt.yml, creating a kitt config file, or previewing workspace config.
+description: Scaffold a `kitt.yml` at a specified path inside the workspace, with detected fields pre-filled and TODO comments next to anything that needs operator review. Previews the YAML for operator confirmation before any file lands on disk. Companion to `/kitt-doctor`; the doctor surfaces missing kitt.yml placements, this skill creates them. Use when scaffolding a kitt.yml, creating a kitt config file, or previewing workspace config. Use when scaffolding the root kitt.yml for a multi-repo workspace.
 ---
 
 <objective>
@@ -16,13 +16,13 @@ Do NOT run this skill during a crew run. The crew expects `kitt.yml` to exist be
 </when_to_run>
 
 <procedure>
-1. **Resolve the workspace and target from the OPERATOR's current context.** The skill is running in Claude Code; the operator's current working directory is the only legitimate source for the workspace. Do NOT rely on any KITT install state, env var, or pinned workspace. The operator passes a target path relative to that workspace (e.g. `apps/example-app` for an Nx app, `.` for a single-app workspace root). When the operator does not pass a target, ask; do not infer.
+1. **Resolve the workspace and target from the OPERATOR's current context.** The skill is running in Claude Code; the operator's current working directory is the only legitimate source for the workspace. Do NOT rely on any KITT install state, env var, or pinned workspace. The operator passes a target path relative to that workspace (e.g. `apps/example-app` for an Nx app, `.` for a single-app workspace root). When the operator does not pass a target, ask; do not infer. A target of `.` at a directory that holds several child projects and no `project` `kitt.yml` is a workspace root (the workspace-mode rule under "Path conventions" in `kitt-yml-schema.md`); the proposal for it is a `workspace` file, not a project file.
 
 2. **Print the resolved workspace and target BEFORE doing anything.** Print one line: `Scanning <absolute workspace path> for target <target_path>.` If the resolution is wrong (the operator wanted a specific sibling project but you resolved to an unrelated path), stop and ask. The propose-then-confirm loop is worthless if the underlying workspace is wrong. This step is non-negotiable.
 
 3. **Call `mcp__kitt__detect_stack`** with the resolved absolute path as `workspace_path`. The tool requires this argument; it does not infer a workspace from environment state. If the result contains an `error`, surface it and stop.
 
-4. **Call `mcp__kitt__propose_kitt_yml`** with the detection JSON and the target path (relative to the workspace, as it appears in the detection's `targets` list). The tool returns the proposed YAML as a string with TODO comments where operator review is needed.
+4. **Call `mcp__kitt__propose_kitt_yml`** with the detection JSON and the target path (relative to the workspace, as it appears in the detection's `targets` list). The tool returns the proposed YAML as a string with TODO comments where operator review is needed. When detection reported `project_type: "container"` or `"workspace"` and the target is `.`, the proposal is a **workspace** file: a `workspace:` block listing each child by `path`, `slug`, and `role` (`backend`, `frontend`, `tests`, or `other`), with roles guessed from each child's stack, undeclared children appended with a TODO, and declared-but-missing children commented out. Show it exactly the same way; the operator reviews the role guesses.
 
 5. **Show the operator the proposed YAML verbatim** in your response. Do not rephrase, summarize, or strip TODO comments. The operator must see exactly what would land on disk.
 
@@ -37,6 +37,7 @@ Do NOT run this skill during a crew run. The crew expects `kitt.yml` to exist be
    - Run `/kitt-create-agent-instructions` to scaffold `AGENTS.md` plus per-CLI pointer files (CLAUDE.md, GEMINI.md, `.github/copilot-instructions.md`) so a fresh AI session on any supported CLI has working context.
    - Review the new `requirements:` block in the proposed `kitt.yml`. Default is `source: local` with `path: requirements`; either create the local `requirements/` directory and drop `<REQ-ID>.md` files in it, OR swap the `local:` sub-block for `jira:` (with an optional `project_key` for REQ-ID prefix sanity checks) when the project tracks REQs in Jira. The Atlassian cloud_id is resolved at runtime by the orchestrator via the MCP; do not store it in `kitt.yml`. The crew orchestrator pulls the active REQ body from whichever source the yml declares.
    - Install any packs the doctor flagged as missing (each pack ships as a Claude Code plugin from the KITT marketplace, e.g. `/plugin install kitt-crew@kitt-marketplace`).
+   - Workspace file written: the members still need their own `project` `kitt.yml`. Run this skill once per member path, or `/kitt-init-project` from the root to do all of them with one confirm loop.
    - Re-run `/kitt-doctor` to confirm gaps closed.
 </procedure>
 
@@ -75,6 +76,28 @@ Example skill turn after a successful propose:
 > ```
 >
 > Write this to `apps/example-app/kitt.yml`? (yes / no)
+
+Example skill turn for a container root (target `.` over `backend/` and `frontend/`):
+
+> Proposed workspace `kitt.yml` for `.` (container root):
+>
+> ```yaml
+> # kitt.yml generated by /kitt-create-yml for the myproduct workspace.
+> # This is a WORKSPACE file: it names the sibling projects under this directory.
+>
+> workspace:
+>   slug: myproduct
+>   name: Myproduct  # TODO: confirm the human-readable name.
+>   projects:
+>     - path: backend
+>       slug: backend
+>       role: backend
+>     - path: frontend
+>       slug: frontend
+>       role: frontend
+> ```
+>
+> Write this to `/path/to/myproduct/kitt.yml`? (yes / no)
 
 After confirmation and a successful write, report the resolved absolute path and the next-step reminders from the procedure.
 </output_format>

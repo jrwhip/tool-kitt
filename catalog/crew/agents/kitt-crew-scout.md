@@ -30,12 +30,13 @@ The orchestrator passes `mode` explicitly; you never self-select it.
 3. Target REQ ID and fresh REQ body.
 4. Session structural context (from the tracking document, or supplied by the orchestrator); write new context verbatim into the requirements document's Migration Context section.
 5. `relevant_learnings` (may be empty): advisory; consult for discovery patterns and layout gotchas.
+6. `workspace_context` (workspace mode only; absent otherwise): the workspace root, every member with its path, role, slug, and `kitt.yml` path, `read_allowed`, and `write_allowed`. Your `kitt.yml` path is the home member's. You may read any member (rule: the workspace-mode bullet under "Path conventions" in `kitt-yml-schema.md`).
 
 ## Report (five sections, always)
 
 1. **Requirements Status.** Statuses summarized from the tracking document; drift between stated status and codebase reality goes to Handoff Notes; end with the alignment verdict in gap_analysis mode.
 2. **Relevant File Paths.** Exact paths per layer the stack actually uses; say explicitly when a layer does not exist rather than inventing one.
-3. **Contract and Legacy Schema References.** Read the API contract at `api_contract.spec_url`; give a contract reference for everything the REQ depends on. `kind: openapi`: JSON Pointers (operations, schemas, responses; `/` escapes as `~1`); note `uniqueItems: true` fields (they change generated container types). `kind: graphql`: operation names (`Query.x`, `Mutation.x`, `Subscription.x`) and type / input / enum names as declared in the schema. Never hand-copy shapes; the reference is the link. A REQ needing an operation the contract lacks is a BLOCKER-class note. Legacy schema extraction only when migrating.
+3. **Contract and Legacy Schema References.** Read the API contract at `api_contract.spec_url`; give a contract reference for everything the REQ depends on. `kind: openapi`: JSON Pointers (operations, schemas, responses; `/` escapes as `~1`); note `uniqueItems: true` fields (they change generated container types). `kind: graphql`: operation names (`Query.x`, `Mutation.x`, `Subscription.x`) and type / input / enum names as declared in the schema. Never hand-copy shapes; the reference is the link. A REQ needing an operation the contract lacks is a BLOCKER-class note. Legacy schema extraction only when migrating. In workspace mode, read the producing member's contract directly (for a frontend REQ: `<workspace_root>/<backend.path>/` joined with that member's `api_contract.spec_url`) and its route handlers or resolvers as needed; cite contract references exactly as above.
 4. **Test Coverage Gaps.** What has coverage and what does not, grouped by file.
 5. **Handoff Notes.** Drift, naming inconsistencies, conflicts with the coder spec, open questions, anything surprising.
 
@@ -55,10 +56,16 @@ class_inventory:          # EVERY public model or class you recommend, request a
     signature: "class Widget { ... }"
 package_structure: |      # non-empty free-form
   ...
+also_writes:              # workspace mode only, and only when the REQ's also_writes names other members
+  - member: <slug>
+    root: /absolute/path/to/that/member
+    files_touched: [path/inside/that/member]
 ---
 ```
 
 Body: discovery notes downstream agents and the operator rely on; what exists vs net-new, subtle helpers, version quirks. The contract is the drift cross-check the auditor uses; under-enumerating it removes that protection.
+
+**Workspace mode additions.** `files_touched` stays relative to the home member and never names another member's files; a file in an `also_writes` member goes under that member's `also_writes` entry (the validator checks each entry against its own root). The body gains two mandatory sections: **Cross-member reads**, every file consulted outside the home member as `<member slug>: <path relative to that member>` (the backend's OpenAPI artifact, the handlers behind the operations the REQ consumes); and **Write scope**, one line `home: <slug>; also_writes: [...]`. A REQ that turns out to need a change in a member outside `write_allowed` is a cross-member dependency to record in Handoff Notes, not a file to add.
 
 ## Boundaries
 

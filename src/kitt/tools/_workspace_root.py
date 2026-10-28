@@ -66,6 +66,38 @@ Nearest-match-wins still applies inside that repo: a call targeting
 ``kitt.yml``) and gets its own ``LEARNINGS.md``. Two packages that each
 carry ``kitt.yml`` are two workspaces. To keep one shared corpus for the
 whole repository, target the repo root.
+
+The workspace loop
+------------------
+
+A container directory whose children are each their own project (and
+usually their own git repository) carries a *workspace* ``kitt.yml``, a
+file with a top-level ``workspace`` block naming the children as members
+(see :mod:`._kitt_yml_kind`)::
+
+    myproduct/kitt.yml      <- workspace: projects: [backend, frontend, tests]
+      backend/   .git, kitt.yml
+      frontend/  .git, kitt.yml
+      tests/     .git
+
+The walk above needs no special case for this shape; three facts fall
+out of the existing rules:
+
+1. From ``myproduct/`` the walk finds the root's own ``kitt.yml`` on
+   its first step, so the root owns its own corpus.
+2. From ``myproduct/backend/`` the walk stops at ``backend/`` (its own
+   git toplevel) and never sees the root. A member stays its own
+   workspace; a session launched inside it is exactly a session in a
+   plain single project.
+3. A member with neither ``.git`` nor a marker walks up to the root and
+   belongs to the root corpus, which is the right answer for a thin
+   directory the root file happens to list.
+
+What the root adds is a *read* relationship, not a new resolution rule:
+:func:`find_workspace_members` lists the member directories the root
+file declares, and the learnings read path aggregates each member's
+corpus into a search run from the root. Writes never cross that line;
+a corpus is appended to only through its own root.
 """
 
 from __future__ import annotations
@@ -75,6 +107,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..product import CONFIG_FILENAME
+from ._kitt_yml_kind import describe_members, load_kitt_yml
 from ._learnings_format import LEARNINGS_FILENAME
 
 __all__ = [
@@ -83,6 +116,7 @@ __all__ = [
     "MARKER_FILENAMES",
     "WorkspaceRoot",
     "find_git_toplevel",
+    "find_workspace_members",
     "find_workspace_root",
     "has_marker",
 ]
@@ -198,3 +232,25 @@ def find_workspace_root(start: Path) -> WorkspaceRoot:
             break
 
     return WorkspaceRoot(root=None, searched=tuple(searched), git_toplevel=boundary)
+
+
+def find_workspace_members(root: Path) -> list[Path]:
+    """The member directories a workspace ``kitt.yml`` at ``root`` declares.
+
+    Returns the absolute directory of every declared member that exists
+    and resolves inside ``root``, in declared order. Returns ``[]`` when
+    ``root`` carries no ``kitt.yml``, a project-kind one, or an invalid
+    one: a plain project has no members, and a broken root file must not
+    silently widen a search.
+
+    Read-only. This is the only place the learnings read path learns
+    about members; the write path never consults it.
+    """
+    info = load_kitt_yml(root / KITT_YML_FILENAME)
+    if info is None or info.workspace is None:
+        return []
+    return [
+        member.abs_path
+        for member in describe_members(root, info.workspace)
+        if member.exists
+    ]

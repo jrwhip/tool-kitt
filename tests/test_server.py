@@ -157,3 +157,50 @@ class TestGetWorkspaceInfo:
             "context_docs",
             "skills",
         ]
+
+
+class TestGetWorkspaceInfoKind:
+    """``kitt_yml_kind`` and the member list a workspace root declares."""
+
+    @staticmethod
+    async def _info(root):
+        config = ServerConfig(cli_type="claude")
+        app = create_app(config=config, workspace=str(root))
+        tool = next(
+            t for t in app._tool_manager.list_tools()
+            if t.name == "get_workspace_info"
+        )
+        return json.loads(await tool.fn(str(root)))
+
+    async def test_reports_workspace_kind_and_members(self, tmp_path):
+        (tmp_path / "kitt.yml").write_text(
+            "workspace:\n  slug: myproduct\n  name: My Product\n  projects:\n"
+            "    - path: backend\n      role: backend\n"
+            "    - path: frontend\n      role: frontend\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "backend").mkdir()
+        (tmp_path / "backend" / "kitt.yml").write_text(
+            "project:\n  slug: api\n", encoding="utf-8"
+        )
+        payload = await self._info(tmp_path)
+        assert payload["kitt_yml_kind"] == "workspace"
+        assert payload["files"]["kitt_yml"] is True
+        assert payload["workspace_config"]["slug"] == "myproduct"
+        assert payload["workspace_config"]["name"] == "My Product"
+        members = {m["path"]: m for m in payload["workspace_config"]["members"]}
+        assert list(members) == ["backend", "frontend"]
+        assert members["backend"]["has_kitt_yml"] is True
+        assert members["backend"]["kitt_yml_kind"] == "project"
+        assert members["frontend"]["exists"] is False
+
+    async def test_reports_project_kind_without_members(self, tmp_path):
+        (tmp_path / "kitt.yml").write_text("project:\n  slug: api\n", encoding="utf-8")
+        payload = await self._info(tmp_path)
+        assert payload["kitt_yml_kind"] == "project"
+        assert payload["workspace_config"] is None
+
+    async def test_reports_none_when_no_kitt_yml(self, tmp_path):
+        payload = await self._info(tmp_path)
+        assert payload["kitt_yml_kind"] is None
+        assert payload["workspace_config"] is None

@@ -17,6 +17,8 @@ Ask once per project, before drafting anything, and record the answer in the tra
 | GitHub issues | NOT yet a crew source | `gh` CLI is nearly free, but the crew cannot resolve REQs from issues today: pair with exported files, or extend the crew's req_resolution first |
 
 A hybrid is normal: files as the drafting store, published to Jira or GitHub after sign-off (one issue per REQ, body verbatim, key/number recorded back into the file frontmatter as `jira:` or `github:`).
+
+In workspace mode (the session's directory holds a `workspace` `kitt.yml`), ask once per member, not once per workspace: each member has its own `requirements:` source, and a REQ is stored with its home member.
 </storage>
 
 <format>
@@ -27,6 +29,8 @@ title: <short imperative title>
 priority: <1..n, unique>
 depends_on: [<REQ ids, or empty>]
 status: pending
+project: <member slug>          # workspace mode only: the one member this REQ writes to
+also_writes: []                 # workspace mode only, rare: extra member slugs this REQ may write
 ---
 
 ## Requirement
@@ -37,6 +41,8 @@ status: pending
 ```
 
 In Jira or GitHub, the body is identical; frontmatter maps to issue fields (priority, links for depends_on), and the issue key or number is the id.
+
+**Workspace mode fields.** `project:` and `also_writes:` name members by `workspace.projects[].slug` from the workspace root's `kitt.yml` (schema: `kitt-yml-schema.md`, "Section: `workspace`" and the workspace-mode rule under "Path conventions"). They matter only when the REQ is drafted or run from a workspace root; a single-project session ignores them. The REQ file lives in the home member's `requirements/` directory, so a session launched inside that member sees it unchanged. Default is one writer. Populate `also_writes` only when the operator has decided the REQ genuinely must land in two members at once; the usual answer to "this needs the backend and the frontend" is two REQs, one per member, joined by `depends_on`. In Jira, the two fields are the labels `kitt-project:<slug>` and `kitt-also-writes:<slug>`; when they are absent the orchestrator asks which member before dispatching.
 </format>
 
 <quality_bar>

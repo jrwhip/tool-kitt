@@ -9,3 +9,5 @@
 {"intent": "my doctor appointment is on thursday", "expected_skill": null}
 {"intent": "diagnose why this container exits immediately", "expected_skill": null}
 {"intent": "list the mcp servers in my settings file", "expected_skill": null}
+{"intent": "from the parent folder, we're checking a multi-project workspace root for missing setup", "expected_skill": "kitt-doctor"}
+{"intent": "which of these child folders are git repos", "expected_skill": null}

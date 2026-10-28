@@ -4,7 +4,7 @@ Two kinds of templates live here:
 
 **Tracking-document templates** (the four `*.template.md` files): skeletons for the documents a crew run produces and consumes. The caller fills in `[STACK: ...]` markers with stack specifics before the crew starts.
 
-**Project config example** (`kitt.example.yml`): a worked example of the KITT-shared project configuration file. Each project has its own `kitt.yml` at its project root. Schema reference: `kitt-yml-schema.md` (this directory; ships with the pack).
+**Project config example** (`kitt.example.yml`): a worked example of the KITT-shared project configuration file. Each project has its own `kitt.yml` at its project root. A parent directory of sibling repositories may add a `workspace` `kitt.yml` of its own that names the children as members; the members keep theirs. Schema reference: `kitt-yml-schema.md` (this directory; ships with the pack), including the workspace-mode rule under "Path conventions".
 
 ## Tracking-document templates
 
@@ -23,10 +23,12 @@ For migration projects, an additional template (`extracted-requirements.template
 
 See:
 
-- `kitt.example.yml` (this directory): worked examples for both a backend and a frontend project.
+- `kitt.example.yml` (this directory): worked examples for a backend project, a frontend project, and a workspace root.
 - `kitt-yml-schema.md` (this directory): full schema with section-by-section field tables. Agents fetch it via `mcp__kitt__get_pack_template` (`pack="crew"`, `name="kitt-yml-schema.md"`).
 
 The crew does not run without `kitt.yml`. If it is missing at the resolved path, every agent stops and reports.
+
+**Workspace mode, in two sentences.** A `kitt.yml` whose top-level key is `workspace` marks a container of sibling projects; a session launched there sees every member, and `<target_dir>` for a member is `<workspace_root>/<member path>`. A session launched inside a member is a plain single-project session, and crew artifacts always land in the REQ's home member, never at the root.
 
 ## How to use a tracking-document template
 

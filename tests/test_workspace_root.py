@@ -19,6 +19,7 @@ produced the bug report is not touched.
 
 from __future__ import annotations
 
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -28,6 +29,7 @@ from kitt.tools import learnings
 from kitt.tools._workspace_root import (
     WorkspaceRoot,
     find_git_toplevel,
+    find_workspace_members,
     find_workspace_root,
 )
 from kitt.tools.learnings import (
@@ -476,3 +478,105 @@ class TestGoldenFixtureResolutionIsUnchanged:
         assert _shape(find_workspace_root(fixture)) == _shape(find_workspace_root(plain))
 
 
+
+
+# ---------------------------------------------------------------------------
+# Workspace roots: a container directory whose children are their own repos
+# ---------------------------------------------------------------------------
+
+WORKSPACE_ROOT_YML = (
+    "workspace:\n"
+    "  slug: myproduct\n"
+    "  projects:\n"
+    "    - path: backend\n"
+    "      role: backend\n"
+    "    - path: frontend\n"
+    "      role: frontend\n"
+    "    - path: tests\n"
+    "      role: tests\n"
+)
+
+
+@pytest.fixture
+def product(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
+    """A workspace root that is NOT a git repo, holding three member repos.
+
+    ``backend`` and ``frontend`` carry their own ``kitt.yml``; ``tests``
+    is a bare repo with no marker at all. The root carries only the
+    workspace ``kitt.yml``.
+    """
+    root = tmp_path / "myproduct"
+    root.mkdir()
+    (root / "kitt.yml").write_text(WORKSPACE_ROOT_YML, encoding="utf-8")
+    backend = _mkpackage(root, "backend")
+    (backend / ".git").mkdir()
+    frontend = _mkpackage(root, "frontend")
+    (frontend / ".git").mkdir()
+    tests = _mkrepo(root / "tests")
+    return root, backend, frontend, tests
+
+
+class TestWorkspaceRootShape:
+    def test_root_workspace_yml_stops_the_walk_at_the_root(
+        self, product: tuple[Path, Path, Path, Path]
+    ):
+        root, _, _, _ = product
+        result = find_workspace_root(root)
+        assert result.found
+        assert result.root == root
+        assert result.searched == (root,)
+
+    def test_member_with_its_own_git_is_isolated_from_the_root(
+        self, product: tuple[Path, Path, Path, Path]
+    ):
+        root, backend, _, _ = product
+        sub = backend / "app"
+        sub.mkdir()
+        result = find_workspace_root(sub)
+        assert result.root == backend
+        assert root not in result.searched
+
+    def test_unmarked_member_with_its_own_git_does_not_reach_the_root(
+        self, product: tuple[Path, Path, Path, Path]
+    ):
+        """``tests/`` has ``.git`` and no marker: it is its own (empty) island."""
+        root, _, _, tests = product
+        result = find_workspace_root(tests)
+        assert not result.found
+        assert result.git_toplevel == tests
+        assert root not in result.searched
+
+    def test_unmarked_child_without_git_resolves_to_the_root(
+        self, product: tuple[Path, Path, Path, Path]
+    ):
+        root, _, _, _ = product
+        docs = root / "docs"
+        docs.mkdir()
+        result = find_workspace_root(docs)
+        assert result.root == root
+
+
+class TestFindWorkspaceMembers:
+    def test_returns_existing_declared_members_in_order(
+        self, product: tuple[Path, Path, Path, Path]
+    ):
+        root, backend, frontend, tests = product
+        assert find_workspace_members(root) == [backend, frontend, tests]
+
+    def test_skips_declared_members_that_do_not_exist(
+        self, product: tuple[Path, Path, Path, Path]
+    ):
+        root, backend, frontend, tests = product
+        shutil.rmtree(tests)
+        assert find_workspace_members(root) == [backend, frontend]
+
+    def test_returns_empty_for_a_project_kind_root(self, tmp_path: Path):
+        package = _mkpackage(tmp_path, "pkg")
+        assert find_workspace_members(package) == []
+
+    def test_returns_empty_when_no_kitt_yml(self, tmp_path: Path):
+        assert find_workspace_members(tmp_path) == []
+
+    def test_returns_empty_for_an_invalid_root_file(self, tmp_path: Path):
+        (tmp_path / "kitt.yml").write_text("workspace: [broken", encoding="utf-8")
+        assert find_workspace_members(tmp_path) == []

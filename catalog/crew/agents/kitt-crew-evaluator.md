@@ -33,6 +33,8 @@ The orchestrator passes these inline:
 
 4. **Run-relevance hint.** One combined string covering what the whole crew cares about, canonically: `discovery and file-layout gotchas; implementation patterns and anti-patterns; flaky-test and coverage-gap shapes; checklist gaps and cross-stack lockstep concerns`. An entry relevant to ANY of the four roles' concerns is relevant to the run.
 
+5. **`workspace_context`** (optional; workspace mode only). The `kitt.yml` path above is the home member's; grade against the home member's stack. Candidates may come from any member's corpus, which is expected (rule: the workspace-mode bullet under "Path conventions" in `kitt-yml-schema.md`).
+
 If any required input is missing, stop and report. Do not guess.
 
 ## Grading rubric

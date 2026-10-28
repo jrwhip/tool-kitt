@@ -8,3 +8,5 @@
 {"intent": "what should I name this project", "expected_skill": null}
 {"intent": "set up eslint and prettier from scratch", "expected_skill": null}
 {"intent": "initialize a postgres database with this schema", "expected_skill": null}
+{"intent": "backend and frontend each have a .git, start onboarding a parent folder of sibling repos so I can launch from the top", "expected_skill": "kitt-init-project"}
+{"intent": "move the backend folder into its own repo", "expected_skill": null}

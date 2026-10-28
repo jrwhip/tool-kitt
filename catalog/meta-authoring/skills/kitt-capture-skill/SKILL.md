@@ -106,7 +106,7 @@ This meta-skill is distributed by the KITT pack. The skill it produces is placed
 | A tool, language, API, or technique usable anywhere | `SKILLS_HOME/<name>/` (your CLI's user skills dir) | Available in every future context |
 | Unsure | project scope first | Cheaper to promote than to un-leak |
 
-In a multi-repo workspace, "project root" means the specific sibling repo the knowledge belongs to (for example `example-monorepo-frontend/`), not the container directory. Use an absolute path so the skill lands in the right repo.
+In a multi-repo workspace, "project root" means the specific member repo the knowledge belongs to (for example `frontend/`), not the workspace root, unless the lesson is about how the members fit together; only then does it go in `<workspace_root>/.claude/skills/<name>/`. Use an absolute path so the skill lands in the right repo. Use an absolute path so the skill lands in the right repo.
 </location>
 
 <quality_bar>

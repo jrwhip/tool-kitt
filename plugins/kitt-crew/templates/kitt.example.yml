@@ -1,10 +1,11 @@
-# kitt.yml example: two worked configurations
+# kitt.yml example: three worked configurations
 #
-# This file shows TWO complete configurations: one for a Spring Boot backend project
-# and one for an Angular frontend project that consumes the backend's API contract.
+# This file shows THREE complete configurations: a Spring Boot backend project,
+# an Angular frontend project that consumes the backend's API contract, and a
+# workspace root that names both as members.
 #
-# In a real project, only ONE of these blocks would appear at the project root,
-# named exactly `kitt.yml`. They are colocated here for reference.
+# In a real project, only ONE of these blocks would appear in a given
+# `kitt.yml`. They are colocated here for reference.
 #
 # Schema reference: kitt-yml-schema.md (ships alongside this file in the crew pack)
 
@@ -129,4 +130,39 @@ legacy-migration:
 #   # schema_env_prefix omitted; frontend does not run schema extractors
 #   # The handoff_contract field on the frontend points at the BACKEND's contract
 #   # by absolute path, since the contract is the bridge between the two halves.
+#   # In a workspace (Example C) that path is derivable:
+#   # <workspace_root>/<backend.path>/FRONTEND_HANDOFF_CONTRACT.md; the crew
+#   # orchestrator offers it when this field is missing.
 #   handoff_contract: /path/to/backend/project/FRONTEND_HANDOFF_CONTRACT.md
+
+# ============================================================================
+# Example C: workspace root (a container of sibling repositories)
+# Lives at:  <workspace_root>/kitt.yml  (e.g. /path/to/myproduct/kitt.yml)
+#            with backend/, frontend/, tests/ as children, each its own repo
+# ============================================================================
+#
+# No `project:` key here; readers tell a workspace file from a project file
+# by content. The members keep their own project kitt.yml (Examples A and B).
+# Launching the AI CLI at this directory puts the session in workspace mode:
+# the crew can read every member and writes to the REQ's home member.
+# Launching inside a member is a plain single-project session.
+#
+# workspace:
+#   slug: myproduct
+#   name: My Product
+#   projects:
+#     - path: backend
+#       slug: demo-api       # the slug REQ files use in `project:`
+#       role: backend        # owns the API contract
+#     - path: frontend
+#       slug: demo-admin
+#       role: frontend       # consumes the generated client
+#     - path: tests
+#       slug: demo-e2e
+#       role: tests          # exercises both
+#
+# # Optional. Governs the ROOT corpus; a search from the root also reads
+# # every member's LEARNINGS.md (read-only; each member owns its own file).
+# learnings:
+#   embeddings:
+#     provider: local

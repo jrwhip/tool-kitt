@@ -8,6 +8,7 @@ evaluator sits on top of.
 
 from __future__ import annotations
 
+import shutil
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -779,3 +780,180 @@ class TestGoldenFixtureCorpusExercisesTheEvaluator:
 
         assert found.count("## LRN-") > EVALUATOR_DISPATCH_THRESHOLD
         assert corpus.read_bytes() == before, "the checked-in fixture was written to"
+
+
+# ---------------------------------------------------------------------------
+# Workspace roots: reads aggregate members, writes stay at the root
+# ---------------------------------------------------------------------------
+
+
+def _mk_workspace_root(ws: Path) -> tuple[Path, Path]:
+    """``ws`` becomes a workspace root (no .git) over two member repos."""
+    (ws / "kitt.yml").write_text(
+        "workspace:\n  slug: myproduct\n  projects:\n"
+        "    - path: backend\n      role: backend\n"
+        "    - path: frontend\n      role: frontend\n",
+        encoding="utf-8",
+    )
+    backend = ws / "backend"
+    backend.mkdir()
+    (backend / ".git").mkdir()
+    (backend / "kitt.yml").write_text("project:\n  slug: api\n", encoding="utf-8")
+    frontend = ws / "frontend"
+    frontend.mkdir()
+    (frontend / ".git").mkdir()
+    (frontend / "kitt.yml").write_text("project:\n  slug: ui\n", encoding="utf-8")
+    return backend, frontend
+
+
+class TestWorkspaceRootReads:
+    async def test_root_search_reads_root_plus_member_corpora(self, isolated_env):
+        ws, _home = isolated_env
+        backend, frontend = _mk_workspace_root(ws)
+        today = datetime.now(tz=timezone.utc).date().isoformat()
+        (ws / "LEARNINGS.md").write_text(
+            _make_entry(entry_date=today, letter="a", title="Root lesson"), encoding="utf-8"
+        )
+        (backend / "LEARNINGS.md").write_text(
+            _make_entry(entry_date=today, letter="b", title="Backend lesson"),
+            encoding="utf-8",
+        )
+        (frontend / "LEARNINGS.md").write_text(
+            _make_entry(entry_date=today, letter="c", title="Frontend lesson"),
+            encoding="utf-8",
+        )
+
+        result = await learnings_search(
+            req_id="", stack_tags=["spring-boot"], target_workspace_path=str(ws)
+        )
+
+        assert "Root lesson" in result
+        assert "Backend lesson" in result
+        assert "Frontend lesson" in result
+
+    async def test_root_search_skips_a_member_without_a_corpus(self, isolated_env):
+        ws, _home = isolated_env
+        backend, _frontend = _mk_workspace_root(ws)
+        today = datetime.now(tz=timezone.utc).date().isoformat()
+        (backend / "LEARNINGS.md").write_text(
+            _make_entry(entry_date=today, letter="b", title="Backend lesson"),
+            encoding="utf-8",
+        )
+        # No root corpus and no frontend corpus: still no crash, still finds backend.
+        result = await learnings_search(
+            req_id="", stack_tags=["spring-boot"], target_workspace_path=str(ws)
+        )
+        assert "Backend lesson" in result
+
+    async def test_member_search_from_inside_a_child_reads_the_child_only(
+        self, isolated_env
+    ):
+        ws, _home = isolated_env
+        backend, frontend = _mk_workspace_root(ws)
+        today = datetime.now(tz=timezone.utc).date().isoformat()
+        (ws / "LEARNINGS.md").write_text(
+            _make_entry(entry_date=today, letter="a", title="Root lesson"), encoding="utf-8"
+        )
+        (backend / "LEARNINGS.md").write_text(
+            _make_entry(entry_date=today, letter="b", title="Backend lesson"),
+            encoding="utf-8",
+        )
+        (frontend / "LEARNINGS.md").write_text(
+            _make_entry(entry_date=today, letter="c", title="Frontend lesson"),
+            encoding="utf-8",
+        )
+
+        result = await learnings_search(
+            req_id="", stack_tags=["spring-boot"], target_workspace_path=str(backend)
+        )
+
+        assert "Backend lesson" in result
+        assert "Root lesson" not in result
+        assert "Frontend lesson" not in result
+
+    async def test_append_from_the_root_writes_the_root_only(self, isolated_env):
+        ws, _home = isolated_env
+        backend, frontend = _mk_workspace_root(ws)
+        result = await append_learnings(
+            str(ws), entry_markdown=_make_entry(letter="a", title="Root lesson")
+        )
+        assert result.startswith("Appended"), result
+        assert "Root lesson" in (ws / "LEARNINGS.md").read_text(encoding="utf-8")
+        assert not (backend / "LEARNINGS.md").exists()
+        assert not (frontend / "LEARNINGS.md").exists()
+
+    async def test_learnings_path_reports_kind_members_and_member_read_paths(
+        self, isolated_env
+    ):
+        ws, _home = isolated_env
+        backend, frontend = _mk_workspace_root(ws)
+        (backend / "LEARNINGS.md").write_text("x", encoding="utf-8")
+        shutil.rmtree(frontend)
+
+        result = await learnings_path(str(ws))
+
+        assert "kitt_yml_kind: workspace" in result
+        assert "workspace_members:" in result
+        assert f"{backend}  [declared, exists]" in result
+        assert f"{frontend}  [declared, missing]" in result
+        assert f"write_path: {ws / 'LEARNINGS.md'}" in result
+        assert f"{backend / 'LEARNINGS.md'}  [populated" in result
+        assert f"{ws / 'LEARNINGS.md'}  [missing]" in result
+
+    async def test_learnings_path_on_a_project_root_reports_no_members(
+        self, isolated_env
+    ):
+        ws, _home = isolated_env
+        _mark_in_workspace(ws)
+        result = await learnings_path(str(ws))
+        assert "kitt_yml_kind: project" in result
+        assert "workspace_members:" not in result
+
+    async def test_learnings_path_on_an_invalid_root_file_says_so(self, isolated_env):
+        ws, _home = isolated_env
+        (ws / "kitt.yml").write_text("project: {slug: a}\nworkspace: {slug: b}\n", encoding="utf-8")
+        result = await learnings_path(str(ws))
+        assert "kitt_yml_kind: invalid" in result
+        assert "workspace_members:" not in result
+
+
+class TestReadOnlyMemberSidecars:
+    def test_semantic_top_n_never_rebuilds_a_non_writable_source(
+        self, isolated_env, monkeypatch
+    ):
+        """A root search must not write a member's sidecar; the read-only
+        loader is used for every source outside ``writable_sources``."""
+        from kitt.tools import _embeddings
+
+        ws, _home = isolated_env
+        backend, _frontend = _mk_workspace_root(ws)
+        root_file = ws / "LEARNINGS.md"
+        member_file = backend / "LEARNINGS.md"
+        root_file.write_text(_make_entry(letter="a", title="Root"), encoding="utf-8")
+        member_file.write_text(_make_entry(letter="b", title="Member"), encoding="utf-8")
+        entries = learnings._parse_entries(
+            root_file.read_text(encoding="utf-8"), root_file
+        ) + learnings._parse_entries(member_file.read_text(encoding="utf-8"), member_file)
+
+        calls: dict[str, list[Path]] = {"rebuild": [], "readonly": []}
+
+        def fake_rebuild(path: Path, entries: object = None, provider: object = None) -> None:
+            calls["rebuild"].append(path)
+
+        def fake_readonly(path: Path, entries: object = None, provider: object = None) -> None:
+            calls["readonly"].append(path)
+
+        monkeypatch.setattr(_embeddings, "EMBEDDINGS_AVAILABLE", True)
+        monkeypatch.setattr(learnings, "_load_or_rebuild_sidecar", fake_rebuild)
+        monkeypatch.setattr(learnings, "_load_sidecar_if_current", fake_readonly)
+
+        class _Provider:
+            name = "fake"
+            dimensions = 3
+
+        learnings._semantic_top_n(
+            entries, "anything", 5, _Provider(), writable_sources=frozenset({root_file})
+        )
+
+        assert calls["rebuild"] == [root_file]
+        assert calls["readonly"] == [member_file]
