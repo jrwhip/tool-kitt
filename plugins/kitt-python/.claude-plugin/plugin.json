@@ -1,7 +1,7 @@
 {
   "name": "kitt-python",
   "description": "Python development: FastAPI, AI integrations (Bedrock, Vertex, Pinecone), testing, packaging",
-  "version": "1.0.0-dev.6",
+  "version": "1.0.0-dev.7",
   "author": {
     "name": "Jared Whipple"
   },
