@@ -1,7 +1,7 @@
 {
   "name": "kitt-angular",
   "description": "Angular development: component patterns, testing, code review",
-  "version": "1.0.0-dev.6",
+  "version": "1.0.0-dev.7",
   "author": {
     "name": "Jared Whipple"
   },

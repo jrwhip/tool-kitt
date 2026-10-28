@@ -6,7 +6,7 @@
 # these on first launch.
 [project]
 name = "kitt"
-version = "1.0.0-dev.6"
+version = "1.0.0-dev.7"
 description = "KITT MCP server, bundled inside the kitt-core Claude Code plugin"
 requires-python = ">=3.10"
 dependencies = [

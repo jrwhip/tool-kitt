@@ -1,6 +1,6 @@
 {
   "generator": "kitt build-plugins",
-  "generator_version": "1.0.0-dev.6",
+  "generator_version": "1.0.0-dev.7",
   "marketplace": "kitt-marketplace",
   "warning": "This directory is regenerated in full on every `kitt build-plugins` run. Every file is overwritten. Edit the catalog, not this tree."
 }

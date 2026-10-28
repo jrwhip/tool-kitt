@@ -1,7 +1,7 @@
 {
   "name": "kitt-crew",
   "description": "Universal four-role agent crew (scout, coder, tester, auditor): one REQ per run, API-contract-first (OpenAPI or GraphQL), spec-files-as-authority, coverage-gated. For any disciplined dev project (net-new, ongoing iteration, blocker fix, or frontend handoff).",
-  "version": "1.0.0-dev.6",
+  "version": "1.0.0-dev.7",
   "author": {
     "name": "Jared Whipple"
   },

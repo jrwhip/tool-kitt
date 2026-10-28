@@ -5,4 +5,4 @@ Provides shared commands, skills, agents, and MCP tools, organized as
 packs that install per project or globally.
 """
 
-__version__ = "1.0.0.dev6"
+__version__ = "1.0.0.dev7"
