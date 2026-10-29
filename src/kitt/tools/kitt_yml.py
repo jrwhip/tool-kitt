@@ -276,6 +276,13 @@ def _derive_api_contract_section(
     (openapi-generator-cli), so every derived block is ``kind: openapi``.
     GraphQL projects declare the block by hand; see kitt-yml-schema.md.
     The todo_comment is set when the field needs human review.
+
+    Every recognised backend or frontend framework gets a block, even when
+    detection found no producer or consumer tooling: the crew refuses to
+    run without ``api_contract``, so a proposal that omits it leaves the
+    operator with a project that cannot start. The values are then TODOs
+    to fill in, never silence. A target with no recognised framework
+    still gets nothing; there is no sensible default to offer.
     """
     role = profile.get("openapi_role")
     if role == "producer":
@@ -331,6 +338,30 @@ def _derive_api_contract_section(
             "Pin must match the backend's `spec_version`."
         )
         return None, pinned, todo
+    framework = profile.get("framework")
+    if framework == "fastapi":
+        return (
+            "/openapi.json",
+            "fastapi TODO",
+            "FastAPI serves its OpenAPI document at /openapi.json by default; "
+            "confirm the path and pin the FastAPI version as `fastapi <semver>`.",
+        )
+    if framework in _BACKEND_FRAMEWORKS:
+        return (
+            None,
+            "TODO",
+            "This backend owns the API contract. Set `spec_url` to where it "
+            "publishes its OpenAPI document and pin the tool that produces it "
+            "as `<tool> <semver>`.",
+        )
+    if framework in _FRONTEND_FRAMEWORKS:
+        return (
+            None,
+            "openapi-generator-cli TODO",
+            "No OpenAPI client generator found in package.json. The frontend "
+            "consumes the backend's contract: set `spec_url` to its openapi.json "
+            "and pin the generator you install, matching the backend's `spec_version`.",
+        )
     return None, None, None
 
 
