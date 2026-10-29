@@ -1,7 +1,7 @@
 {
   "name": "kitt-core",
   "description": "Foundation tools: mental models, debugging, todo management, planning",
-  "version": "1.0.0-dev.7",
+  "version": "1.0.0-dev.8",
   "author": {
     "name": "Jared Whipple"
   },
