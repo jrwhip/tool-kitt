@@ -151,8 +151,8 @@ class TestProposeKittYml:
         parsed = yaml.safe_load(proposed)
         assert parsed["project"]["build_file"] == "pyproject.toml"
         assert parsed["project"]["test_root"] == "tests"
-        # No api_contract block for a fastapi project that doesn't declare a role.
-        assert "api_contract" not in parsed
+        # FastAPI serves its own OpenAPI document; the proposal points at it.
+        assert parsed["api_contract"]["spec_url"] == "/openapi.json"
         assert "openapi" not in parsed
 
     def test_output_round_trips_through_yaml_safe_load(self, workspace: Path):
@@ -1534,3 +1534,40 @@ class TestProposeWorkspaceYml:
         after = json.loads(detect_stack(str(workspace)))
         assert after["project_type"] == "workspace"
         assert [m["path"] for m in after["workspace"]["members"]] == ["backend", "frontend"]
+
+
+class TestApiContractDefaultsForEveryFramework:
+    """The crew refuses to run without ``api_contract``; a proposal never omits it."""
+
+    def test_frontend_without_a_generator_still_gets_a_block(self, workspace: Path):
+        (workspace / "package.json").write_text(
+            json.dumps({"name": "ui", "dependencies": {"@angular/core": "^21.0.0"}}),
+            encoding="utf-8",
+        )
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        parsed = yaml.safe_load(proposed)
+        assert parsed["api_contract"]["kind"] == "openapi"
+        assert parsed["api_contract"]["spec_url"] is None
+        assert parsed["api_contract"]["pinned_generator_version"] == "openapi-generator-cli TODO"
+        assert "No OpenAPI client generator found" in proposed
+
+    def test_fastapi_defaults_to_its_served_document(self, workspace: Path):
+        _write_fastapi_single_app(workspace)
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        parsed = yaml.safe_load(proposed)
+        assert parsed["api_contract"]["spec_url"] == "/openapi.json"
+        assert parsed["api_contract"]["pinned_generator_version"] == "fastapi TODO"
+
+    @pytest.mark.parametrize("framework", ["flask", "django"])
+    def test_other_backends_get_a_todo_block(self, workspace: Path, framework: str):
+        (workspace / "requirements.txt").write_text(f"{framework}==3.0\n", encoding="utf-8")
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        parsed = yaml.safe_load(proposed)
+        assert parsed["api_contract"]["spec_url"] is None
+        assert parsed["api_contract"]["pinned_generator_version"] == "TODO"
+        assert "owns the API contract" in proposed
+
+    def test_unrecognised_stack_gets_no_block(self, workspace: Path):
+        (workspace / "Cargo.toml").write_text('[package]\nname = "tool"\n', encoding="utf-8")
+        proposed = propose_kitt_yml(detect_stack(str(workspace)), ".")
+        assert "api_contract" not in yaml.safe_load(proposed)

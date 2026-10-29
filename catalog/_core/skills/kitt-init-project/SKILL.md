@@ -62,7 +62,7 @@ Do NOT run during a crew run. This is setup, not runtime.
 
    a. `mcp__kitt__propose_kitt_yml` -> `mcp__kitt__write_kitt_yml`. The proposed YAML lands first because everything else references it.
 
-   b. `mcp__kitt__write_spec_stubs` with the absolute target dir and detection JSON. Stack-appropriate specs land in `<target>/specs/`.
+   b. `mcp__kitt__write_spec_stubs` with three arguments: `target_dir` (the absolute target directory), `detection_json` (the `detect_stack` output verbatim), and `target_path` (the target's path relative to the workspace exactly as it appears in the detection's `targets` list, `.` for the workspace root). All three are required; the tool picks the per-stack template from the profile that `target_path` names. Stack-appropriate specs land in `<target>/specs/`.
 
    c. `mcp__kitt__write_tracking_doc_stub` with the absolute target dir. Drops the crew pack's `implementation-tracking.template.md` to the project at either the operator-declared `legacy-migration.tracking_doc` path (when set in kitt.yml) or the default `implementation-tracking.md`. Refuses to overwrite by default.
 
